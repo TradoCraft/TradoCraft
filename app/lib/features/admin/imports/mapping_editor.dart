@@ -73,10 +73,17 @@ class MappingEditor extends ConsumerWidget {
         if (c.requiredValue) c.name,
     };
     // The plain columns, and of a per-language family the member this file column names.
-    List<String> fieldOptions(int i) => [
-      for (final c in entity.columns)
-        if (!c.perLanguage) c.name else ?familyField(c, preview.columns[i]),
-    ];
+    // The field already chosen for the column (e.g. `name_fr` from a saved mapping for a file
+    // column named otherwise) is always offered, so the list shows what will be applied.
+    List<String> fieldOptions(int i) {
+      final options = columnFieldOptions(entity, preview.columns[i]);
+      final chosen = s.fields[i];
+      return [
+        ...options,
+        if (chosen != null && !options.contains(chosen)) chosen,
+      ];
+    }
+
     Widget dropdown(int i) {
       final field = s.fields[i];
       final dup = field != null && check.duplicates.contains(field);

@@ -156,11 +156,22 @@ pub(crate) fn propose_mapping(
     }
 }
 
+/// The fixed values of a saved mapping (pairs without a file column) whose fields the entity still
+/// has. This screen keeps them as they are: they are shown, sent with a run and saved again, but
+/// not edited here.
+pub(crate) fn fixed_from_mapping(entity: &ImportDescription, m: &ImportMapping) -> Vec<ColumnPair> {
+    m.columns
+        .iter()
+        .filter(|p| p.column.is_none() && p.value.is_some() && is_field(entity, &p.field))
+        .cloned()
+        .collect()
+}
+
 /// What is wrong with, or missing from, a mapping.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct MappingCheck {
-    /// The key column is not chosen for any file column.
-    pub key_missing: bool,
+    /// Key columns without a file column or fixed value.
+    pub missing_keys: Vec<String>,
     /// Fields chosen for more than one file column.
     pub duplicates: Vec<String>,
     /// Fields without a file column.
@@ -171,14 +182,23 @@ pub(crate) struct MappingCheck {
 
 impl MappingCheck {
     pub fn blocked(&self) -> bool {
-        self.key_missing || !self.duplicates.is_empty()
+        !self.missing_keys.is_empty() || !self.duplicates.is_empty()
     }
 }
 
-pub(crate) fn check_mapping(fields: &[Option<String>], entity: &ImportDescription) -> MappingCheck {
+/// Checks the fields chosen for the file columns together with the `fixed` values.
+pub(crate) fn check_mapping(
+    fields: &[Option<String>],
+    fixed: &[ColumnPair],
+    entity: &ImportDescription,
+) -> MappingCheck {
     let mut seen: Vec<&str> = Vec::new();
     let mut dup: Vec<String> = Vec::new();
-    for f in fields.iter().flatten() {
+    for f in fields
+        .iter()
+        .flatten()
+        .chain(fixed.iter().map(|p| &p.field))
+    {
         if seen.contains(&f.as_str()) {
             if !dup.contains(f) {
                 dup.push(f.clone());
@@ -188,14 +208,16 @@ pub(crate) fn check_mapping(fields: &[Option<String>], entity: &ImportDescriptio
         }
     }
     MappingCheck {
-        key_missing: if entity.key_columns.is_empty() {
-            !seen.contains(&entity.key_column.as_str())
+        // A legacy description names only `key_column`.
+        missing_keys: if entity.key_columns.is_empty() {
+            std::slice::from_ref(&entity.key_column)
         } else {
-            entity
-                .key_columns
-                .iter()
-                .any(|k| !seen.contains(&k.as_str()))
-        },
+            entity.key_columns.as_slice()
+        }
+        .iter()
+        .filter(|k| !seen.contains(&k.as_str()))
+        .cloned()
+        .collect(),
         duplicates: dup,
         unmapped: entity
             .columns
@@ -214,15 +236,17 @@ pub(crate) fn check_mapping(fields: &[Option<String>], entity: &ImportDescriptio
 
 /// The pairs to send with a job: none when every file column is the field of the same name and
 /// nothing is ignored (the strict header of the server is exact too); the non-ignored pairs
-/// otherwise.
+/// otherwise, followed by the `fixed` values.
 pub(crate) fn columns_to_send(
     header: &[String],
     fields: &[Option<String>],
+    fixed: &[ColumnPair],
 ) -> Option<Vec<ColumnPair>> {
-    let identity = header
-        .iter()
-        .zip(fields)
-        .all(|(h, f)| f.as_deref() == Some(h.as_str()));
+    let identity = fixed.is_empty()
+        && header
+            .iter()
+            .zip(fields)
+            .all(|(h, f)| f.as_deref() == Some(h.as_str()));
     if identity {
         return None;
     }
@@ -231,6 +255,7 @@ pub(crate) fn columns_to_send(
             .iter()
             .zip(fields)
             .filter_map(|(h, f)| f.as_ref().map(|f| ColumnPair::column(h.clone(), f.clone())))
+            .chain(fixed.iter().cloned())
             .collect(),
     )
 }
@@ -367,6 +392,8 @@ struct Wizard {
     saved: RwSignal<Vec<ImportMapping>>,
     saved_error: RwSignal<Option<String>>,
     fields: RwSignal<Vec<Option<String>>>,
+    /// Fixed values taken from a saved mapping (read-only here).
+    fixed: RwSignal<Vec<ColumnPair>>,
     proposed_from: RwSignal<Option<String>>,
     proposed_fields: StoredValue<Option<Vec<Option<String>>>>,
     dry: RwSignal<RunState>,
@@ -400,6 +427,7 @@ impl Wizard {
             saved: RwSignal::new(Vec::new()),
             saved_error: RwSignal::new(None),
             fields: RwSignal::new(Vec::new()),
+            fixed: RwSignal::new(Vec::new()),
             proposed_from: RwSignal::new(None),
             proposed_fields: StoredValue::new(None),
             dry: RwSignal::new(RunState::default()),
@@ -468,8 +496,10 @@ impl Wizard {
             return None;
         }
         self.entity.with(|e| {
-            e.as_ref()
-                .map(|e| self.fields.with(|f| check_mapping(f, e)))
+            e.as_ref().map(|e| {
+                self.fields
+                    .with(|f| self.fixed.with(|x| check_mapping(f, x, e)))
+            })
         })
     }
 
@@ -479,7 +509,8 @@ impl Wizard {
 
     fn columns(self) -> Option<Vec<ColumnPair>> {
         let header = self.header();
-        self.fields.with(|f| columns_to_send(&header, f))
+        self.fields
+            .with(|f| self.fixed.with(|x| columns_to_send(&header, f, x)))
     }
 
     /// What a run started now would be for.
@@ -540,6 +571,7 @@ impl Wizard {
         self.preview_loading.set(false);
         self.preview_error.set(None);
         self.fields.set(Vec::new());
+        self.fixed.set(Vec::new());
         self.proposed_from.set(None);
         self.dry.set(RunState::default());
         self.apply.set(RunState::default());
@@ -623,11 +655,16 @@ impl Wizard {
         let (Some(e), Some(p)) = (self.entity.get_untracked(), self.preview.get_untracked()) else {
             return;
         };
-        let (fields, from) = self
-            .saved
-            .with_untracked(|s| propose_mapping(&p.columns, &e, s));
+        let (fields, fixed, from) = self.saved.with_untracked(|s| {
+            let (fields, from) = propose_mapping(&p.columns, &e, s);
+            let fixed = best_saved_mapping(&p.columns, s)
+                .map(|m| fixed_from_mapping(&e, m))
+                .unwrap_or_default();
+            (fields, fixed, from)
+        });
         self.proposed_fields.set_value(Some(fields.clone()));
         self.fields.set(fields);
+        self.fixed.set(fixed);
         self.proposed_from.set(from);
     }
 
@@ -653,6 +690,7 @@ impl Wizard {
         self.saved.set(Vec::new());
         self.saved_error.set(None);
         self.fields.set(Vec::new());
+        self.fixed.set(Vec::new());
         self.proposed_from.set(None);
         self.dry.set(RunState::default());
         self.apply.set(RunState::default());
@@ -715,6 +753,7 @@ impl Wizard {
             return;
         };
         self.fields.set(fields_from_mapping(&p.columns, &e, m));
+        self.fixed.set(fixed_from_mapping(&e, m));
         self.proposed_from.set(Some(m.name.clone()));
     }
 
@@ -741,6 +780,7 @@ impl Wizard {
                 .iter()
                 .zip(f)
                 .filter_map(|(h, f)| f.as_ref().map(|f| ColumnPair::column(h.clone(), f.clone())))
+                .chain(self.fixed.get_untracked())
                 .collect::<Vec<_>>()
         });
         let body = MappingInput {
@@ -1426,11 +1466,24 @@ fn MappingStep(w: Wizard) -> impl IntoView {
         <p class="tc-label">"* Required for new records"</p>
         <div role="status" aria-live="polite" data-target="admin-import-mapping-notes">
             {move || check.get().map(|c| {
-                let key = w.entity.with(|e| e.as_ref().map(|e| e.key_column.clone()).unwrap_or_default());
+                let keys = c.missing_keys.join(", ");
+                let fixed = w.fixed.get();
                 view! {
-                    {c.key_missing.then(|| view! {
+                    {(!c.missing_keys.is_empty()).then(|| view! {
                         <p style="color: var(--error);" data-target="admin-import-key-missing">
-                            {format!("Choose a file column for the key field {key}: rows are matched on it.")}
+                            {format!("Choose a file column for the key field(s) {keys}: rows are matched on them.")}
+                        </p>
+                    })}
+                    {(!fixed.is_empty()).then(|| view! {
+                        <p data-target="admin-import-fixed">
+                            {format!(
+                                "Fixed values from the saved mapping: {}",
+                                fixed
+                                    .iter()
+                                    .map(|p| format!("{} = {}", p.field, p.value.clone().unwrap_or_default()))
+                                    .collect::<Vec<_>>()
+                                    .join(", ")
+                            )}
                         </p>
                     })}
                     {c.duplicates.iter().map(|f| view! {
@@ -2026,25 +2079,29 @@ mod tests {
 
     #[test]
     fn check_finds_missing_key_duplicates_and_unmapped() {
-        let c = check_mapping(&[some("name"), some("name"), None], &entity());
-        assert!(c.key_missing);
+        let c = check_mapping(&[some("name"), some("name"), None], &[], &entity());
+        assert_eq!(c.missing_keys, ["code"]);
         assert_eq!(c.duplicates, vec!["name"]);
         assert_eq!(c.unmapped, vec!["code", "city"]);
         assert_eq!(c.unmapped_required, vec!["code"]);
         assert!(c.blocked());
-        let ok = check_mapping(&[some("code"), some("name"), some("city")], &entity());
+        let ok = check_mapping(&[some("code"), some("name"), some("city")], &[], &entity());
         assert!(!ok.blocked() && ok.unmapped.is_empty());
     }
 
     #[test]
     fn identity_header_sends_no_columns() {
         let h = header(&["code", "name"]);
-        assert_eq!(columns_to_send(&h, &[some("code"), some("name")]), None);
-        let pairs = columns_to_send(&header(&["Klantnr", "x"]), &[some("code"), None]).unwrap();
+        assert_eq!(
+            columns_to_send(&h, &[some("code"), some("name")], &[]),
+            None
+        );
+        let pairs =
+            columns_to_send(&header(&["Klantnr", "x"]), &[some("code"), None], &[]).unwrap();
         assert_eq!(pairs.len(), 1);
         assert_eq!(pairs[0].column.as_deref(), Some("Klantnr"));
         // Ignoring a column is not the identity either.
-        assert!(columns_to_send(&h, &[some("code"), None]).is_some());
+        assert!(columns_to_send(&h, &[some("code"), None], &[]).is_some());
     }
 
     #[test]
@@ -2127,9 +2184,55 @@ mod tests {
                 Some("name".into())
             ]
         );
-        let check = check_mapping(&[Some("code".into())], &e);
-        assert!(!check.key_missing);
+        let check = check_mapping(&[Some("code".into())], &[], &e);
+        assert!(check.missing_keys.is_empty());
         // The family is never "unmapped": a file has any number of its members.
         assert_eq!(check.unmapped, ["name", "city"]);
+    }
+
+    fn value(value: &str, field: &str) -> ColumnPair {
+        ColumnPair {
+            column: None,
+            value: Some(value.into()),
+            field: field.into(),
+        }
+    }
+
+    #[test]
+    fn fixed_values_of_a_saved_mapping_are_kept_and_sent() {
+        let mut m = mapping("with fixed", &[("Nr", "code")]);
+        m.columns.push(value("Gent", "city"));
+        m.columns.push(value("x", "gone"));
+        let e = entity();
+        let fixed = fixed_from_mapping(&e, &m);
+        assert_eq!(fixed, [value("Gent", "city")]);
+        // A mapping of only fixed values and covered columns is still proposed.
+        assert!(best_saved_mapping(&header(&["nr"]), std::slice::from_ref(&m)).is_some());
+        let sent = columns_to_send(&header(&["code"]), &[some("code")], &fixed).unwrap();
+        assert_eq!(
+            sent,
+            [ColumnPair::column("code", "code"), value("Gent", "city")]
+        );
+        let id = Uuid::nil();
+        assert_ne!(
+            run_signature(id, "customers", None, Some(&sent)),
+            run_signature(id, "customers", None, Some(&sent[..1]))
+        );
+        // A fixed key counts as mapped; a field with both a column and a value is doubled.
+        let c = check_mapping(&[some("name")], &[value("C1", "code")], &e);
+        assert!(c.missing_keys.is_empty());
+        let c = check_mapping(&[some("city")], &fixed, &e);
+        assert_eq!(c.duplicates, ["city"]);
+    }
+
+    #[test]
+    fn the_missing_key_parts_are_named() {
+        let mut e = entity();
+        e.key_columns = vec!["code".into(), "zone".into(), "valid_from".into()];
+        let c = check_mapping(&[some("code"), some("zone")], &[], &e);
+        assert_eq!(c.missing_keys, ["valid_from"]);
+        e.key_columns.clear();
+        let c = check_mapping(&[some("name")], &[], &e);
+        assert_eq!(c.missing_keys, ["code"], "falls back to key_column");
     }
 }

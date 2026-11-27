@@ -25,6 +25,13 @@ bool isEntityField(ImportDescription entity, String field) =>
           (!c.perLanguage && c.name == field) || familyField(c, field) != null,
     );
 
+/// The fields offered for the file column [header]: the plain columns, and of a per-language
+/// family the member the header names.
+List<String> columnFieldOptions(ImportDescription entity, String header) => [
+  for (final c in entity.columns)
+    if (!c.perLanguage) c.name else ?familyField(c, header),
+];
+
 /// The fields a fixed value can be given: every column that is not a per-language family.
 List<ImportColumn> fixableColumns(ImportDescription entity) => [
   for (final c in entity.columns)

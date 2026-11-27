@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show mapEquals;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/api.dart';
@@ -204,6 +205,8 @@ class ImportWizard extends Notifier<WizardState> {
   int _entitySeq = 0;
   // The fields of the last proposal: other fields in the state were edited by the person.
   List<String?>? _proposedFields;
+  // The fixed values of the last proposal: other fixed values were entered by the person.
+  Map<String, String> _proposedFixed = const {};
 
   ImportsClient get _api => ref.read(apiProvider).imports;
 
@@ -248,6 +251,7 @@ class ImportWizard extends Notifier<WizardState> {
     _previewSeq++;
     _entitySeq++;
     _proposedFields = null;
+    _proposedFixed = const {};
     state = WizardState(entity: state.entity, saved: state.saved);
   }
 
@@ -261,6 +265,7 @@ class ImportWizard extends Notifier<WizardState> {
     _restartAll();
     _previewSeq++;
     _proposedFields = null;
+    _proposedFixed = const {};
     state = WizardState(
       entity: state.entity,
       saved: state.saved,
@@ -289,6 +294,7 @@ class ImportWizard extends Notifier<WizardState> {
     final seq = ++_entitySeq;
     _restartAll();
     _proposedFields = null;
+    _proposedFixed = const {};
     state = state.copyWith(
       entity: e,
       saved: const [],
@@ -355,8 +361,11 @@ class ImportWizard extends Notifier<WizardState> {
     }
   }
 
-  /// The person changed the columns since the last proposal.
+  bool get _fixedEdited => !mapEquals(state.fixed, _proposedFixed);
+
+  /// The person changed the columns or the fixed values since the last proposal.
   bool get _edited {
+    if (_fixedEdited) return true;
     final f = state.fields;
     final p = _proposedFields;
     if (f.isEmpty) return false;
@@ -379,9 +388,14 @@ class ImportWizard extends Notifier<WizardState> {
     );
     _proposedFields = proposal.fields;
     final from = proposal.from;
+    // Fixed values the person entered stay; only proposed ones are replaced.
+    final keepFixed = _fixedEdited;
+    if (!keepFixed) {
+      _proposedFixed = from == null ? const {} : fixedFromMapping(e, from);
+    }
     state = state.copyWith(
       fields: proposal.fields,
-      fixed: from == null ? const {} : fixedFromMapping(e, from),
+      fixed: keepFixed ? state.fixed : _proposedFixed,
       proposedFrom: from?.name,
     );
   }

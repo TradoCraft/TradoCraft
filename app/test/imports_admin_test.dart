@@ -1361,6 +1361,34 @@ void main() {
       },
     );
 
+    testWidgets(
+      'saved mappings arriving late keep the fixed values the person entered',
+      (tester) async {
+        final gate = Completer<Object?>();
+        final t = setup({'GET /api/v1/imports/mappings': (_) => gate.future});
+        final w = t.container.read(importWizardProvider.notifier);
+        unawaited(w.selectEntity(entity));
+        await settle(tester);
+        unawaited(w.upload(_xlsx));
+        await settle(tester);
+        w.setFixed('city', 'Gent');
+        gate.complete([
+          {
+            ...mappingJson('m1', 'Other', {'code': 'code'}),
+            'columns': [
+              {'column': 'code', 'field': 'code'},
+              {'value': 'Brugge', 'field': 'city'},
+            ],
+          },
+        ]);
+        await settle(tester);
+        final s = t.container.read(importWizardProvider);
+        expect(s.saved, hasLength(1));
+        expect(s.fixed, {'city': 'Gent'});
+        expect(s.fields, ['code', 'name', 'city']);
+      },
+    );
+
     testWidgets('saved mappings arriving after the screen is gone do nothing', (
       tester,
     ) async {
@@ -1528,6 +1556,20 @@ void main() {
         'city',
       ]);
       expect(checkMapping(['code'], products).unmapped, ['name', 'city']);
+      expect(columnFieldOptions(products, 'Name_FR'), [
+        'code',
+        'name',
+        'city',
+        'name_fr',
+      ]);
+      // A saved mapping may give a differently named column a language field.
+      final saved = ImportMapping.fromJson({
+        ...mappingJson('id-l', 'lang', {}),
+        'columns': [
+          {'column': 'Naam FR', 'field': 'name_fr'},
+        ],
+      });
+      expect(fieldsFromMapping(['Naam FR'], products, saved), ['name_fr']);
     });
   });
 }
