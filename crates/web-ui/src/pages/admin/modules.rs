@@ -43,6 +43,18 @@ impl ModuleTreeNode {
     }
 }
 
+/// One visible row of the module tree: a node without its subtree.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ModuleRow {
+    pub id: String,
+    pub code: String,
+    pub depth: usize,
+    pub repeat: bool,
+    pub other_requires: Vec<String>,
+    pub requires: Vec<String>,
+    pub has_children: bool,
+}
+
 /// Builds the forest from `catalogue` (module code -> direct requirements, in catalogue order).
 /// Roots have no requirements; children are the modules that require the parent. Requirements on
 /// unknown codes are ignored; modules on a cycle are still listed (as extra roots).
@@ -218,10 +230,20 @@ pub(crate) fn toggle_module(
 pub(crate) fn visible_rows(
     roots: &[ModuleTreeNode],
     collapsed: &HashSet<String>,
-) -> Vec<ModuleTreeNode> {
-    fn walk(n: &ModuleTreeNode, collapsed: &HashSet<String>, out: &mut Vec<ModuleTreeNode>) {
-        out.push(n.clone());
-        if collapsed.contains(&n.id()) {
+) -> Vec<ModuleRow> {
+    fn walk(n: &ModuleTreeNode, collapsed: &HashSet<String>, out: &mut Vec<ModuleRow>) {
+        let id = n.id();
+        let is_collapsed = collapsed.contains(&id);
+        out.push(ModuleRow {
+            id,
+            code: n.code.clone(),
+            depth: n.depth,
+            repeat: n.repeat,
+            other_requires: n.other_requires.clone(),
+            requires: n.requires.clone(),
+            has_children: !n.children.is_empty(),
+        });
+        if is_collapsed {
             return;
         }
         for c in &n.children {
@@ -260,9 +282,12 @@ pub fn ModulesSection() -> impl IntoView {
     let saving = RwSignal::new(false);
     let reload = RwSignal::new(0_u64);
     let cascade_note = RwSignal::new(Option::<String>::None);
+    // The initial load failed (shown with a Retry instead of "Loading modules...").
+    let load_error = RwSignal::new(Option::<String>::None);
 
     Effect::new(move |_| {
         let _ = reload.get();
+        load_error.set(None);
         spawn_api(
             ctx,
             |c| async move { c.list_modules().await },
@@ -274,18 +299,21 @@ pub fn ModulesSection() -> impl IntoView {
                     }
                 }
                 Err(err) => {
-                    fb.fail(err.user_message());
+                    if catalogue.try_with_untracked(Option::is_some) == Some(false) {
+                        set_alive(load_error, Some(err.user_message()));
+                    } else {
+                        fb.fail(err.user_message());
+                    }
                 }
             },
         );
     });
 
-    let rows = Memo::new(move |_| {
-        catalogue.with(|c| match c {
-            Some(c) => collapsed.with(|col| visible_rows(&build_module_tree(c), col)),
-            None => Vec::new(),
-        })
+    // The tree changes with the catalogue only; collapsing just re-walks it.
+    let tree = Memo::new(move |_| {
+        catalogue.with(|c| c.as_deref().map(build_module_tree).unwrap_or_default())
     });
+    let rows = Memo::new(move |_| tree.with(|t| collapsed.with(|col| visible_rows(t, col))));
     let changed = Memo::new(move |_| disabled.get() != saved.get());
 
     let toggle = move |code: String, on: bool| {
@@ -357,14 +385,25 @@ pub fn ModulesSection() -> impl IntoView {
             })}
             <Show
                 when=move || catalogue.with(Option::is_some)
-                fallback=|| view! { <p class="tc-label">"Loading modules..."</p> }
+                fallback=move || match load_error.get() {
+                    Some(msg) => view! {
+                        <div class="tc-alert-error" role="alert" data-target="admin-modules-load-error">
+                            {msg}
+                            " "
+                            <button type="button" class="tc-btn tc-btn-sm" data-target="admin-modules-retry" on:click=move |_| reload.update(|n| *n += 1)>
+                                "Retry"
+                            </button>
+                        </div>
+                    }.into_any(),
+                    None => view! { <p class="tc-label">"Loading modules..."</p> }.into_any(),
+                }
             >
                 <ul data-target="admin-modules-tree" role="list" style="list-style: none; margin: 0; padding: 0;">
                     <For
                         each=move || rows.get()
-                        key=|n| n.id()
+                        key=|n| n.id.clone()
                         children=move |n| {
-                            let id = n.id();
+                            let id = n.id.clone();
                             let id_toggle = id.clone();
                             let id_state = id.clone();
                             let code = n.code.clone();
@@ -378,7 +417,7 @@ pub fn ModulesSection() -> impl IntoView {
                             } else {
                                 None
                             };
-                            let has_children = !n.children.is_empty();
+                            let has_children = n.has_children;
                             let on = Memo::new(move |_| disabled.with(|d| !d.contains(&code_on)));
                             let is_collapsed = Memo::new(move |_| collapsed.with(|c| c.contains(&id_state)));
                             let indent = format!(
@@ -509,6 +548,9 @@ mod tests {
         let roots = build_module_tree(&c);
         assert_eq!(visible_rows(&roots, &HashSet::new()).len(), 2);
         let collapsed: HashSet<String> = ["customers".to_string()].into();
-        assert_eq!(visible_rows(&roots, &collapsed).len(), 1);
+        let rows = visible_rows(&roots, &collapsed);
+        assert_eq!(rows.len(), 1);
+        assert!(rows[0].has_children);
+        assert_eq!(rows[0].id, "customers");
     }
 }
