@@ -357,6 +357,14 @@ endpoints = [
     ("/api/v1/attribute-definitions/{id}", "put", None, "AttributeDefinitionInput", "AttributeDefinition"),
     ("/api/v1/attribute-definitions/{id}", "delete", None, None, ""),
     ("/api/v1/baseline-item-types", "get", None, None, "[BaselineItemType]"),
+    (
+        "/api/v1/audit/events",
+        "get",
+        ["entity", "entity_id", "action", "user_id", "from", "to", "before_id", "limit"],
+        None,
+        "AuditPage",
+    ),
+    ("/api/v1/audit/facets", "get", None, None, "AuditFacets"),
 ]
 
 for path, method, query_params, req_schema, resp_schema in endpoints:
@@ -466,6 +474,9 @@ checks = [
     ("crates/api-client/src/attributes.rs", "AttributeDefinition", "AttributeDefinition"),
     ("crates/api-client/src/attributes.rs", "AttributeDefinitionInput", "AttributeDefinitionInput"),
     ("crates/api-client/src/attributes.rs", "BaselineItemType", "BaselineItemType"),
+    ("crates/api-client/src/audit.rs", "AuditEvent", "AuditEvent"),
+    ("crates/api-client/src/audit.rs", "AuditPage", "AuditPage"),
+    ("crates/api-client/src/audit.rs", "AuditFacets", "AuditFacets"),
 ]
 
 rust_to_schema = {struct_name: schema_name for _, struct_name, schema_name in checks}

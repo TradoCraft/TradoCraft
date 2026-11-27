@@ -5,6 +5,7 @@
 
 pub mod admin;
 pub mod attributes;
+pub mod audit;
 pub mod auth;
 pub mod client;
 pub mod customers;
@@ -27,6 +28,7 @@ pub use admin::{
 pub use attributes::{
     AttributeDefinition, AttributeDefinitionInput, BaselineItemType, DefinitionKind, SelectOption,
 };
+pub use audit::{AuditEvent, AuditFacets, AuditPage, ListAuditEventsParams};
 pub use auth::{
     Auth, Company, EnvKind, EnvironmentInfo, Me, MeModule, Membership, PublicProvider, Session,
     ShortcutBinding, UserPreferences,
