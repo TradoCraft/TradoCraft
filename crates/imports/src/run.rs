@@ -23,7 +23,7 @@ use tokio::sync::watch;
 use tokio::task::JoinHandle;
 use tradocraft_core::csv_io::{ImportReport, RowError};
 use tradocraft_core::import::{
-    exceeds_limits, read_raw, read_table, Limits, Phase, Progress, RunOptions,
+    bind_with_values, exceeds_limits, read_raw, Limits, Phase, Progress, RunOptions,
 };
 use tradocraft_core::{AppError, AppResult, CurrentUser, Permission};
 use utoipa::ToSchema;
@@ -247,20 +247,28 @@ async fn execute(
     })?;
 
     // Reading is CPU work on up to 50 MiB: keep it off the async threads.
-    let pairs = job.columns.as_deref().map(mapping::to_pairs);
+    let (pairs, fixed) = match job.columns.as_deref() {
+        Some(columns) => {
+            let (pairs, fixed) = mapping::to_pairs(columns);
+            (Some(pairs), fixed)
+        }
+        None => (None, Vec::new()),
+    };
     let sheet = job.sheet.clone();
     let limits = *limits;
     let reader = entity.clone();
     let read = tokio::task::spawn_blocking(move || {
         let known = reader.header();
-        read_table(
-            &bytes,
-            sheet.as_deref(),
-            &limits,
-            &known,
-            &[reader.describe().key_column.as_str()],
-            pairs.as_deref(),
-        )
+        let known: Vec<&str> = known.iter().map(String::as_str).collect();
+        let required: Vec<&str> = reader
+            .describe()
+            .key_columns
+            .iter()
+            .map(String::as_str)
+            .collect();
+        let (format, raw) = read_raw(&bytes, sheet.as_deref(), &limits)?;
+        bind_with_values(raw, &known, &required, pairs.as_deref(), &fixed)
+            .map(|table| (format, table))
     })
     .await
     .map_err(|e| {

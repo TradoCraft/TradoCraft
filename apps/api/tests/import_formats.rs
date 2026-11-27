@@ -712,15 +712,19 @@ async fn the_erased_handle_runs_a_job(db: PgPool) {
             .iter()
             .any(|c| c.name == description.key_column));
         assert_eq!(entity.header().len(), description.columns.len());
-        let rows = entity.export(&db, &user).await.unwrap();
+        let export = entity.export(&db, &user).await.unwrap();
+        let rows = export.rows;
         assert!(rows.len() >= 3);
-        assert!(rows.iter().all(|r| r.len() == entity.header().len()));
-        let file = write(Format::Ods, &description.file_stem, &entity.header(), rows).unwrap();
+        assert!(rows.iter().all(|r| r.len() == export.header.len()));
+        let header: Vec<&str> = export.header.iter().map(String::as_str).collect();
+        let file = write(Format::Ods, &description.file_stem, &header, rows).unwrap();
+        let known = entity.header();
+        let known: Vec<&str> = known.iter().map(String::as_str).collect();
         let (format, table) = read_table(
             &file,
             None,
             &Limits::job(),
-            &entity.header(),
+            &known,
             &[description.key_column.as_str()],
             None,
         )
@@ -749,7 +753,11 @@ async fn the_erased_handle_runs_a_job(db: PgPool) {
         &file,
         None,
         &Limits::job(),
-        &entity.header(),
+        &entity
+            .header()
+            .iter()
+            .map(String::as_str)
+            .collect::<Vec<_>>(),
         &["code"],
         None,
     )
@@ -789,7 +797,11 @@ async fn the_erased_handle_runs_a_job(db: PgPool) {
         &file,
         None,
         &Limits::job(),
-        &entity.header(),
+        &entity
+            .header()
+            .iter()
+            .map(String::as_str)
+            .collect::<Vec<_>>(),
         &["code"],
         None,
     )

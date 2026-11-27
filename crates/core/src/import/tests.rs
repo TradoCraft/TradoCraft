@@ -1332,3 +1332,31 @@ fn an_ods_error_cell_is_found_by_position_and_a_text_that_looks_like_one_is_not(
     assert!(found[0].2.contains("#REF!"));
     assert_eq!((found[1].0, found[1].1.as_str()), (6, "code"));
 }
+
+#[test]
+fn per_language_fields_take_iso_639_1_codes_only() {
+    use crate::import::{family_language, family_languages, is_known_field};
+    use crate::language::{is_iso_639_1, ISO_639_1};
+    assert_eq!(ISO_639_1.len(), 184);
+    assert!(ISO_639_1.windows(2).all(|w| w[0] < w[1]));
+    for ok in ["nl", "fr", "en", "de", "es", "it", "pl", "zh", "zu", "aa"] {
+        assert!(is_iso_639_1(ok), "{ok}");
+    }
+    for bad in ["xx", "ns", "qq", "NL", "n", "nld", "", "e1"] {
+        assert!(!is_iso_639_1(bad), "{bad}");
+    }
+    let known = ["code", "title_*"];
+    assert!(is_known_field(&known, "code"));
+    assert!(is_known_field(&known, "title_it"));
+    assert!(!is_known_field(&known, "title_xx"));
+    assert!(!is_known_field(&known, "title"));
+    assert!(!is_known_field(&known, "title_*"));
+    assert!(!is_known_field(&known, "code_nl"));
+    assert_eq!(family_language("title_fr", "title"), Some("fr"));
+    assert_eq!(family_language("subtitle_fr", "title"), None);
+    let columns: Vec<String> = ["title_nl", "code", "title_de", "title_nl"]
+        .iter()
+        .map(|c| c.to_string())
+        .collect();
+    assert_eq!(family_languages(&columns, "title"), ["de", "nl"]);
+}
