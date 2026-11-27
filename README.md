@@ -129,8 +129,8 @@ and its own API instance. `APP_ENV_KIND` (`live`, the default, `test` or `tutori
 else stops the API at start-up) and `APP_ENV_NAME` (default: the database name) say which one
 this is. `GET /api/v1/meta/environment` returns `{name, kind, db_name, version}` without signing
 in (never the host, user or password). The app keeps a list of environments, switches between
-them from the account menu or the login page, and always shows the active one in a banner: red
-for live, amber for test, blue for tutorial.
+them from the account menu or the login page, and always shows the active one in a strip: yellow
+for test, green for tutorial. A live environment has no strip; it is blue in the Environments list.
 
 Test environments. `scripts/envctl clone <database> <name> [--anonymize]` copies a database
 (`pg_dump | pg_restore`), clears credentials and starts a separate API instance with
