@@ -59,7 +59,7 @@ The existing [Leptos Helpdesk](../crates/web-ui/src/pages/helpdesk.rs) and
 | Environment awareness (`/meta/environment`, environment list, banner and switcher in the app) | Done, [ADR 0043](adr/0043-environments.md); clone script, bootstrap wizard and outbound-side-effect switch-off follow |
 | A5 Helpdesk customer mail (`send_email` automation action, SLA notices to the customer, scheduled report mails) | Done, [ADR 0064](adr/0064-helpdesk-sla-customer-notices.md), [ADR 0065](adr/0065-scheduled-report-mails.md), [ADR 0066](adr/0066-helpdesk-send-email-action.md); mail templates are A6 |
 | A6 Helpdesk reply templates and language | Done, [ADR 0072](adr/0072-helpdesk-reply-templates.md) (builds on the prepared answers of ADR 0013); SLA notices to the customer still use built-in texts, see A6b |
-| A6b Helpdesk SLA notices from templates | Open (needs deadline placeholders and rendering without a user) |
+| A6b Helpdesk SLA notices from templates | In progress, [ADR 0100](adr/0100-helpdesk-sla-notices-from-templates.md) (Proposed). Rendering without a user already exists (`ticket_values_for`); the work is the `sla.*` placeholders, an answer per notice and rule, and the settings screens |
 | A7 Helpdesk ticket checklists (templates per team, `apply_checklist` automation action, progress badge, optional close gate) | Done (PR #100), [ADR 0093](adr/0093-helpdesk-ticket-checklists.md) |
 | A8 Helpdesk immediate change notification (concurrent updates seen by both people) | Done, [ADR 0075](adr/0075-helpdesk-live-ticket-updates.md) (builds on the SSE channel of [ADR 0073](adr/0073-concurrent-edit-protection.md)); mail ingested by the worker follows |
 | A9 Helpdesk ticket bundles (linked tickets: bundle, related, duplicate; bundle mass update with preview) | Done, [ADR 0076](adr/0076-helpdesk-ticket-links-and-bundles.md); list badge, per-customer greeting in a bundle reply and automation on links follow |
@@ -80,7 +80,7 @@ The existing [Leptos Helpdesk](../crates/web-ui/src/pages/helpdesk.rs) and
 | D5 Accent-insensitive search | Done for customers, contacts, suppliers and products, [ADR 0057](adr/0057-accent-insensitive-search.md); the other lists follow |
 | D6 Audit log viewer | Done, [ADR 0059](adr/0059-audit-trail-viewer.md); field-level changes are recorded for customers and suppliers, other modules adopt `audit::Changes` |
 | D7 Restrict CORS to configured origins | Done, [ADR 0050](adr/0050-portal-surface.md) |
-| D8 Draft autosave | Open |
+| D8 Draft autosave | In progress, [ADR 0101](adr/0101-draft-autosave.md) (Proposed): `core.drafts`, Flutter and Leptos for ticket replies, notes, articles; Flutter also for quotation remarks |
 | D9 Two-factor authentication | Open |
 | D10 Data import framework (CSV, XLSX, ODS, Parquet) | Done for the shared importer, CSV/XLSX/ODS readers, XLSX/ODS export, admin screen and background jobs, [ADR 0067](adr/0067-data-import-framework.md); Parquet and further entities (contacts, suppliers, stock opening balances, quotations, orders, tickets) follow |
 | P1 Price lists (zones, chapters, export profiles, PDF and Excel) | Done (PRs #95, #97), [ADR 0074](adr/0074-price-lists.md); never run in a real app (see the release checklist) |
