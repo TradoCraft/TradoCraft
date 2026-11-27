@@ -155,6 +155,54 @@ void main() {
         expect(find.text('Save to refresh the preview.'), findsOneWidget);
       },
     );
+
+    testWidgets('the barrier does not close; Back still reports the change', (
+      tester,
+    ) async {
+      var register = <Map<String, Object?>>[];
+      final http = FakeHttp({
+        'GET /api/v1/kb/documents': (_) => <Object>[],
+        'GET $_merge': (_) => {
+          'approval_id': 'a1',
+          'draft': null,
+          'audience': [_recipient('Here Ltd', 'here@example.test', [])],
+        },
+        'GET $_merge/history': (_) => <Object>[],
+        'GET $_merge/opt-outs': (_) => register,
+        'POST $_merge/opt-outs': (body) {
+          register = [
+            {
+              'email': (body as Map)['email'],
+              'opted_out_at': '2026-11-26T10:00:00Z',
+              'source': 'staff',
+            },
+          ];
+          return null;
+        },
+      });
+      await _pump(
+        tester,
+        const MailMergePage(),
+        overrides: [dioProvider.overrideWithValue(fakeDio(http))],
+      );
+      await tester.tap(find.byKey(const ValueKey('mail-merge-opt-outs')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('opt-out-email')),
+        'new@example.test',
+      );
+      await tester.tap(find.byKey(const ValueKey('opt-out-add')));
+      await tester.pumpAndSettle();
+
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('opt-out-close')), findsOneWidget);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('opt-out-close')), findsNothing);
+      expect(find.text('Save to refresh the preview.'), findsOneWidget);
+    });
   });
 
   group('portal unsubscribe', () {

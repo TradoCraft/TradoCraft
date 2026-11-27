@@ -10,6 +10,8 @@ import '../../shared/app_icons.dart';
 Future<bool> showMailingOptOutsDialog(BuildContext context) async =>
     await showDialog<bool>(
       context: context,
+      // Closing goes through the dialog itself, which waits for a write in flight.
+      barrierDismissible: false,
       builder: (_) => const MailingOptOutsDialog(),
     ) ??
     false;
@@ -79,84 +81,94 @@ class _MailingOptOutsDialogState extends ConsumerState<MailingOptOutsDialog> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    return AlertDialog(
-      title: Text(l.mergeOptOuts),
-      content: SizedBox(
-        width: 520,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(l.mergeOptOutsHelp),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    key: const ValueKey('opt-out-email'),
-                    controller: _email,
-                    enabled: !_busy,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(labelText: l.email),
-                    onSubmitted: (_) => _add(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  key: const ValueKey('opt-out-add'),
-                  onPressed: _busy ? null : _add,
-                  child: Text(l.add),
-                ),
-              ],
-            ),
-            if (_busy) const LinearProgressIndicator(),
-            if (_error != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  _error!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              ),
-            const SizedBox(height: 8),
-            if (_items.isEmpty && !_busy) Text(l.mergeOptOutsEmpty),
-            Flexible(
-              child: ListView(
-                shrinkWrap: true,
+    // Every way out returns whether the register changed; none while a write is in flight.
+    return PopScope<bool>(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && !_busy) Navigator.pop(context, _changed);
+      },
+      child: AlertDialog(
+        title: Text(l.mergeOptOuts),
+        content: SizedBox(
+          width: 520,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(l.mergeOptOutsHelp),
+              const SizedBox(height: 12),
+              Row(
                 children: [
-                  for (final item in _items)
-                    ListTile(
-                      key: ValueKey(item.email),
-                      title: Text(item.email),
-                      subtitle: Text(
-                        [
-                          MaterialLocalizations.of(context)
-                              .formatMediumDate(item.optedOutAt.toLocal()),
-                          item.source == 'unsubscribe_link'
-                              ? l.mergeOptOutViaLink
-                              : l.mergeOptOutViaStaff(
-                                  item.recordedByName ?? '',
-                                ),
-                        ].join(' · '),
-                      ),
-                      trailing: IconButton(
-                        tooltip: l.remove,
-                        icon: const Icon(AppIcons.delete),
-                        onPressed: _busy ? null : () => _remove(item.email),
-                      ),
+                  Expanded(
+                    child: TextField(
+                      key: const ValueKey('opt-out-email'),
+                      controller: _email,
+                      enabled: !_busy,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: InputDecoration(labelText: l.email),
+                      onSubmitted: (_) => _add(),
                     ),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    key: const ValueKey('opt-out-add'),
+                    onPressed: _busy ? null : _add,
+                    child: Text(l.add),
+                  ),
                 ],
               ),
-            ),
-          ],
+              if (_busy) const LinearProgressIndicator(),
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    _error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 8),
+              if (_items.isEmpty && !_busy) Text(l.mergeOptOutsEmpty),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (final item in _items)
+                      ListTile(
+                        key: ValueKey(item.email),
+                        title: Text(item.email),
+                        subtitle: Text(
+                          [
+                            MaterialLocalizations.of(context)
+                                .formatMediumDate(item.optedOutAt.toLocal()),
+                            item.source == 'unsubscribe_link'
+                                ? l.mergeOptOutViaLink
+                                : l.mergeOptOutViaStaff(
+                                    item.recordedByName ?? '',
+                                  ),
+                          ].join(' · '),
+                        ),
+                        trailing: IconButton(
+                          tooltip: l.remove,
+                          icon: const Icon(AppIcons.delete),
+                          onPressed: _busy ? null : () => _remove(item.email),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
+        actions: [
+          TextButton(
+            key: const ValueKey('opt-out-close'),
+            onPressed: _busy ? null : () => Navigator.pop(context, _changed),
+            child: Text(l.close),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, _changed),
-          child: Text(l.close),
-        ),
-      ],
     );
   }
 }
