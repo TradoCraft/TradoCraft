@@ -4,6 +4,7 @@
 //! without `sqlx`, `tokio`, or `axum`.
 
 pub mod admin;
+pub mod attributes;
 pub mod auth;
 pub mod client;
 pub mod customers;
@@ -22,6 +23,9 @@ pub mod vat;
 pub use admin::{
     AdminUser, AdminUserCreate, AdminUserUpdate, CompanyLogoInfo, CompanySettingsInput, ModuleInfo,
     ModulesInput, OidcSubjectInput, RoleInfo,
+};
+pub use attributes::{
+    AttributeDefinition, AttributeDefinitionInput, BaselineItemType, DefinitionKind, SelectOption,
 };
 pub use auth::{
     Auth, Company, EnvKind, EnvironmentInfo, Me, MeModule, Membership, PublicProvider, Session,

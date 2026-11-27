@@ -2,6 +2,7 @@
 //! Mirrors `app/lib/features/admin/admin_page.dart` (without the site baseline types and the
 //! configurator builder shortcut). Every section is deep-linkable as `/admin/<section>`.
 
+pub mod attributes;
 pub mod company;
 pub mod modules;
 pub mod users;
@@ -28,15 +29,17 @@ pub enum AdminSection {
     Company,
     Vat,
     Zones,
+    Attributes,
 }
 
 impl AdminSection {
-    pub const ALL: [AdminSection; 5] = [
+    pub const ALL: [AdminSection; 6] = [
         AdminSection::Users,
         AdminSection::Modules,
         AdminSection::Company,
         AdminSection::Vat,
         AdminSection::Zones,
+        AdminSection::Attributes,
     ];
 
     /// The path segment: `/admin/<key>`.
@@ -47,6 +50,7 @@ impl AdminSection {
             Self::Company => "company",
             Self::Vat => "vat",
             Self::Zones => "zones",
+            Self::Attributes => "attributes",
         }
     }
 
@@ -57,6 +61,7 @@ impl AdminSection {
             Self::Company => "Company",
             Self::Vat => "VAT rates",
             Self::Zones => "Price zones",
+            Self::Attributes => "Attributes",
         }
     }
 
@@ -71,6 +76,7 @@ impl AdminSection {
             // User administration needs users.admin; price zones are open to prices.write.
             Self::Users | Self::Modules | Self::Company | Self::Vat => can("users.admin"),
             Self::Zones => can("prices.write"),
+            Self::Attributes => can("products.write"),
         }
     }
 }
@@ -381,6 +387,7 @@ pub fn AdminPage() -> impl IntoView {
                         Some(AdminSection::Company) => view! { <company::CompanySection /> }.into_any(),
                         Some(AdminSection::Vat) => view! { <vat::VatSection /> }.into_any(),
                         Some(AdminSection::Zones) => view! { <zones::ZonesSection /> }.into_any(),
+                        Some(AdminSection::Attributes) => view! { <attributes::AttributesSection /> }.into_any(),
                         None => view! { <div></div> }.into_any(),
                     }}
                 </Show>
@@ -408,6 +415,10 @@ mod tests {
         assert_eq!(
             allowed_sections(|p| p == "prices.write"),
             vec![AdminSection::Zones]
+        );
+        assert_eq!(
+            allowed_sections(|p| p == "products.write"),
+            vec![AdminSection::Attributes]
         );
     }
 

@@ -352,6 +352,11 @@ endpoints = [
     ("/api/v1/admin/identity-providers/{id}", "put", None, "IdentityProviderInput", "IdentityProviderInfo"),
     ("/api/v1/admin/identity-providers/{id}", "delete", ["confirm_lockout"], None, ""),
     ("/api/v1/admin/identity-providers/test", "post", None, "IdentityProviderTest", "IdentityProviderTestResult"),
+    ("/api/v1/attribute-definitions", "get", ["scope"], None, "[AttributeDefinition]"),
+    ("/api/v1/attribute-definitions", "post", None, "AttributeDefinitionInput", "AttributeDefinition"),
+    ("/api/v1/attribute-definitions/{id}", "put", None, "AttributeDefinitionInput", "AttributeDefinition"),
+    ("/api/v1/attribute-definitions/{id}", "delete", None, None, ""),
+    ("/api/v1/baseline-item-types", "get", None, None, "[BaselineItemType]"),
 ]
 
 for path, method, query_params, req_schema, resp_schema in endpoints:
@@ -457,12 +462,17 @@ checks = [
     ("crates/api-client/src/identity.rs", "BindingResult", "BindingResult"),
     ("crates/api-client/src/identity.rs", "TokenTestResult", "TokenTestResult"),
     ("crates/api-client/src/identity.rs", "IdentityProviderTestResult", "IdentityProviderTestResult"),
+    ("crates/api-client/src/attributes.rs", "SelectOption", "SelectOption"),
+    ("crates/api-client/src/attributes.rs", "AttributeDefinition", "AttributeDefinition"),
+    ("crates/api-client/src/attributes.rs", "AttributeDefinitionInput", "AttributeDefinitionInput"),
+    ("crates/api-client/src/attributes.rs", "BaselineItemType", "BaselineItemType"),
 ]
 
 rust_to_schema = {struct_name: schema_name for _, struct_name, schema_name in checks}
 rust_to_schema["EnvKind"] = "EnvKind"
 rust_to_schema["QuotationStatus"] = "QuotationStatus"
 rust_to_schema["PercentBase"] = "PercentBase"
+rust_to_schema["DefinitionKind"] = "DefinitionKind"
 
 for rs_path, struct_name, schema_name in checks:
     check_schema_fields(rs_path, struct_name, schema_name, rust_to_schema)
