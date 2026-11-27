@@ -10,7 +10,7 @@ use rust_decimal::Decimal;
 use tradocraft_api_client::vat::{CountryVatRate, CountryVatRateInput};
 use uuid::Uuid;
 
-use super::{spawn_api, Feedback, FeedbackView};
+use super::{bump, is_current, spawn_api, Feedback, FeedbackView};
 use crate::pages::set_alive;
 use crate::state::AppContext;
 
@@ -206,18 +206,26 @@ pub fn VatSection() -> impl IntoView {
     let saving = RwSignal::new(false);
     let confirm_delete = RwSignal::new(Option::<Uuid>::None);
 
+    // Only the newest list request may fill the list; set_alive only covers the page being left.
+    let list_seq = StoredValue::new(0_u64);
     Effect::new(move |_| {
         let _ = reload.get();
         load_error.set(None);
+        let gen = bump(list_seq);
         spawn_api(
             ctx,
             |c| async move { c.list_vat_rates().await },
-            move |res| match res {
-                Ok(list) => {
-                    set_alive(rules, Some(list));
+            move |res| {
+                if !is_current(list_seq, gen) {
+                    return;
                 }
-                Err(err) => {
-                    set_alive(load_error, Some(err.user_message()));
+                match res {
+                    Ok(list) => {
+                        set_alive(rules, Some(list));
+                    }
+                    Err(err) => {
+                        set_alive(load_error, Some(err.user_message()));
+                    }
                 }
             },
         );
@@ -348,67 +356,70 @@ pub fn VatSection() -> impl IntoView {
                     <h3 id="admin-vat-editor-title" style="margin-top: 0;">
                         {move || if editor.get() == Some(Editor::New) { "Add VAT rate" } else { "Edit VAT rate" }}
                     </h3>
-                    <div class="tc-form-grid">
-                        <div class="tc-field">
-                            <label class="tc-label" for="admin-vat-country">"Country code"</label>
-                            <input id="admin-vat-country" data-target="admin-vat-country" class="tc-input" type="text" maxlength="2"
-                                style="text-transform: uppercase;"
-                                prop:value=move || draft.with(|d| d.country.clone())
-                                on:input=move |ev| draft.update(|d| d.country = event_target_value(&ev)) />
-                        </div>
-                        <div class="tc-field">
-                            <label class="tc-label" for="admin-vat-category">"Category"</label>
-                            <select id="admin-vat-category" data-target="admin-vat-category" class="tc-select"
-                                on:change=move |ev| draft.update(|d| d.category = event_target_value(&ev))>
-                                {CATEGORIES.into_iter().map(|c| view! {
-                                    <option value=c selected=move || draft.with(|d| d.category == c)>{category_label(c).to_string()}</option>
-                                }).collect_view()}
-                            </select>
-                        </div>
-                        <div class="tc-field">
-                            <label class="tc-label" for="admin-vat-rate">"Rate (%)"</label>
-                            <input id="admin-vat-rate" data-target="admin-vat-rate" class="tc-input" type="text" inputmode="decimal"
-                                prop:value=move || draft.with(|d| d.rate.clone())
-                                on:input=move |ev| draft.update(|d| d.rate = event_target_value(&ev)) />
-                        </div>
-                        <Show when=move || draft.with(|d| d.category == "construction")>
+                    // Disabled while saving, so no edit is made after the request was sent and then lost.
+                    <fieldset style="border: none; padding: 0; margin: 0; min-width: 0;" disabled=move || saving.get()>
+                        <div class="tc-form-grid">
                             <div class="tc-field">
-                                <label class="tc-label" for="admin-vat-min-age">"Min. building age (years)"</label>
-                                <input id="admin-vat-min-age" data-target="admin-vat-min-age" class="tc-input" type="text" inputmode="numeric"
-                                    prop:value=move || draft.with(|d| d.min_age.clone())
-                                    on:input=move |ev| draft.update(|d| d.min_age = event_target_value(&ev)) />
+                                <label class="tc-label" for="admin-vat-country">"Country code"</label>
+                                <input id="admin-vat-country" data-target="admin-vat-country" class="tc-input" type="text" maxlength="2"
+                                    style="text-transform: uppercase;"
+                                    prop:value=move || draft.with(|d| d.country.clone())
+                                    on:input=move |ev| draft.update(|d| d.country = event_target_value(&ev)) />
                             </div>
+                            <div class="tc-field">
+                                <label class="tc-label" for="admin-vat-category">"Category"</label>
+                                <select id="admin-vat-category" data-target="admin-vat-category" class="tc-select"
+                                    on:change=move |ev| draft.update(|d| d.category = event_target_value(&ev))>
+                                    {CATEGORIES.into_iter().map(|c| view! {
+                                        <option value=c selected=move || draft.with(|d| d.category == c)>{category_label(c).to_string()}</option>
+                                    }).collect_view()}
+                                </select>
+                            </div>
+                            <div class="tc-field">
+                                <label class="tc-label" for="admin-vat-rate">"Rate (%)"</label>
+                                <input id="admin-vat-rate" data-target="admin-vat-rate" class="tc-input" type="text" inputmode="decimal"
+                                    prop:value=move || draft.with(|d| d.rate.clone())
+                                    on:input=move |ev| draft.update(|d| d.rate = event_target_value(&ev)) />
+                            </div>
+                            <Show when=move || draft.with(|d| d.category == "construction")>
+                                <div class="tc-field">
+                                    <label class="tc-label" for="admin-vat-min-age">"Min. building age (years)"</label>
+                                    <input id="admin-vat-min-age" data-target="admin-vat-min-age" class="tc-input" type="text" inputmode="numeric"
+                                        prop:value=move || draft.with(|d| d.min_age.clone())
+                                        on:input=move |ev| draft.update(|d| d.min_age = event_target_value(&ev)) />
+                                </div>
+                            </Show>
+                            <div class="tc-field">
+                                <label class="tc-label" for="admin-vat-start">"Start date (YYYY-MM-DD)"</label>
+                                <input id="admin-vat-start" data-target="admin-vat-start" class="tc-input" type="text"
+                                    prop:value=move || draft.with(|d| d.start.clone())
+                                    on:input=move |ev| draft.update(|d| d.start = event_target_value(&ev)) />
+                            </div>
+                            <div class="tc-field">
+                                <label class="tc-label" for="admin-vat-end">"End date (optional)"</label>
+                                <input id="admin-vat-end" data-target="admin-vat-end" class="tc-input" type="text"
+                                    prop:value=move || draft.with(|d| d.end.clone())
+                                    on:input=move |ev| draft.update(|d| d.end = event_target_value(&ev)) />
+                            </div>
+                            <div class="tc-field tc-form-span-2">
+                                <label class="tc-label" for="admin-vat-notes">"Notes"</label>
+                                <input id="admin-vat-notes" data-target="admin-vat-notes" class="tc-input" type="text"
+                                    prop:value=move || draft.with(|d| d.notes.clone())
+                                    on:input=move |ev| draft.update(|d| d.notes = event_target_value(&ev)) />
+                            </div>
+                        </div>
+                        <Show when=move || editor.get() == Some(Editor::New)>
+                            <label class="tc-checkbox-row" style="margin-top: var(--space-sm);">
+                                <input type="checkbox" data-target="admin-vat-close-previous"
+                                    prop:checked=move || draft.with(|d| d.close_previous)
+                                    on:change=move |ev| {
+                                        let on = event_target_checked(&ev);
+                                        draft.update(|d| d.close_previous = on);
+                                    } />
+                                "Close previous open rule automatically"
+                            </label>
                         </Show>
-                        <div class="tc-field">
-                            <label class="tc-label" for="admin-vat-start">"Start date (YYYY-MM-DD)"</label>
-                            <input id="admin-vat-start" data-target="admin-vat-start" class="tc-input" type="text"
-                                prop:value=move || draft.with(|d| d.start.clone())
-                                on:input=move |ev| draft.update(|d| d.start = event_target_value(&ev)) />
-                        </div>
-                        <div class="tc-field">
-                            <label class="tc-label" for="admin-vat-end">"End date (optional)"</label>
-                            <input id="admin-vat-end" data-target="admin-vat-end" class="tc-input" type="text"
-                                prop:value=move || draft.with(|d| d.end.clone())
-                                on:input=move |ev| draft.update(|d| d.end = event_target_value(&ev)) />
-                        </div>
-                        <div class="tc-field tc-form-span-2">
-                            <label class="tc-label" for="admin-vat-notes">"Notes"</label>
-                            <input id="admin-vat-notes" data-target="admin-vat-notes" class="tc-input" type="text"
-                                prop:value=move || draft.with(|d| d.notes.clone())
-                                on:input=move |ev| draft.update(|d| d.notes = event_target_value(&ev)) />
-                        </div>
-                    </div>
-                    <Show when=move || editor.get() == Some(Editor::New)>
-                        <label class="tc-checkbox-row" style="margin-top: var(--space-sm);">
-                            <input type="checkbox" data-target="admin-vat-close-previous"
-                                prop:checked=move || draft.with(|d| d.close_previous)
-                                on:change=move |ev| {
-                                    let on = event_target_checked(&ev);
-                                    draft.update(|d| d.close_previous = on);
-                                } />
-                            "Close previous open rule automatically"
-                        </label>
-                    </Show>
+                    </fieldset>
                     {move || editor_error.get().map(|msg| view! {
                         <div class="tc-alert-error" style="margin-top: var(--space-md);" role="alert" data-target="admin-vat-editor-error">{msg}</div>
                     })}
