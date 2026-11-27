@@ -3,18 +3,33 @@
 //! Designed to compile for both native targets and `wasm32-unknown-unknown`
 //! without `sqlx`, `tokio`, or `axum`.
 
+pub mod admin;
+pub mod attributes;
+pub mod audit;
 pub mod auth;
 pub mod client;
 pub mod customers;
 pub mod error;
 pub mod helpdesk;
+pub mod identity;
+pub mod imports;
 pub mod kb;
 pub mod portal;
+pub mod price_zones;
 pub mod products;
 pub mod sales;
 pub mod suppliers;
 pub mod todo;
+pub mod vat;
 
+pub use admin::{
+    AdminUser, AdminUserCreate, AdminUserUpdate, CompanyLogoInfo, CompanySettingsInput, ModuleInfo,
+    ModulesInput, OidcSubjectInput, RoleInfo,
+};
+pub use attributes::{
+    AttributeDefinition, AttributeDefinitionInput, BaselineItemType, DefinitionKind, SelectOption,
+};
+pub use audit::{AuditEvent, AuditFacets, AuditPage, ListAuditEventsParams};
 pub use auth::{
     Auth, Company, EnvKind, EnvironmentInfo, Me, MeModule, Membership, PublicProvider, Session,
     ShortcutBinding, UserPreferences,
@@ -31,12 +46,21 @@ pub use helpdesk::{
     TicketDetail, TicketPage, TicketReader, TicketSla, TicketStatusInput, TicketSummary,
     TicketTimeEntries, TicketTimeEntry, TicketWatcher, TimeEntryInput, UpdateTicketInput,
 };
+pub use identity::{
+    BindingResult, IdentityProviderInfo, IdentityProviderInput, IdentityProviderTest,
+    IdentityProviderTestResult, TokenTestResult,
+};
+pub use imports::{
+    ColumnKind, ColumnPair, CreateJob, ImportColumn, ImportDescription, ImportFile, ImportJob,
+    ImportJobPage, ImportMapping, ImportPreview, ListImportJobsParams, MappingInput, StoredError,
+};
 pub use portal::{
     ConfirmPortalOrder, FileInfo, KbLanguageParams, ListPublicKbEntriesParams, LoginLinkInput,
     MessageInput, NewTicket, PortalMessage, PortalOrder, PortalOrderDetail, PortalOrderLine,
     PortalProfile, PortalSession, PortalTicket, PortalTicketDetail, ReaderCategory, ReaderEntry,
     ReaderImage, ReaderLink, ReaderSummary, SessionInput,
 };
+pub use price_zones::{PriceZone, PriceZoneInput};
 pub use products::{
     CreateProductRequest, ListProductsParams, Product, ProductInput, ProductPage,
     UpdateProductRequest,
@@ -53,3 +77,4 @@ pub use suppliers::{
     SupplierProduct, SupplierProductInput, UpdateSupplierInput, UpdateSupplierRequest,
 };
 pub use todo::{ListTodosParams, TodoCounts, TodoCreate, TodoItem, TodoPatch, TodoScope};
+pub use vat::{CountryVatRate, CountryVatRateInput};

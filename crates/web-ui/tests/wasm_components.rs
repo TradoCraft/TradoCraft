@@ -3,10 +3,13 @@
 use leptos::prelude::*;
 use leptos::task::tick;
 use leptos_router::components::Router;
+use leptos_router::components::Routes;
+use tradocraft_web_ui::api::{Company, ConnectionMode, Me};
 use tradocraft_web_ui::components::tutorial_overlay::TutorialOverlay;
+use tradocraft_web_ui::pages::admin::AdminPage;
 use tradocraft_web_ui::pages::login::LoginPage;
 use tradocraft_web_ui::pages::products::ProductsPage;
-use tradocraft_web_ui::state::AppContext;
+use tradocraft_web_ui::state::{ActiveSession, AppContext};
 use tradocraft_web_ui::tutorial::TutorialState;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
@@ -141,4 +144,105 @@ async fn products_page_unauthenticated_shows_sign_in_link() {
     tick().await;
 
     assert!(guard.query("[data-target=\"products-go-login\"]").is_some());
+}
+
+fn me_with(permissions: &[&str]) -> Me {
+    Me {
+        user_id: uuid::Uuid::nil(),
+        email: "admin@example.com".into(),
+        display_name: "Admin".into(),
+        company: Company {
+            id: uuid::Uuid::nil(),
+            name: "Demo".into(),
+            vat_number: None,
+            street: String::new(),
+            postal_code: String::new(),
+            city: String::new(),
+            country_code: "BE".into(),
+            currency: "EUR".into(),
+            email: None,
+            phone: None,
+            iban: None,
+            default_language: "en".into(),
+            is_primary: true,
+            quotation_single_line_items: true,
+            autosave_minutes: 5,
+        },
+        roles: vec![],
+        permissions: permissions.iter().map(|p| p.to_string()).collect(),
+        modules: vec![],
+        memberships: vec![],
+    }
+}
+
+/// Mounts the admin page for a user with `permissions` (offline mode: the sections' requests fail
+/// with a message instead of reaching a server).
+fn mount_admin(guard: &ContainerGuard, permissions: &'static [&'static str]) -> impl Sized {
+    leptos::mount::mount_to(guard.el().clone(), move || {
+        let ctx = AppContext::new();
+        ctx.session.set(Some(ActiveSession {
+            connection: ConnectionMode::MockDemo,
+            me: me_with(permissions),
+        }));
+        provide_context(ctx);
+        view! {
+            <Router>
+                // The test page is served at `/`; the admin page reads its section from the route.
+                <Routes fallback=|| "no route matched">
+                    <leptos_router::components::Route path=leptos_router::path!("") view=AdminPage/>
+                </Routes>
+            </Router>
+        }
+    })
+}
+
+#[wasm_bindgen_test]
+async fn admin_page_shows_only_the_permitted_sections() {
+    let guard = ContainerGuard::new();
+    let _handle = mount_admin(&guard, &["users.admin", "audit.view"]);
+    tick().await;
+
+    for key in ["users", "modules", "company", "vat", "audit"] {
+        assert!(
+            guard
+                .query(&format!("[data-target=\"admin-section-{key}\"]"))
+                .is_some(),
+            "section {key} should be offered"
+        );
+    }
+    for key in ["zones", "attributes", "identity", "import"] {
+        assert!(
+            guard
+                .query(&format!("[data-target=\"admin-section-{key}\"]"))
+                .is_none(),
+            "section {key} should be hidden"
+        );
+    }
+    // Without a section in the path the first permitted one is shown.
+    assert!(guard.query("[data-target=\"admin-users\"]").is_some());
+}
+
+#[wasm_bindgen_test]
+async fn admin_page_without_permissions_says_so() {
+    let guard = ContainerGuard::new();
+    let _handle = mount_admin(&guard, &["products.read"]);
+    tick().await;
+
+    assert!(guard.query("[data-target=\"admin-no-access\"]").is_some());
+    assert!(guard.query("[data-target=\"admin-sections\"]").is_none());
+}
+
+#[wasm_bindgen_test]
+async fn admin_page_with_one_section_shows_no_switcher() {
+    let guard = ContainerGuard::new();
+    let _handle = mount_admin(&guard, &["prices.write"]);
+    tick().await;
+
+    assert!(guard.query("[data-target=\"admin-sections\"]").is_none());
+    assert!(guard.query("[data-target=\"admin-zones\"]").is_some());
+    // Offline mode: the request fails with a message instead of panicking.
+    tick().await;
+    assert!(guard
+        .query("[data-target=\"admin-zones-load-error\"]")
+        .is_some());
 }

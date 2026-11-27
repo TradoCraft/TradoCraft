@@ -9,6 +9,7 @@ use leptos_router::components::{Redirect, Route, Router, Routes};
 use leptos_router::path;
 
 use crate::components::shell::AppShell;
+use crate::pages::admin::AdminPage;
 use crate::pages::answers::AnswersPage;
 use crate::pages::customers::CustomersPage;
 use crate::pages::helpdesk::HelpdeskPage;
@@ -181,7 +182,15 @@ pub fn App() -> impl IntoView {
                     path=path!("/admin")
                     view=|| view! {
                         <AppShell>
-                            <PlaceholderPage title="Admin" route="/admin" />
+                            <AdminPage />
+                        </AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/admin/:section")
+                    view=|| view! {
+                        <AppShell>
+                            <AdminPage />
                         </AppShell>
                     }
                 />

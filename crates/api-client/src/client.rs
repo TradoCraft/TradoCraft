@@ -150,6 +150,56 @@ impl Client {
         self.send_json(req).await
     }
 
+    /// Sends an authenticated binary `PUT` (raw body, `application/octet-stream`), expecting a JSON
+    /// response.
+    pub(crate) async fn put_bytes<T>(&self, path: &str, body: Vec<u8>) -> Result<T, ApiError>
+    where
+        T: DeserializeOwned,
+    {
+        let url = self.url(path)?;
+        let req = self.apply_headers(
+            self.http
+                .put(url)
+                .header("content-type", "application/octet-stream")
+                .body(body),
+        )?;
+        self.send_json(req).await
+    }
+
+    /// Sends an authenticated `POST` without a body, expecting an empty 2xx answer (`204`).
+    pub(crate) async fn post_empty(&self, path: &str) -> Result<(), ApiError> {
+        let url = self.url(path)?;
+        let req = self.apply_headers(self.http.post(url))?;
+        let _ = self.send_checked(req).await?;
+        Ok(())
+    }
+
+    /// Sends an authenticated JSON `PUT`, expecting an empty 2xx answer (`204`).
+    pub(crate) async fn put_json_empty<B>(&self, path: &str, body: &B) -> Result<(), ApiError>
+    where
+        B: Serialize + ?Sized,
+    {
+        let url = self.url(path)?;
+        let req = self.apply_headers(self.http.put(url).json(body))?;
+        let _ = self.send_checked(req).await?;
+        Ok(())
+    }
+
+    /// Sends an authenticated `DELETE` with query parameters, expecting an empty 2xx answer.
+    pub(crate) async fn delete_empty_with_query<Q>(
+        &self,
+        path: &str,
+        query: &Q,
+    ) -> Result<(), ApiError>
+    where
+        Q: Serialize + ?Sized,
+    {
+        let url = self.url(path)?;
+        let req = self.apply_headers(self.http.delete(url).query(query))?;
+        let _ = self.send_checked(req).await?;
+        Ok(())
+    }
+
     /// Sends an authenticated `GET` and returns the raw response body (file downloads).
     pub(crate) async fn get_bytes(&self, path: &str) -> Result<Vec<u8>, ApiError> {
         let url = self.url(path)?;
