@@ -26,11 +26,16 @@ this release gate.
   reply templates with subject and body translations. In Helpdesk, an agent can find an answer,
   insert it into a ticket reply in the ticket's language, review the rendered placeholders, and
   edit the draft before sending. Verify that the resulting reply reaches the tutorial outbox.
-- [ ] **Release verification.** Exercise all four workflows in browser tests against the real API
+- [x] **Release verification.** Exercise all four workflows in browser tests against the real API
   and a seeded database. Smoke-test the packaged `/app/` entry point before tagging v0.4.0.
   Done: Playwright specs for all four workflows in `e2e/tests-leptos/` (`npm run test:leptos`), run against the
-  API with the dev seed, and run by the `e2e-leptos` job in `.github/workflows/ci.yml`. Open: smoke-test the packaged
-  Docker image.
+  API with the dev seed, and run by the `e2e-leptos` job in `.github/workflows/ci.yml`. The API image was built
+  and smoke-tested locally on 2026-11-27 against a throwaway PostgreSQL 16 with the dev seed (10 of 10 checks:
+  `/health`, `/app/` and its wasm asset, tutorial environment, dev `/me`, Typst, writable files and outbox
+  directories, non-root user, `HEALTHCHECK` healthy). That build used a copy of the `Dockerfile` that fetches apt
+  and the trunk `wasm-bindgen` download over HTTPS with the sandbox CA, because the sandbox proxy refuses plain
+  HTTP. Not covered: the packaged release `docker-compose.yml` (nginx on 8088, portal on 8090, worker), which
+  needs the published images; rehearse it with the release workflow on a fork tag (see Release mechanics below).
 
 The existing [Leptos Helpdesk](../crates/web-ui/src/pages/helpdesk.rs) and
 [Flutter To-do](../app/lib/features/todo/todo_page.dart) are the starting points. See also the
