@@ -16,9 +16,11 @@ deleted, the admin screen and background jobs.
 **1. Framework extensions (generic).**
 
 * *Keys of several columns.* `Importable::KEY_COLUMNS` (default: the one `KEY_COLUMN`) lists the
-  columns that together identify a record. The engine joins their trimmed values into one key for
-  `load` and `plan_row`, requires every one of them in the file and reports a duplicate key with
-  all its parts (`P-100 / Z1 / 2027-01-01`). `ImportDescription` gains `key_columns`;
+  columns that together identify a record. The engine encodes their trimmed values into one key
+  for `load` and `plan_row` (`composite_key`: a JSON array of the values, so a code may hold any
+  character without two keys becoming equal; a key of one column stays the plain value), requires
+  every one of them in the file and reports a duplicate key with all its parts
+  (`P-100 / Z1 / 2027-01-01`). `ImportDescription` gains `key_columns`;
   `key_column` stays (the first one) so existing clients keep working.
 * *Audit per entity.* `Importable::audit_event` decides the audit event of a written record. The
   default is the `created`/`updated` event of ADR 0067; an entity whose manual edits are audited on
@@ -28,7 +30,13 @@ deleted, the admin screen and background jobs.
   code, checked against the full list in `tradocraft_core::language` (`ns` or `xx` are unknown
   columns, not new languages). Binding and mapping validation accept the family members; the entity
   finds the languages of a file among the bound columns. An export writes one column per language
-  that occurs in the exported data, sorted by code. The import is therefore not limited to the
+  that occurs in the exported data, sorted by code; a text stored under a code that is not ISO
+  639-1 (the tables accept any two letters) is left out of the export, so an export never has a
+  column its import would refuse, and an import never touches such a text.
+* *Cells per row.* An export must read back, and the widest one, the products file, has 25
+  columns plus a name and a description for each of the 184 ISO 639-1 codes (393). The limit of
+  cells per row of ADR 0029/0067 is therefore 400 instead of 100, for one request and for a job;
+  the other limits (rows, cells in the sheet, sizes) are unchanged. The import is therefore not limited to the
   languages the application offers elsewhere; the database keeps whatever constraints it has
   (`products.product_translations` and `pricing.price_list_group_titles` take any two lowercase
   letters).

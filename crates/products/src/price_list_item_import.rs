@@ -24,8 +24,8 @@ use std::collections::{BTreeMap, HashMap};
 use sqlx::types::Json as SqlJson;
 use sqlx::{PgConnection, PgPool};
 use tradocraft_core::import::{
-    family_language, family_languages, AuditEvent, Cell, CellValue, Cells, Column, ColumnKind,
-    ExportTable, ImportEntity, Importable, Row, Table, KEY_SEPARATOR,
+    self, family_language, family_languages, AuditEvent, Cell, CellValue, Cells, Column,
+    ColumnKind, ExportTable, ImportEntity, Importable, Row, Table,
 };
 use tradocraft_core::{new_id, AppResult, CurrentUser, Permission};
 use uuid::Uuid;
@@ -162,7 +162,13 @@ impl GroupTitles {
             None => {
                 self.chosen.insert(language.to_string(), new);
             }
-            Some(old) if old.title == new.title => {}
+            // The same title from a row that wins: keep its position, so a later row with
+            // another title is compared against the best one.
+            Some(old) if old.title == new.title => {
+                if rule != ImportTitleConflict::Error && replaces(rule, old, &new) {
+                    self.chosen.insert(language.to_string(), new);
+                }
+            }
             Some(old) => {
                 if rule == ImportTitleConflict::Error {
                     let message = format!(
@@ -283,8 +289,13 @@ fn path_of(groups: &[StoredGroup], group_id: Uuid) -> Vec<i32> {
     path
 }
 
-fn split_key(key: &str) -> (&str, &str) {
-    key.split_once(KEY_SEPARATOR).unwrap_or((key, ""))
+/// The list code and product code of a key.
+fn split_key(key: &str) -> (String, String) {
+    let mut parts = import::key_parts(key, 2).unwrap_or_default().into_iter();
+    (
+        parts.next().unwrap_or_default(),
+        parts.next().unwrap_or_default(),
+    )
 }
 
 fn title_column(language: &str) -> String {
@@ -537,7 +548,8 @@ impl Importable for PriceListItems {
         user: &CurrentUser,
         keys: &[String],
     ) -> AppResult<Vec<(String, StoredItem)>> {
-        let (lists, products): (Vec<&str>, Vec<&str>) = keys.iter().map(|k| split_key(k)).unzip();
+        let (lists, products): (Vec<String>, Vec<String>) =
+            keys.iter().map(|k| split_key(k)).unzip();
         // Lock the lists first, as an edit in the editor does: that serialises changes of their
         // group trees.
         sqlx::query(
@@ -575,7 +587,7 @@ impl Importable for PriceListItems {
             .into_iter()
             .map(|f| {
                 (
-                    format!("{}{KEY_SEPARATOR}{}", f.list_code, f.product_code),
+                    import::composite_key(&[&f.list_code, &f.product_code]),
                     f.item,
                 )
             })
@@ -596,14 +608,14 @@ impl Importable for PriceListItems {
         cells: &mut Cells<'_>,
     ) -> AppResult<ItemChange> {
         let (list_code, product_code) = split_key(key);
-        let list = context.lists.get(list_code);
+        let list = context.lists.get(&list_code);
         if list.is_none() {
             cells.error(
                 Some("price_list"),
                 format!("unknown price list {list_code:?}"),
             );
         }
-        let product_id = context.products.get(product_code).copied();
+        let product_id = context.products.get(&product_code).copied();
         if product_id.is_none() {
             cells.error(
                 Some("product_code"),
@@ -989,6 +1001,17 @@ mod tests {
         offer(&mut t, rule, 5, "1.2.b", "Text after numbers");
         assert_eq!(t.chosen["nl"].title, "Early");
         assert!(t.conflicts.is_empty());
+    }
+
+    #[test]
+    fn an_equal_title_from_a_lower_position_keeps_its_position() {
+        let rule = ImportTitleConflict::LowestPosition;
+        let mut t = GroupTitles::default();
+        offer(&mut t, rule, 2, "1.2.10", "A");
+        offer(&mut t, rule, 3, "1.2.1", "A");
+        offer(&mut t, rule, 4, "1.2.5", "B");
+        assert_eq!(t.chosen["nl"].title, "A");
+        assert_eq!(t.chosen["nl"].position, "1.2.1");
     }
 
     #[test]

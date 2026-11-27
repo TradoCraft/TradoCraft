@@ -18,7 +18,8 @@ use crate::csv_io::{self, ImportParams, ImportReport, RowError};
 use crate::error::{AppError, AppResult};
 use crate::import::importable::{Importable, NoProgress, Phase, Progress};
 use crate::import::{
-    download, read_table, write, Cells, ExportTable, Format, Limits, Table, KEY_SEPARATOR,
+    composite_key, download, key_parts, read_table, write, Cells, ExportTable, Format, Limits,
+    Table,
 };
 use crate::{audit, new_id};
 
@@ -119,16 +120,18 @@ fn limit_reached(width_errors: &[RowError], planned: usize, line: usize) -> bool
     planned + earlier >= csv_io::MAX_REPORTED_ERRORS
 }
 
-/// The key of a row: the trimmed values of the key columns joined with [`KEY_SEPARATOR`]; None
-/// when one of them is missing.
+/// The key of a row: the trimmed values of the key columns ([`composite_key`]); None when one of
+/// them is missing.
 fn row_key<E: Importable>(row: &crate::import::Row) -> Option<String> {
     let parts: Option<Vec<&str>> = E::KEY_COLUMNS.iter().map(|c| row.get_trimmed(c)).collect();
-    Some(parts?.join(&KEY_SEPARATOR.to_string()))
+    Some(composite_key(&parts?))
 }
 
 /// A key as a person reads it: its parts joined with ` / `.
-fn shown_key(key: &str) -> String {
-    key.split(KEY_SEPARATOR).collect::<Vec<_>>().join(" / ")
+fn shown_key(key: &str, count: usize) -> String {
+    key_parts(key, count)
+        .map(|p| p.join(" / "))
+        .unwrap_or_else(|| key.to_string())
 }
 
 /// Checks every row against the database and decides what each one would do.
@@ -191,7 +194,7 @@ async fn plan_one<E: Importable>(
             format!(
                 "{} {} appears twice (first on line {first})",
                 E::KEY_COLUMNS.join(" / "),
-                shown_key(&key)
+                shown_key(&key, E::KEY_COLUMNS.len())
             ),
         );
         return Ok(());
@@ -495,9 +498,19 @@ mod tests {
 
     #[test]
     fn a_key_of_several_columns_is_shown_with_slashes() {
-        let key = ["P-100", "Z1", "2027-01-01"].join(&KEY_SEPARATOR.to_string());
-        assert_eq!(shown_key(&key), "P-100 / Z1 / 2027-01-01");
-        assert_eq!(shown_key("C1"), "C1");
+        let key = composite_key(&["P-100", "Z1", "2027-01-01"]);
+        assert_eq!(shown_key(&key, 3), "P-100 / Z1 / 2027-01-01");
+        assert_eq!(shown_key("C1", 1), "C1");
+        // No value can fake a boundary between parts.
+        let odd = composite_key(&["A\u{1f}B", "\",\""]);
+        assert_eq!(
+            key_parts(&odd, 2),
+            Some(vec!["A\u{1f}B".to_string(), "\",\"".to_string()])
+        );
+        assert_ne!(odd, composite_key(&["A", "B\u{1f}\",\""]));
+        assert_eq!(composite_key(&["C1"]), "C1");
+        assert_eq!(key_parts("C1", 1), Some(vec!["C1".to_string()]));
+        assert_eq!(key_parts("C1", 2), None);
     }
 
     #[test]

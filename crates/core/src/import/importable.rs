@@ -156,9 +156,25 @@ pub struct ImportDescription {
     pub columns: Vec<Column>,
 }
 
-/// Joins the parts of a key of several columns (see [`Importable::KEY_COLUMNS`]); a unit
-/// separator, which no trimmed cell value of a key holds in practice.
-pub const KEY_SEPARATOR: char = '\u{1f}';
+/// The key of a record from the trimmed values of its key columns (see
+/// [`Importable::KEY_COLUMNS`]). A key of one column is its value as it is; a key of several is a
+/// JSON array of the values, so no character of a value (a code may hold any) can be mistaken for
+/// the boundary between two parts.
+pub fn composite_key(parts: &[&str]) -> String {
+    match parts {
+        [one] => one.to_string(),
+        _ => serde_json::to_string(parts).unwrap_or_default(),
+    }
+}
+
+/// The `count` parts of a key made by [`composite_key`]; None when it is not such a key.
+pub fn key_parts(key: &str, count: usize) -> Option<Vec<String>> {
+    if count == 1 {
+        return Some(vec![key.to_string()]);
+    }
+    let parts: Vec<String> = serde_json::from_str(key).ok()?;
+    (parts.len() == count).then_some(parts)
+}
 
 /// A step of an import that a progress sink is told about.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -222,8 +238,8 @@ pub trait Importable: Send + Sync + 'static {
     const COLUMNS: &'static [Column];
     /// The column that identifies a record.
     const KEY_COLUMN: &'static str = "code";
-    /// The columns that together identify a record; the engine joins their trimmed values with
-    /// [`KEY_SEPARATOR`] into the key passed to [`Importable::load`] and
+    /// The columns that together identify a record; the engine encodes their trimmed values with
+    /// [`composite_key`] into the key passed to [`Importable::load`] and
     /// [`Importable::plan_row`]. One column ([`Importable::KEY_COLUMN`]) unless an entity says
     /// otherwise.
     const KEY_COLUMNS: &'static [&'static str] = &[Self::KEY_COLUMN];

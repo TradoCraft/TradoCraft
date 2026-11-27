@@ -14,8 +14,8 @@ use chrono::NaiveDate;
 use rust_decimal::Decimal;
 use sqlx::{PgConnection, PgPool};
 use tradocraft_core::import::{
-    AuditEvent, Cell, CellValue, Cells, Column, ColumnKind, ExportTable, ImportEntity, Importable,
-    Row, Table, KEY_SEPARATOR,
+    self, AuditEvent, Cell, CellValue, Cells, Column, ColumnKind, ExportTable, ImportEntity,
+    Importable, Row, Table,
 };
 use tradocraft_core::{AppResult, CurrentUser, Permission};
 use uuid::Uuid;
@@ -65,14 +65,13 @@ fn parse_date(value: &str) -> Option<NaiveDate> {
 }
 
 /// The parts of a key: product code, zone code, start date.
-fn key_parts(key: &str) -> Option<(&str, &str, &str)> {
-    let mut parts = key.split(KEY_SEPARATOR);
-    let parts = (parts.next()?, parts.next()?, parts.next()?);
-    Some(parts)
+fn key_parts(key: &str) -> Option<(String, String, String)> {
+    let mut parts = import::key_parts(key, 3)?.into_iter();
+    Some((parts.next()?, parts.next()?, parts.next()?))
 }
 
 fn key(product: &str, zone: &str, valid_from: NaiveDate) -> String {
-    format!("{product}{KEY_SEPARATOR}{zone}{KEY_SEPARATOR}{valid_from}")
+    import::composite_key(&[product, zone, &valid_from.to_string()])
 }
 
 /// Zone prices, keyed by product, zone and start date.
@@ -132,7 +131,7 @@ impl Importable for ZonePrices {
     ) -> AppResult<Vec<(String, StoredZonePrice)>> {
         let (mut products, mut zones, mut dates) = (Vec::new(), Vec::new(), Vec::new());
         for (p, z, d) in keys.iter().filter_map(|k| key_parts(k)) {
-            if let Some(d) = parse_date(d) {
+            if let Some(d) = parse_date(&d) {
                 products.push(p);
                 zones.push(z);
                 dates.push(d);
@@ -183,15 +182,15 @@ impl Importable for ZonePrices {
         cells: &mut Cells<'_>,
     ) -> AppResult<ZonePriceChange> {
         let (product, zone, date) = key_parts(key).unwrap_or_default();
-        let product_id = context.products.get(product).copied();
+        let product_id = context.products.get(&product).copied();
         if product_id.is_none() {
             cells.error(Some("product_code"), format!("unknown product {product:?}"));
         }
-        let zone_id = context.zones.get(zone).copied();
+        let zone_id = context.zones.get(&zone).copied();
         if zone_id.is_none() {
             cells.error(Some("zone"), format!("unknown price zone {zone:?}"));
         }
-        let valid_from = parse_date(date);
+        let valid_from = parse_date(&date);
         if valid_from.is_none() {
             cells.error(
                 Some("valid_from"),
@@ -370,7 +369,12 @@ mod tests {
     fn keys_have_three_parts() {
         let d = NaiveDate::from_ymd_opt(2027, 1, 1).unwrap();
         let k = key("P-100", "Z1", d);
-        assert_eq!(key_parts(&k), Some(("P-100", "Z1", "2027-01-01")));
+        let parts = (
+            "P-100".to_string(),
+            "Z1".to_string(),
+            "2027-01-01".to_string(),
+        );
+        assert_eq!(key_parts(&k), Some(parts));
         assert_eq!(key_parts("P-100"), None);
         assert_eq!(max_price().to_string(), "99999999999999.9999");
     }
