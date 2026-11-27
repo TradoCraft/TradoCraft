@@ -113,7 +113,16 @@ async fn replace_translations(
         seen.push(lang);
     }
     let mut tx = state.db.begin().await?;
-    ensure_product(&mut *tx, id).await?;
+    // Lock the product as an import does before it writes translations, so the two cannot
+    // interleave. Products are shared master data: there is no company to scope by.
+    let locked: Option<Uuid> =
+        sqlx::query_scalar("SELECT id FROM products.products WHERE id = $1 FOR UPDATE")
+            .bind(id)
+            .fetch_optional(&mut *tx)
+            .await?;
+    if locked.is_none() {
+        return Err(AppError::NotFound("product"));
+    }
     sqlx::query("DELETE FROM products.product_translations WHERE product_id = $1")
         .bind(id)
         .execute(&mut *tx)

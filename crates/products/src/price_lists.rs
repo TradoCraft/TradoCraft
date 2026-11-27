@@ -422,6 +422,7 @@ pub struct PriceListSettings {
     /// Import of the items (ADR 0100): how many leading segments of a `position` name the group
     /// path (each the `sort_order` of a group among its siblings); the rest is the item's sort
     /// key. 1 to 4, default 2.
+    #[schema(minimum = 1, maximum = 4)]
     pub import_group_levels: u8,
     /// Import of the items: which title a group gets when its rows disagree.
     pub import_title_conflict: ImportTitleConflict,

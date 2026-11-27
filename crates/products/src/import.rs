@@ -717,10 +717,13 @@ impl Importable for Products {
         let ids: Vec<Uuid> = products.iter().map(|p| p.id).collect();
         let mut conn = pool.acquire().await?;
         let translations = load_translations(&mut conn, &ids).await?;
-        // One name and one description column per language that occurs, sorted by code.
+        // One name and one description column per language that occurs, sorted by code. Only
+        // ISO 639-1 codes, the ones an import accepts: a translation stored under another code
+        // is left out of the export (and an import never touches it).
         let mut languages: Vec<String> = translations
             .values()
             .flat_map(|t| t.keys().cloned())
+            .filter(|l| tradocraft_core::language::is_iso_639_1(l))
             .collect();
         languages.sort();
         languages.dedup();

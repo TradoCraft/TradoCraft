@@ -51302,7 +51302,8 @@
             "format": "int32",
             "description": "Import of the items (ADR 0100): how many leading segments of a `position` name the group\npath (each the `sort_order` of a group among its siblings); the rest is the item's sort\nkey. 1 to 4, default 2.",
             "default": 2,
-            "minimum": 0
+            "maximum": 4,
+            "minimum": 1
           },
           "import_short_position": {
             "oneOf": [
