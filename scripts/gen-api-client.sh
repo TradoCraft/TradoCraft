@@ -365,6 +365,17 @@ endpoints = [
         "AuditPage",
     ),
     ("/api/v1/audit/facets", "get", None, None, "AuditFacets"),
+    ("/api/v1/imports/entities", "get", None, None, "[ImportDescription]"),
+    ("/api/v1/imports/files", "post", ["filename"], None, "ImportFile"),
+    ("/api/v1/imports/files/{id}/preview", "get", ["sheet"], None, "ImportPreview"),
+    ("/api/v1/imports/jobs", "get", ["status", "limit", "offset"], None, "ImportJobPage"),
+    ("/api/v1/imports/jobs", "post", None, "CreateJob", "ImportJob"),
+    ("/api/v1/imports/jobs/{id}", "get", None, None, "ImportJob"),
+    ("/api/v1/imports/jobs/{id}/cancel", "post", None, None, "ImportJob"),
+    ("/api/v1/imports/jobs/{id}/errors", "get", None, None, None),
+    ("/api/v1/imports/mappings", "get", ["entity"], None, "[ImportMapping]"),
+    ("/api/v1/imports/mappings", "put", None, "MappingInput", "ImportMapping"),
+    ("/api/v1/imports/mappings/{id}", "delete", None, None, ""),
 ]
 
 for path, method, query_params, req_schema, resp_schema in endpoints:
@@ -477,6 +488,17 @@ checks = [
     ("crates/api-client/src/audit.rs", "AuditEvent", "AuditEvent"),
     ("crates/api-client/src/audit.rs", "AuditPage", "AuditPage"),
     ("crates/api-client/src/audit.rs", "AuditFacets", "AuditFacets"),
+    ("crates/api-client/src/imports.rs", "ImportColumn", "ImportColumn"),
+    ("crates/api-client/src/imports.rs", "ImportDescription", "ImportDescription"),
+    ("crates/api-client/src/imports.rs", "ImportFile", "ImportFile"),
+    ("crates/api-client/src/imports.rs", "ImportPreview", "ImportPreview"),
+    ("crates/api-client/src/imports.rs", "StoredError", "StoredError"),
+    ("crates/api-client/src/imports.rs", "ImportJob", "ImportJob"),
+    ("crates/api-client/src/imports.rs", "ImportJobPage", "ImportJobPage"),
+    ("crates/api-client/src/imports.rs", "ColumnPair", "ColumnPair"),
+    ("crates/api-client/src/imports.rs", "ImportMapping", "ImportMapping"),
+    ("crates/api-client/src/imports.rs", "MappingInput", "MappingInput"),
+    ("crates/api-client/src/imports.rs", "CreateJob", "CreateJob"),
 ]
 
 rust_to_schema = {struct_name: schema_name for _, struct_name, schema_name in checks}
@@ -484,6 +506,7 @@ rust_to_schema["EnvKind"] = "EnvKind"
 rust_to_schema["QuotationStatus"] = "QuotationStatus"
 rust_to_schema["PercentBase"] = "PercentBase"
 rust_to_schema["DefinitionKind"] = "DefinitionKind"
+rust_to_schema["ColumnKind"] = "ColumnKind"
 
 for rs_path, struct_name, schema_name in checks:
     check_schema_fields(rs_path, struct_name, schema_name, rust_to_schema)

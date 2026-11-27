@@ -6,6 +6,7 @@ pub mod attributes;
 pub mod audit;
 pub mod company;
 pub mod identity;
+pub mod imports;
 pub mod modules;
 pub mod users;
 pub mod vat;
@@ -34,10 +35,11 @@ pub enum AdminSection {
     Attributes,
     Identity,
     Audit,
+    Import,
 }
 
 impl AdminSection {
-    pub const ALL: [AdminSection; 8] = [
+    pub const ALL: [AdminSection; 9] = [
         AdminSection::Users,
         AdminSection::Modules,
         AdminSection::Company,
@@ -46,6 +48,7 @@ impl AdminSection {
         AdminSection::Attributes,
         AdminSection::Identity,
         AdminSection::Audit,
+        AdminSection::Import,
     ];
 
     /// The path segment: `/admin/<key>`.
@@ -59,6 +62,7 @@ impl AdminSection {
             Self::Attributes => "attributes",
             Self::Identity => "identity",
             Self::Audit => "audit",
+            Self::Import => "import",
         }
     }
 
@@ -72,6 +76,7 @@ impl AdminSection {
             Self::Attributes => "Attributes",
             Self::Identity => "Identity providers",
             Self::Audit => "Audit trail",
+            Self::Import => "Import",
         }
     }
 
@@ -89,6 +94,7 @@ impl AdminSection {
             Self::Attributes => can("products.write"),
             Self::Identity => can("identity.admin"),
             Self::Audit => can("audit.view"),
+            Self::Import => can("imports.admin"),
         }
     }
 }
@@ -214,7 +220,6 @@ pub fn FeedbackView(fb: Feedback, prefix: &'static str) -> impl IntoView {
 }
 
 /// A file chosen in a browser file input.
-#[allow(dead_code)] // `name` is read by the import wizard.
 pub(crate) struct PickedFile {
     pub name: String,
     pub bytes: Vec<u8>,
@@ -268,6 +273,35 @@ pub(crate) fn begin_file_read(
     done: impl FnOnce(Result<PickedFile, String>) + 'static,
 ) {
     done(Err("Choosing files needs the browser build.".to_string()))
+}
+
+/// Offers `bytes` to the browser as a file download.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn save_file(filename: &str, content_type: &str, bytes: &[u8]) -> Result<(), String> {
+    use wasm_bindgen::JsCast;
+    let fail = |_| "The browser could not save the file.".to_string();
+    let parts = js_sys::Array::new();
+    parts.push(&js_sys::Uint8Array::from(bytes));
+    let options = web_sys::BlobPropertyBag::new();
+    options.set_type(content_type);
+    let blob =
+        web_sys::Blob::new_with_u8_array_sequence_and_options(&parts, &options).map_err(fail)?;
+    let url = web_sys::Url::create_object_url_with_blob(&blob).map_err(fail)?;
+    let anchor = web_sys::window()
+        .and_then(|w| w.document())
+        .and_then(|d| d.create_element("a").ok())
+        .and_then(|e| e.dyn_into::<web_sys::HtmlAnchorElement>().ok())
+        .ok_or_else(|| "The browser could not save the file.".to_string())?;
+    anchor.set_href(&url);
+    anchor.set_download(filename);
+    anchor.click();
+    let _ = web_sys::Url::revoke_object_url(&url);
+    Ok(())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) fn save_file(_filename: &str, _content_type: &str, _bytes: &[u8]) -> Result<(), String> {
+    Err("Downloading files needs the browser build.".to_string())
 }
 
 /// Display name of a role code; unknown codes show as they are.
@@ -402,6 +436,7 @@ pub fn AdminPage() -> impl IntoView {
                         Some(AdminSection::Attributes) => view! { <attributes::AttributesSection /> }.into_any(),
                         Some(AdminSection::Identity) => view! { <identity::IdentitySection /> }.into_any(),
                         Some(AdminSection::Audit) => view! { <audit::AuditSection /> }.into_any(),
+                        Some(AdminSection::Import) => view! { <imports::ImportsSection /> }.into_any(),
                         None => view! { <div></div> }.into_any(),
                     }}
                 </Show>

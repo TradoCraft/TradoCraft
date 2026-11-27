@@ -12,6 +12,7 @@ pub mod customers;
 pub mod error;
 pub mod helpdesk;
 pub mod identity;
+pub mod imports;
 pub mod kb;
 pub mod portal;
 pub mod price_zones;
@@ -48,6 +49,10 @@ pub use helpdesk::{
 pub use identity::{
     BindingResult, IdentityProviderInfo, IdentityProviderInput, IdentityProviderTest,
     IdentityProviderTestResult, TokenTestResult,
+};
+pub use imports::{
+    ColumnKind, ColumnPair, CreateJob, ImportColumn, ImportDescription, ImportFile, ImportJob,
+    ImportJobPage, ImportMapping, ImportPreview, ListImportJobsParams, MappingInput, StoredError,
 };
 pub use portal::{
     ConfirmPortalOrder, FileInfo, KbLanguageParams, ListPublicKbEntriesParams, LoginLinkInput,
