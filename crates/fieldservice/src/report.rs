@@ -565,6 +565,7 @@ mod tests {
             phone: None,
             iban: None,
             default_language: "nl".into(),
+            languages: vec!["nl".into()],
             is_primary: true,
             quotation_single_line_items: true,
             autosave_minutes: 5,

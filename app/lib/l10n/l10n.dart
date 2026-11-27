@@ -1,8 +1,11 @@
 import 'package:flutter/widgets.dart';
 
+import '../api/generated/models/company.dart';
 import 'app_localizations.dart';
+import 'language_names.dart';
 
 export 'app_localizations.dart';
+export 'language_names.dart';
 
 extension L10nContext on BuildContext {
   AppLocalizations get l10n => AppLocalizations.of(this);
@@ -11,15 +14,19 @@ extension L10nContext on BuildContext {
 /// The five languages of the app and of customer communication.
 const languageCodes = ['nl', 'fr', 'en', 'de', 'es'];
 
-/// A language's own name, e.g. for a language picker.
-String languageName(String code) => switch (code) {
-  'nl' => 'Nederlands',
-  'fr' => 'Français',
-  'en' => 'English',
-  'de' => 'Deutsch',
-  'es' => 'Español',
-  _ => code,
-};
+/// A language's own name (endonym), e.g. for a language picker; the code when unknown.
+String languageName(String code) => languageNames[code]?.$2 ?? code;
+
+/// A language's English name; the code when unknown.
+String languageEnglishName(String code) => languageNames[code]?.$1 ?? code;
+
+/// The content languages of [company] in their configured order (ADR 0101); its default language
+/// alone when the server sent no list, English without a company.
+List<String> companyLanguagesOf(Company? company) {
+  final list = company?.languages;
+  if (list != null && list.isNotEmpty) return list;
+  return [company?.defaultLanguage ?? 'en'];
+}
 
 /// Labels for values that come from the API as codes.
 extension CodeLabels on AppLocalizations {

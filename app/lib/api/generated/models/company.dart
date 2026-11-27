@@ -23,6 +23,7 @@ class Company {
     required this.street,
     this.email,
     this.iban,
+    this.languages,
     this.phone,
     this.vatNumber,
   });
@@ -48,6 +49,12 @@ class Company {
   /// installation-wide settings (identity providers, ADR 0055).
   @JsonKey(name: 'is_primary')
   final bool isPrimary;
+
+  /// The company's content languages (ISO 639-1) in display order; includes the default.
+  /// (ADR 0101). Optional in the schema so that older clients and fixtures without it still.
+  /// parse.
+  @JsonKey(includeIfNull: false)
+  final List<String>? languages;
   final String name;
   @JsonKey(includeIfNull: false)
   final String? phone;

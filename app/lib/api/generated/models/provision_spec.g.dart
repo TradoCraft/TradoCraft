@@ -14,6 +14,9 @@ ProvisionSpec _$ProvisionSpecFromJson(Map<String, dynamic> json) =>
       currency: json['currency'] as String,
       defaultLanguage: json['default_language'] as String,
       name: json['name'] as String,
+      languages: (json['languages'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
       legalName: json['legal_name'] as String?,
       vatNumber: json['vat_number'] as String?,
     );
@@ -25,6 +28,7 @@ Map<String, dynamic> _$ProvisionSpecToJson(ProvisionSpec instance) =>
       'country_code': instance.countryCode,
       'currency': instance.currency,
       'default_language': instance.defaultLanguage,
+      'languages': ?instance.languages,
       'legal_name': ?instance.legalName,
       'name': instance.name,
       'vat_number': ?instance.vatNumber,

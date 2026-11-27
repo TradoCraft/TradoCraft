@@ -555,6 +555,7 @@ impl ApiClient for MockApiClient {
                     phone: None,
                     iban: None,
                     default_language: "en".to_string(),
+                    languages: ["en", "nl", "fr", "de", "es"].map(String::from).to_vec(),
                     is_primary: true,
                     quotation_single_line_items: false,
                     autosave_minutes: 5,

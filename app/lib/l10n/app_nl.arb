@@ -4086,5 +4086,13 @@
   "listGroupChip": "Groep: {group}",
   "listRemoveGrouping": "Groepering {group} verwijderen",
   "listGroupExpanded": "{label}, {count} rijen, uitgevouwen",
-  "listGroupCollapsed": "{label}, {count} rijen, ingeklapt"
+  "listGroupCollapsed": "{label}, {count} rijen, ingeklapt",
+  "adminLanguagesTitle": "Inhoudstalen",
+  "adminLanguagesHelp": "De talen waarin uw bedrijf schrijft en afdrukt: productteksten, prijslijsten, kennisbank, antwoorden, mails en documenten. Taalkeuzes tonen deze talen in deze volgorde.",
+  "adminLanguagesDefault": "Standaard",
+  "adminLanguagesMakeDefault": "Als standaard",
+  "adminLanguagesRemove": "Taal verwijderen",
+  "adminLanguagesAdd": "Taal toevoegen",
+  "adminLanguagesSearch": "Zoeken op naam of code",
+  "adminLanguagesSaved": "Talen opgeslagen"
 }

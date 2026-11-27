@@ -6703,5 +6703,13 @@
   "listGroupExpanded": "{label}, {count} rows, expanded",
   "@listGroupExpanded": {"placeholders": {"label": {"type": "String"}, "count": {"type": "int"}}},
   "listGroupCollapsed": "{label}, {count} rows, collapsed",
-  "@listGroupCollapsed": {"placeholders": {"label": {"type": "String"}, "count": {"type": "int"}}}
+  "@listGroupCollapsed": {"placeholders": {"label": {"type": "String"}, "count": {"type": "int"}}},
+  "adminLanguagesTitle": "Content languages",
+  "adminLanguagesHelp": "The languages your company writes and prints in: product texts, price lists, knowledge base, answers, mails and documents. Language pickers offer these languages in this order.",
+  "adminLanguagesDefault": "Default",
+  "adminLanguagesMakeDefault": "Make default",
+  "adminLanguagesRemove": "Remove language",
+  "adminLanguagesAdd": "Add language",
+  "adminLanguagesSearch": "Search by name or code",
+  "adminLanguagesSaved": "Languages saved"
 }

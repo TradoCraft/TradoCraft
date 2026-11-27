@@ -11980,4 +11980,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String listGroupCollapsed(String label, int count) {
     return '$label, $count rows, collapsed';
   }
+
+  @override
+  String get adminLanguagesTitle => 'Content languages';
+
+  @override
+  String get adminLanguagesHelp =>
+      'The languages your company writes and prints in: product texts, price lists, knowledge base, answers, mails and documents. Language pickers offer these languages in this order.';
+
+  @override
+  String get adminLanguagesDefault => 'Default';
+
+  @override
+  String get adminLanguagesMakeDefault => 'Make default';
+
+  @override
+  String get adminLanguagesRemove => 'Remove language';
+
+  @override
+  String get adminLanguagesAdd => 'Add language';
+
+  @override
+  String get adminLanguagesSearch => 'Search by name or code';
+
+  @override
+  String get adminLanguagesSaved => 'Languages saved';
 }

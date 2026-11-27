@@ -21149,6 +21149,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{label}, {count} rows, collapsed'**
   String listGroupCollapsed(String label, int count);
+
+  /// No description provided for @adminLanguagesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Content languages'**
+  String get adminLanguagesTitle;
+
+  /// No description provided for @adminLanguagesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The languages your company writes and prints in: product texts, price lists, knowledge base, answers, mails and documents. Language pickers offer these languages in this order.'**
+  String get adminLanguagesHelp;
+
+  /// No description provided for @adminLanguagesDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get adminLanguagesDefault;
+
+  /// No description provided for @adminLanguagesMakeDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Make default'**
+  String get adminLanguagesMakeDefault;
+
+  /// No description provided for @adminLanguagesRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove language'**
+  String get adminLanguagesRemove;
+
+  /// No description provided for @adminLanguagesAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add language'**
+  String get adminLanguagesAdd;
+
+  /// No description provided for @adminLanguagesSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name or code'**
+  String get adminLanguagesSearch;
+
+  /// No description provided for @adminLanguagesSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Languages saved'**
+  String get adminLanguagesSaved;
 }
 
 class _AppLocalizationsDelegate

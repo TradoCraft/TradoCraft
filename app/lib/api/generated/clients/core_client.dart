@@ -11,12 +11,14 @@ import '../models/admin_user_update.dart';
 import '../models/bootstrap_request.dart';
 import '../models/bootstrap_result.dart';
 import '../models/company.dart';
+import '../models/company_languages_input.dart';
 import '../models/company_logo_info.dart';
 import '../models/company_settings_input.dart';
 import '../models/company_user.dart';
 import '../models/country_vat_rate.dart';
 import '../models/country_vat_rate_input.dart';
 import '../models/environment_info.dart';
+import '../models/language_info.dart';
 import '../models/me.dart';
 import '../models/module_info.dart';
 import '../models/modules_input.dart';
@@ -31,6 +33,12 @@ part 'core_client.g.dart';
 @RestApi()
 abstract class CoreClient {
   factory CoreClient(Dio dio, {String? baseUrl}) = _CoreClient;
+
+  /// Replaces the company's content languages and default language (administrators).
+  @PUT('/api/v1/admin/company/languages')
+  Future<Company> putCompanyLanguages({
+    @Body() required CompanyLanguagesInput body,
+  });
 
   /// The company logo image. 404 when none was uploaded.
   @GET('/api/v1/admin/company/logo')
@@ -125,6 +133,10 @@ abstract class CoreClient {
     @Query('entity_type') required String entityType,
     @Query('record_id') required String recordId,
   });
+
+  /// Every ISO 639-1 language with its names: what an administrator chooses company languages from.
+  @GET('/api/v1/languages')
+  Future<List<LanguageInfo>> listLanguages();
 
   @GET('/api/v1/me')
   Future<Me> me();

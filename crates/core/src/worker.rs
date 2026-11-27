@@ -282,7 +282,7 @@ mod tests {
             down_until: Utc.with_ymd_and_hms(2027, 1, 26, 9, 30, 0).unwrap(),
         };
         let mut subjects = std::collections::HashSet::new();
-        for lang in crate::LANGUAGES {
+        for lang in ["nl", "fr", "en", "de", "es"] {
             let (subject, body) = outage_mail(lang, &o);
             assert!(subjects.insert(subject), "{lang} reuses a subject");
             assert!(body.contains("2027-01-26 08:00 UTC"), "{lang}: {body}");

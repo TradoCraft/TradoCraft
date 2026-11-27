@@ -7,6 +7,7 @@ pub mod audit;
 pub mod company;
 pub mod identity;
 pub mod imports;
+pub mod languages;
 pub mod modules;
 pub mod users;
 pub mod vat;

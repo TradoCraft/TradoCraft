@@ -4086,5 +4086,13 @@
   "listGroupChip": "Groupe : {group}",
   "listRemoveGrouping": "Supprimer le regroupement {group}",
   "listGroupExpanded": "{label}, {count} lignes, développé",
-  "listGroupCollapsed": "{label}, {count} lignes, réduit"
+  "listGroupCollapsed": "{label}, {count} lignes, réduit",
+  "adminLanguagesTitle": "Langues du contenu",
+  "adminLanguagesHelp": "Les langues dans lesquelles votre entreprise rédige et imprime : textes produits, listes de prix, base de connaissances, réponses, e-mails et documents. Les sélecteurs de langue proposent ces langues dans cet ordre.",
+  "adminLanguagesDefault": "Par défaut",
+  "adminLanguagesMakeDefault": "Définir par défaut",
+  "adminLanguagesRemove": "Retirer la langue",
+  "adminLanguagesAdd": "Ajouter une langue",
+  "adminLanguagesSearch": "Rechercher par nom ou code",
+  "adminLanguagesSaved": "Langues enregistrées"
 }

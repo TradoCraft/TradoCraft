@@ -4086,5 +4086,13 @@
   "listGroupChip": "Gruppe: {group}",
   "listRemoveGrouping": "Gruppierung {group} entfernen",
   "listGroupExpanded": "{label}, {count} Zeilen, aufgeklappt",
-  "listGroupCollapsed": "{label}, {count} Zeilen, zugeklappt"
+  "listGroupCollapsed": "{label}, {count} Zeilen, zugeklappt",
+  "adminLanguagesTitle": "Inhaltssprachen",
+  "adminLanguagesHelp": "Die Sprachen, in denen Ihr Unternehmen schreibt und druckt: Produkttexte, Preislisten, Wissensdatenbank, Antworten, E-Mails und Dokumente. Sprachauswahlen bieten diese Sprachen in dieser Reihenfolge an.",
+  "adminLanguagesDefault": "Standard",
+  "adminLanguagesMakeDefault": "Als Standard",
+  "adminLanguagesRemove": "Sprache entfernen",
+  "adminLanguagesAdd": "Sprache hinzufügen",
+  "adminLanguagesSearch": "Nach Name oder Code suchen",
+  "adminLanguagesSaved": "Sprachen gespeichert"
 }

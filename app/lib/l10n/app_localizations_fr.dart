@@ -12057,4 +12057,29 @@ class AppLocalizationsFr extends AppLocalizations {
   String listGroupCollapsed(String label, int count) {
     return '$label, $count lignes, réduit';
   }
+
+  @override
+  String get adminLanguagesTitle => 'Langues du contenu';
+
+  @override
+  String get adminLanguagesHelp =>
+      'Les langues dans lesquelles votre entreprise rédige et imprime : textes produits, listes de prix, base de connaissances, réponses, e-mails et documents. Les sélecteurs de langue proposent ces langues dans cet ordre.';
+
+  @override
+  String get adminLanguagesDefault => 'Par défaut';
+
+  @override
+  String get adminLanguagesMakeDefault => 'Définir par défaut';
+
+  @override
+  String get adminLanguagesRemove => 'Retirer la langue';
+
+  @override
+  String get adminLanguagesAdd => 'Ajouter une langue';
+
+  @override
+  String get adminLanguagesSearch => 'Rechercher par nom ou code';
+
+  @override
+  String get adminLanguagesSaved => 'Langues enregistrées';
 }

@@ -25,6 +25,11 @@ pub struct Company {
     pub phone: Option<String>,
     pub iban: Option<String>,
     pub default_language: String,
+    /// The company's content languages (ISO 639-1) in display order; includes the default
+    /// (ADR 0101). Optional in the schema so that older clients and fixtures without it still
+    /// parse.
+    #[serde(default)]
+    pub languages: Vec<String>,
     /// True for the installation's primary company, whose administrators change the
     /// installation-wide settings (identity providers, ADR 0055).
     pub is_primary: bool,
@@ -39,8 +44,10 @@ pub async fn get_company<'e>(db: impl PgExecutor<'e>, id: Uuid) -> Result<Compan
         "SELECT id, name, vat_number, street, postal_code, city, country_code::text AS country_code,
                 currency::text AS currency, email, phone, iban,
                 default_language::text AS default_language, is_primary,
-                quotation_single_line_items, autosave_minutes
-         FROM core.companies WHERE id = $1",
+                quotation_single_line_items, autosave_minutes,
+                ARRAY(SELECT l.language FROM core.company_languages l
+                      WHERE l.company_id = c.id ORDER BY l.sort_order) AS languages
+         FROM core.companies c WHERE id = $1",
     )
     .bind(id)
     .fetch_one(db)
@@ -159,4 +166,5 @@ pub fn router() -> OpenApiRouter<AppState> {
         .merge(crate::preferences::router())
         .merge(crate::admin::router())
         .merge(crate::worker::router())
+        .merge(crate::languages::router())
 }

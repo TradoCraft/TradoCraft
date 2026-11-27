@@ -12040,4 +12040,29 @@ class AppLocalizationsNl extends AppLocalizations {
   String listGroupCollapsed(String label, int count) {
     return '$label, $count rijen, ingeklapt';
   }
+
+  @override
+  String get adminLanguagesTitle => 'Inhoudstalen';
+
+  @override
+  String get adminLanguagesHelp =>
+      'De talen waarin uw bedrijf schrijft en afdrukt: productteksten, prijslijsten, kennisbank, antwoorden, mails en documenten. Taalkeuzes tonen deze talen in deze volgorde.';
+
+  @override
+  String get adminLanguagesDefault => 'Standaard';
+
+  @override
+  String get adminLanguagesMakeDefault => 'Als standaard';
+
+  @override
+  String get adminLanguagesRemove => 'Taal verwijderen';
+
+  @override
+  String get adminLanguagesAdd => 'Taal toevoegen';
+
+  @override
+  String get adminLanguagesSearch => 'Zoeken op naam of code';
+
+  @override
+  String get adminLanguagesSaved => 'Talen opgeslagen';
 }

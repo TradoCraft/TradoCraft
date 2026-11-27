@@ -72,6 +72,57 @@
         }
       }
     },
+    "/api/v1/admin/company/languages": {
+      "put": {
+        "tags": [
+          "core"
+        ],
+        "summary": "Replaces the company's content languages and default language (administrators).",
+        "operationId": "put_company_languages",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyLanguagesInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/company/logo": {
       "get": {
         "tags": [
@@ -16054,6 +16105,40 @@
                   "items": {
                     "type": "string"
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/languages": {
+      "get": {
+        "tags": [
+          "core"
+        ],
+        "summary": "Every ISO 639-1 language with its names: what an administrator chooses company languages from.",
+        "operationId": "list_languages",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LanguageInfo"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -39184,6 +39269,13 @@
             "type": "boolean",
             "description": "True for the installation's primary company, whose administrators change the\ninstallation-wide settings (identity providers, ADR 0055)."
           },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The company's content languages (ISO 639-1) in display order; includes the default\n(ADR 0101). Optional in the schema so that older clients and fixtures without it still\nparse."
+          },
           "name": {
             "type": "string"
           },
@@ -39208,6 +39300,27 @@
               "string",
               "null"
             ]
+          }
+        }
+      },
+      "CompanyLanguagesInput": {
+        "type": "object",
+        "description": "The company's content languages, in the order pickers show them.",
+        "required": [
+          "languages",
+          "default_language"
+        ],
+        "properties": {
+          "default_language": {
+            "type": "string",
+            "description": "The default language; must be one of `languages`."
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "ISO 639-1 codes in display order, 1 to 50, without duplicates."
           }
         }
       },
@@ -45802,6 +45915,29 @@
           "helpful": {
             "type": "boolean",
             "description": "true = helpful, false = not helpful"
+          }
+        }
+      },
+      "LanguageInfo": {
+        "type": "object",
+        "description": "An ISO 639-1 language with its display names.",
+        "required": [
+          "code",
+          "english_name",
+          "name"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "ISO 639-1 code, e.g. `pt`."
+          },
+          "english_name": {
+            "type": "string",
+            "description": "English name, e.g. `Portuguese`."
+          },
+          "name": {
+            "type": "string",
+            "description": "The language's own name, e.g. `Português`."
           }
         }
       },
@@ -53947,7 +54083,14 @@
           },
           "default_language": {
             "type": "string",
-            "description": "One of nl, fr, en, de, es."
+            "description": "ISO 639-1 code of the company's default language."
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The company's content languages in display order (ISO 639-1); the default language is\nadded in front when missing. Empty: only the default language (ADR 0101)."
           },
           "legal_name": {
             "type": [

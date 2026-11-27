@@ -23,8 +23,8 @@ pub mod todo;
 pub mod vat;
 
 pub use admin::{
-    AdminUser, AdminUserCreate, AdminUserUpdate, CompanyLogoInfo, CompanySettingsInput, ModuleInfo,
-    ModulesInput, OidcSubjectInput, RoleInfo,
+    AdminUser, AdminUserCreate, AdminUserUpdate, CompanyLanguagesInput, CompanyLogoInfo,
+    CompanySettingsInput, LanguageInfo, ModuleInfo, ModulesInput, OidcSubjectInput, RoleInfo,
 };
 pub use attributes::{
     AttributeDefinition, AttributeDefinitionInput, BaselineItemType, DefinitionKind, SelectOption,
