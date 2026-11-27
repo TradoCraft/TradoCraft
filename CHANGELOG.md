@@ -18,6 +18,15 @@ changes, not every commit. Items in the roadmap are linked to their ADRs in [doc
   Answers), To-do, staff Knowledge Base, Standard Answers management, Products, Customers, Suppliers,
   Quotations, Orders, Portal and public Knowledge Base slices, and a tutorial overlay. It covers the
   four workflows of the v0.4.0 release gate; the Flutter app remains the full client.
+- Leptos Administration area at `/app/admin`: users, modules, company (including the logo), VAT rates,
+  price zones, attributes, identity providers, audit trail and the import wizard with job history, each
+  section gated by the same permissions as in Flutter. Baseline types and the configurator builder
+  stay in Flutter.
+- Mail-merge consent ([ADR 0099](docs/adr/0099-mail-merge-consent.md)): every customer mailing carries
+  an unsubscribe link in the recipient's language that records an opt-out on a public portal page
+  without a sign-in. A per-company opt-out register (`/customers/mail-merge/opt-outs`) is managed by
+  staff and audited; opted-out addresses are skipped in the preview and confirm refuses if an opt-out
+  arrives in between. Confirming a mailing needs a portal address on the company (otherwise 422).
 - `tradocraft-api-client`, a WASM-safe Rust API client crate used by the Leptos frontend.
 - Playwright specs for the Leptos workflows (`e2e/tests-leptos/`) and wasm-bindgen component tests,
   run in CI.
