@@ -25,7 +25,6 @@ use axum::response::{IntoResponse, Redirect, Response};
 use axum::{Json, Router};
 use limit::{client_ip, IpNet, Limiter};
 use tower_http::services::{ServeDir, ServeFile};
-use tower_http::trace::TraceLayer;
 use tradocraft_core::cors::CorsConfig;
 use tradocraft_core::error::ErrorBody;
 use tradocraft_core::AppState;
@@ -116,7 +115,7 @@ pub fn app(state: AppState, config: PortalConfig) -> Router {
     let router = routes().route("/health", axum::routing::get(|| async { "ok" }));
     mount_web_ui(router, None)
         .layer(axum::middleware::from_fn_with_state(guard, protect))
-        .layer(TraceLayer::new_for_http())
+        .layer(tradocraft_core::http_trace::layer())
         // Outermost: a refused request still carries the CORS headers (so the portal can show
         // "too many requests"), and a preflight is answered without counting against a limit.
         .layer(config.cors.layer())

@@ -482,3 +482,52 @@ async fn a_mailing_recipient_unsubscribes_without_signing_in(db: PgPool) {
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert!(!body.to_string().contains("alpha.example"), "{body}");
 }
+
+/// Log output collected in memory.
+#[derive(Clone, Default)]
+struct Captured(Arc<std::sync::Mutex<Vec<u8>>>);
+
+impl std::io::Write for Captured {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.0.lock().unwrap().extend_from_slice(buf);
+        Ok(buf.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+/// The token in an unsubscribe link is a credential: request spans record the route template.
+#[sqlx::test(migrations = "../../migrations")]
+async fn request_logs_do_not_record_link_tokens(db: PgPool) {
+    let app = setup(db, config()).await;
+    let logs = Captured::default();
+    let writer = logs.clone();
+    let subscriber = tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .with_ansi(false)
+        .with_writer(move || writer.clone())
+        .finish();
+    let _guard = tracing::subscriber::set_default(subscriber);
+
+    let secret = "tcu_secret-in-the-path";
+    let (status, _, _) = Call::new(
+        Method::GET,
+        &format!("/api/v1/mailing-unsubscribe/{secret}?x={secret}"),
+    )
+    .send(&app)
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    let (status, _, _) = Call::new(Method::GET, &format!("/api/v1/no-such-route/{secret}"))
+        .send(&app)
+        .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    let text = String::from_utf8(logs.0.lock().unwrap().clone()).unwrap();
+    assert!(
+        text.contains("route=/api/v1/mailing-unsubscribe/{token}") && text.contains("method=GET"),
+        "{text}"
+    );
+    assert!(text.contains("route=/api/<unmatched>"), "{text}");
+    assert!(!text.contains(secret), "{text}");
+}
