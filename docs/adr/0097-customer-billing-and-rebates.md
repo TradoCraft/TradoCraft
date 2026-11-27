@@ -108,9 +108,11 @@ from the accounting balances, not from a reconstruction.
     `finance.customer_rebate_rates` with the eligible sales and the rate, so these survive later
     changes to the inputs. The schedule version is referenced by its id only; its tiers are not
     copied, so a later edit of that schedule's tiers is not reflected in the stored approval. It
-    needs a closed year with an opening balance and an applicable schedule (422). An existing
-    approval is returned as it is; there is no
-    re-approval.
+    needs a closed year with an opening balance and an applicable schedule (422). When a rate is
+    already approved, nothing is stored again and the review is returned: `approved_rate` is the
+    stored rate, while `eligible_sales` and `proposed_rate` are the current calculation, which may
+    differ from the figures the approval was based on (those stay in the table, not in the
+    response); there is no re-approval.
 12. **Concurrency.** Posting a document, registering a historical invoice, saving an opening balance,
     changing an assignment and approving a rate all take the same per-customer advisory lock
     (`customer_rebate:<company>:<customer>`). Approval recomputes the review under that lock and, when
@@ -167,11 +169,14 @@ from the accounting balances, not from a reconstruction.
 - A posted document is final; a wrong invoice is corrected by a credit note. A credit does not free
   the shipped quantity: the delivery line stays invoiced, so a delivery cannot be invoiced again after
   a full credit.
-- Posting dated into a period whose turnover has been verified or used for an approval is refused.
-  While only the opening is verified, a late document must be dated after the cutoff, or the
-  opening balance redone. Once the following year's rate is approved, eligible documents dated in
-  that year stay refused, even when dated after the cutoff or after the opening balance is redone;
-  withdrawing or re-approving a rate is not yet available.
+- Posting a document with an eligible, non-zero line dated into a period whose turnover has been
+  verified or used for an approval is refused; documents with only non-eligible or zero lines are
+  not affected. While only the opening is verified, a late document must be dated after the
+  cutoff, or the opening balance redone with a cutoff before the document's date and the eligible
+  sales verified again against the accounting package through that new cutoff (re-verifying with
+  the unchanged cutoff keeps the document refused). Once the following year's rate is approved,
+  eligible documents dated in that year stay refused, even when dated after the cutoff or after the
+  opening balance is redone; withdrawing or re-approving a rate is not yet available.
 - These new tiered annual rebates are separate from the existing per-customer price rebates of
   `crm.customer_rebates` (ADR 0012), which keep working as before.
 - An approved rate is stored with its basis but is not yet applied to quotation or order prices by
