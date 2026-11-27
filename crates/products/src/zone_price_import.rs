@@ -267,15 +267,18 @@ impl Importable for ZonePrices {
 
     async fn update(
         conn: &mut PgConnection,
-        _user: &CurrentUser,
+        user: &CurrentUser,
         id: Uuid,
         change: &ZonePriceChange,
     ) -> AppResult<()> {
-        sqlx::query("UPDATE pricing.zone_prices SET unit_price = $2 WHERE id = $1")
-            .bind(id)
-            .bind(change.unit_price)
-            .execute(conn)
-            .await?;
+        sqlx::query(
+            "UPDATE pricing.zone_prices SET unit_price = $2 WHERE id = $1 AND company_id = $3",
+        )
+        .bind(id)
+        .bind(change.unit_price)
+        .bind(user.company_id)
+        .execute(conn)
+        .await?;
         Ok(())
     }
 

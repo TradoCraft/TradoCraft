@@ -313,6 +313,7 @@ type GroupRow = (
 
 async fn load_groups(
     conn: &mut PgConnection,
+    company_id: Uuid,
     list_ids: &[Uuid],
 ) -> AppResult<HashMap<Uuid, Vec<StoredGroup>>> {
     let rows: Vec<GroupRow> = sqlx::query_as(
@@ -320,8 +321,10 @@ async fn load_groups(
                 COALESCE((SELECT jsonb_object_agg(t.language::text, t.title)
                           FROM pricing.price_list_group_titles t WHERE t.group_id = g.id),
                          '{}'::jsonb)
-             FROM pricing.price_list_groups g WHERE g.price_list_id = ANY($1)",
+             FROM pricing.price_list_groups g
+             WHERE g.company_id = $1 AND g.price_list_id = ANY($2)",
     )
+    .bind(company_id)
     .bind(list_ids)
     .fetch_all(conn)
     .await?;
@@ -350,11 +353,13 @@ async fn ensure_path(
         let found: Option<Uuid> = sqlx::query_scalar(
             "SELECT id FROM pricing.price_list_groups
              WHERE price_list_id = $1 AND parent_id IS NOT DISTINCT FROM $2 AND sort_order = $3
+               AND company_id = $4
              ORDER BY id LIMIT 1",
         )
         .bind(list_id)
         .bind(parent)
         .bind(order)
+        .bind(company_id)
         .fetch_optional(&mut *conn)
         .await?;
         let id = match found {
@@ -415,10 +420,13 @@ async fn prepare_group(
         .execute(&mut *conn)
         .await?;
     }
-    sqlx::query("UPDATE pricing.price_lists SET updated_at = now() WHERE id = $1")
-        .bind(change.list_id)
-        .execute(&mut *conn)
-        .await?;
+    sqlx::query(
+        "UPDATE pricing.price_lists SET updated_at = now() WHERE id = $1 AND company_id = $2",
+    )
+    .bind(change.list_id)
+    .bind(user.company_id)
+    .execute(&mut *conn)
+    .await?;
     Ok(group_id)
 }
 
@@ -483,7 +491,7 @@ impl Importable for PriceListItems {
         .into_iter()
         .collect();
         let list_ids: Vec<Uuid> = lists.values().map(|l| l.id).collect();
-        let groups = load_groups(conn, &list_ids).await?;
+        let groups = load_groups(conn, user.company_id, &list_ids).await?;
         let languages = family_languages(&table.columns, GROUP_TITLE);
 
         // What the whole file says about each group: its first row and its titles.
@@ -758,7 +766,7 @@ impl Importable for PriceListItems {
         sqlx::query(
             "UPDATE pricing.price_list_items SET group_id = $2, sort_key = $3,
                     price_on_request = $4, net = $5, indicative = $6, hidden = $7
-             WHERE id = $1",
+             WHERE id = $1 AND company_id = $8",
         )
         .bind(id)
         .bind(group_id)
@@ -767,6 +775,7 @@ impl Importable for PriceListItems {
         .bind(change.net)
         .bind(change.indicative)
         .bind(change.hidden)
+        .bind(user.company_id)
         .execute(conn)
         .await?;
         Ok(())
@@ -805,7 +814,7 @@ impl Importable for PriceListItems {
         .fetch_all(&mut *conn)
         .await?;
         let ids: Vec<Uuid> = lists.iter().map(|l| l.0).collect();
-        let groups = load_groups(&mut conn, &ids).await?;
+        let groups = load_groups(&mut conn, user.company_id, &ids).await?;
         #[derive(sqlx::FromRow)]
         struct Item {
             price_list_id: Uuid,
