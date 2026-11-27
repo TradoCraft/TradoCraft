@@ -62,6 +62,11 @@ receipts and the stock.
 
 [![TradoCraft tutorial part six: buying and receiving](docs/media/tutorial-part-6-buying.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-tutorial-part-6-buying/tradocraft-tutorial-part-six-buying-and-receiving.mp4)
 
+**Tutorial, part seven: checking the invoices** (1 min 37 s): a supplier invoice registered from the purchase order, the
+three-way match, approving, disputing a suspicious invoice, the tolerances and paying.
+
+[![TradoCraft tutorial part seven: checking the invoices](docs/media/tutorial-part-7-invoices.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-tutorial-part-7-invoices/tradocraft-tutorial-part-seven-checking-the-invoices.mp4)
+
 ## Repository layout
 
 ```
