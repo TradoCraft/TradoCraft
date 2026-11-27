@@ -4,7 +4,6 @@ use std::path::{Path, PathBuf};
 
 use axum::Router;
 use tower_http::services::{ServeDir, ServeFile};
-use tower_http::trace::TraceLayer;
 use tradocraft_core::companies::BootstrapConfig;
 use tradocraft_core::cors::CorsConfig;
 use tradocraft_core::environment::EnvironmentConfig;
@@ -193,7 +192,7 @@ pub fn app_with_vies(
         .layer(axum::Extension(identity))
         .layer(axum::Extension(vies))
         .layer(axum::Extension(motors))
-        .layer(TraceLayer::new_for_http())
+        .layer(tradocraft_core::http_trace::layer())
         .layer(cors.layer())
         .with_state(state)
 }

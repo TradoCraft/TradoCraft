@@ -82,7 +82,8 @@ from the accounting balances, not from a reconstruction.
    turnover flag. It is `posted` and `is_legacy` at once, has no delivery note and no PDF, and exists
    only so that a credit note has something to refer to: its lines hold what is still creditable
    after corrections already made in accounting. Its turnover is not counted (it is in the opening
-   balance), and it cannot be dated after the verified opening cutoff of its year.
+   balance). When an opening cutoff is recorded for its year it cannot be dated after that cutoff;
+   without an opening for that year any date in the year is accepted.
 9. **Opening balances and cutover instead of a ledger.** `finance.customer_rebate_openings` holds per
    customer and year the eligible sales verified against the accounting package through a `cutoff`
    date (between 31 December of the year before and 31 December of the year; at the year before's
@@ -92,7 +93,7 @@ from the accounting balances, not from a reconstruction.
    the cutoff on eligible lines, credits negative. Without an opening for the year there is no figure.
    When an eligible line after the cutoff is in another currency than the company's, or a line is
    still unclassified, the figure is withheld rather than mixed or guessed. A credit reduces turnover
-   in the year it is posted.
+   in the year of its `document_date`.
 10. **Rebate schedules and tiers.** `finance.customer_rebate_schedules` has a `name`, an
     `effective_year` and `tiers` (threshold in the company currency, rate 0 to 100 with up to 4
     decimals; thresholds and rates both strictly increasing). Name and effective year identify a
@@ -104,17 +105,23 @@ from the accounting balances, not from a reconstruction.
     `GET /customer-rebates/customers/{customer}/rates/{year}` shows the eligible sales of the year
     before (only when that year is over), the proposed rate and an approved rate if any.
     `POST /customer-rebates/customers/{customer}/rates` stores the approval in
-    `finance.customer_rebate_rates` with the schedule version, the eligible sales and the rate, so the
-    basis survives later changes to schedules or inputs. It needs a closed year with an opening
-    balance and an applicable schedule (422). An existing approval is returned as it is; there is no
-    re-approval.
+    `finance.customer_rebate_rates` with the eligible sales and the rate, so these survive later
+    changes to the inputs. The schedule version is referenced by its id only; its tiers are not
+    copied, so a later edit of that schedule's tiers is not reflected in the stored approval. It
+    needs a closed year with an opening balance and an applicable schedule (422). When a rate is
+    already approved, nothing is stored again and the review is returned: `approved_rate` is the
+    stored rate, while `eligible_sales` and `proposed_rate` are the current calculation, which may
+    differ from the figures the approval was based on (those stay in the table, not in the
+    response); there is no re-approval.
 12. **Concurrency.** Posting a document, registering a historical invoice, saving an opening balance,
     changing an assignment and approving a rate all take the same per-customer advisory lock
     (`customer_rebate:<company>:<customer>`). Approval recomputes the review under that lock and, when
     the request carries the `proposed_rate` and `eligible_sales` the reviewer saw (the app sends both),
-    refuses with 409 if either has changed meanwhile. Once figures are relied on, the period is closed:
-    a document with eligible, non-zero lines cannot be posted (`turnover_period_closed`) when a rate
-    for the following year is approved or the opening cutoff of its year is on or after its date.
+    refuses with 409 if either has changed meanwhile. Each is compared only when it is sent: a
+    request that omits one skips that comparison, so the approval may store figures other than
+    those the reviewer saw. Once figures are relied on, the period is closed: a document with
+    eligible, non-zero lines cannot be posted (`turnover_period_closed`) when a rate for the
+    following year is approved or the opening cutoff of its year is on or after its date.
 13. **Progress on the invoice.** `finance.customer_rebate_settings` (`GET`/`PUT
     /customer-rebates/settings`) switches `show_on_invoices` and holds the wording per language (nl,
     fr, en, de, es defaults; placeholders `{eligible_sales}`, `{rate_year}`, and for the active
@@ -137,9 +144,12 @@ from the accounting balances, not from a reconstruction.
 16. **Live posting is opt-in per company** (ADR 0043). In a `test` or `tutorial` environment posting
     is open. In the `live` environment `POST /customer-invoices/{id}/post` is refused (403) unless the
     company's UUID is in the comma-separated `CUSTOMER_BILLING_LIVE_COMPANIES` variable of the API,
-    which is to be set only once the accounting handoff and invoice delivery for that company work. A
-    pilot is reconciled in a test environment first; approvals or assignments made there count for
-    nothing in live. Every change is audited (`customer_document` `created`, `posted`, `discarded`,
+    which is to be set only once the accounting handoff and invoice delivery for that company work.
+    `POST /customer-invoices/legacy` is not checked against that variable: in live it registers
+    posted historical invoices for any company, limited only by `billing.post`. Whether to gate it
+    as well is a separate decision. A pilot is reconciled in a test environment first; approvals or
+    assignments made there count for nothing in live. Every change is audited (`customer_document`
+    `created`, `posted`, `discarded`,
     `legacy_registered`; `customer_rebate_settings`, `customer_rebate_schedule`,
     `customer_rebate_assignment`, `customer_rebate_opening` `verified`, `customer_rebate_rate`
     `approved`).
@@ -159,8 +169,14 @@ from the accounting balances, not from a reconstruction.
 - A posted document is final; a wrong invoice is corrected by a credit note. A credit does not free
   the shipped quantity: the delivery line stays invoiced, so a delivery cannot be invoiced again after
   a full credit.
-- Posting dated into a period whose turnover has been verified or used for an approval is refused,
-  so a late document must be dated after the cutoff, or the opening balance redone.
+- Posting a document with an eligible, non-zero line dated into a period whose turnover has been
+  verified or used for an approval is refused; documents with only non-eligible or zero lines are
+  not affected. While only the opening is verified, a late document must be dated after the
+  cutoff, or the opening balance redone with a cutoff before the document's date and the eligible
+  sales verified again against the accounting package through that new cutoff (re-verifying with
+  the unchanged cutoff keeps the document refused). Once the following year's rate is approved,
+  eligible documents dated in that year stay refused, even when dated after the cutoff or after the
+  opening balance is redone; withdrawing or re-approving a rate is not yet available.
 - These new tiered annual rebates are separate from the existing per-customer price rebates of
   `crm.customer_rebates` (ADR 0012), which keep working as before.
 - An approved rate is stored with its basis but is not yet applied to quotation or order prices by

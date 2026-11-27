@@ -19758,6 +19758,84 @@ abstract class AppLocalizations {
   /// **'Failed'**
   String get mergeFailed;
 
+  /// No description provided for @mergeOptedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsubscribed from mailings'**
+  String get mergeOptedOut;
+
+  /// No description provided for @mergeOptOuts.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsubscribed addresses'**
+  String get mergeOptOuts;
+
+  /// No description provided for @mergeOptOutsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'These addresses receive no mailings from this company. Add an address when someone asks not to be mailed; remove it only when they ask to receive mailings again.'**
+  String get mergeOptOutsHelp;
+
+  /// No description provided for @mergeOptOutsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No unsubscribed addresses.'**
+  String get mergeOptOutsEmpty;
+
+  /// No description provided for @mergeOptOutViaLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Via the unsubscribe link'**
+  String get mergeOptOutViaLink;
+
+  /// No description provided for @mergeOptOutViaStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'Added by {name}'**
+  String mergeOptOutViaStaff(String name);
+
+  /// No description provided for @mergeUnsubscribeFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'Every email ends with an unsubscribe link in the recipient\'s language.'**
+  String get mergeUnsubscribeFooter;
+
+  /// No description provided for @unsubscribeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsubscribe from mailings'**
+  String get unsubscribeTitle;
+
+  /// No description provided for @unsubscribeQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop receiving mailings from {company} at {email}?'**
+  String unsubscribeQuestion(String company, String email);
+
+  /// No description provided for @unsubscribeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsubscribe'**
+  String get unsubscribeAction;
+
+  /// No description provided for @unsubscribeDone.
+  ///
+  /// In en, this message translates to:
+  /// **'You have been unsubscribed. You will no longer receive these mailings.'**
+  String get unsubscribeDone;
+
+  /// No description provided for @unsubscribeAlready.
+  ///
+  /// In en, this message translates to:
+  /// **'This address is already unsubscribed.'**
+  String get unsubscribeAlready;
+
+  /// No description provided for @unsubscribeInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'This unsubscribe link is not valid.'**
+  String get unsubscribeInvalid;
+
   /// No description provided for @productMedia.
   ///
   /// In en, this message translates to:

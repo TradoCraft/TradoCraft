@@ -30,7 +30,8 @@ already had a checklist (`field.job_tasks`: ordered tasks, a done flag, who and 
 3. **Templates.** `helpdesk.checklist_templates` (per company: `name`, optional `team_id`, optional
    `category` from the ticket categories, `active`) with ordered `helpdesk.checklist_template_items`.
    `GET /helpdesk/checklist-templates` (filters `team_id`, `category`, `active`) needs
-   `helpdesk.read`; `POST`, `PUT` and `DELETE /helpdesk/checklist-templates/{id}` need
+   `helpdesk.read`; `POST /helpdesk/checklist-templates`, and `PUT` and `DELETE
+   /helpdesk/checklist-templates/{id}`, need
    `helpdesk.admin` and are audited (`checklist_template`). Saving replaces the template's items.
    Team and category only describe where a template fits: nothing is applied automatically because
    of them.
@@ -49,9 +50,10 @@ already had a checklist (`field.job_tasks`: ordered tasks, a done flag, who and 
    `helpdesk.admin` on the team). While it is set, changing a ticket of that team to `closed` with an
    open item is refused with 409 `checklist_incomplete`. The check runs in `set_status` and again
    after the automation rules have run (a rule may change the team), on every path that changes the
-   status: ticket update, note and reply with a status, `POST /tickets/{id}/status`
+   status except a merge: ticket update, note and reply with a status, `POST /tickets/{id}/status`
    ([ADR 0088](0088-tickets-on-the-kanban-board.md)) and the bundle mass update
-   ([ADR 0076](0076-helpdesk-ticket-links-and-bundles.md)). A ticket without a team, or one already
+   ([ADR 0076](0076-helpdesk-ticket-links-and-bundles.md)). Merging a ticket into another closes the
+   merged ticket directly (`extras.rs`), without the gate. A ticket without a team, or one already
    closed, is not checked.
 7. **Progress on the ticket.** `Ticket` carries `checklist_total` and `checklist_done` (counted in
    the ticket query).

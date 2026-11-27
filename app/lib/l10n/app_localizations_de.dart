@@ -11283,6 +11283,52 @@ class AppLocalizationsDe extends AppLocalizations {
   String get mergeFailed => 'Fehlgeschlagen';
 
   @override
+  String get mergeOptedOut => 'Von Mailings abgemeldet';
+
+  @override
+  String get mergeOptOuts => 'Abgemeldete Adressen';
+
+  @override
+  String get mergeOptOutsHelp =>
+      'Diese Adressen erhalten keine Mailings von diesem Unternehmen. Fügen Sie eine Adresse hinzu, wenn jemand keine Mailings mehr wünscht; entfernen Sie sie nur, wenn die Person sie wieder erhalten möchte.';
+
+  @override
+  String get mergeOptOutsEmpty => 'Keine abgemeldeten Adressen.';
+
+  @override
+  String get mergeOptOutViaLink => 'Über den Abmeldelink';
+
+  @override
+  String mergeOptOutViaStaff(String name) {
+    return 'Hinzugefügt von $name';
+  }
+
+  @override
+  String get mergeUnsubscribeFooter =>
+      'Jede E-Mail endet mit einem Abmeldelink in der Sprache des Empfängers.';
+
+  @override
+  String get unsubscribeTitle => 'Von Mailings abmelden';
+
+  @override
+  String unsubscribeQuestion(String company, String email) {
+    return 'Keine Mailings von $company mehr an $email erhalten?';
+  }
+
+  @override
+  String get unsubscribeAction => 'Abmelden';
+
+  @override
+  String get unsubscribeDone =>
+      'Sie wurden abgemeldet. Sie erhalten diese Mailings nicht mehr.';
+
+  @override
+  String get unsubscribeAlready => 'Diese Adresse ist bereits abgemeldet.';
+
+  @override
+  String get unsubscribeInvalid => 'Dieser Abmeldelink ist ungültig.';
+
+  @override
   String get productMedia => 'Bilder & Videos';
 
   @override
