@@ -47,8 +47,9 @@ Two different things are called "language" here:
      inbound mail and records written before a language was removed from the company stay valid
      and editable.
    - Where the company publishes in a set of languages it chose, the code must be one of the
-     company's languages (`languages::require_company_language`): the company default and the
-     languages of a price list zone.
+     company's languages: the company default and the languages of a price list zone (a zone may
+     keep a language the list already publishes in after it was removed from the company, so
+     the list can still be saved).
    - Every language picker in the clients offers the company's languages in their order (plus
      the record's current value when that is no longer configured, so it is not lost).
    - Language detection of inbound mail keeps its own word lists (nl, fr, en, de, es); a text in

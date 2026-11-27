@@ -17,7 +17,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgConnection};
 use tradocraft_core::{
-    audit, is_language, new_id, AppError, AppResult, AppState, CurrentUser, Permission, LANGUAGES,
+    audit, is_language, new_id, AppError, AppResult, AppState, CurrentUser, Permission,
 };
 use utoipa::{IntoParams, ToSchema};
 use utoipa_axum::router::OpenApiRouter;
@@ -466,10 +466,9 @@ impl ContactInput {
         let language = self.language.as_deref().map(str::to_lowercase);
         if let Some(l) = &language {
             if !is_language(l) {
-                return Err(AppError::Validation(format!(
-                    "language must be one of {}",
-                    LANGUAGES.join(", ")
-                )));
+                return Err(AppError::Validation(
+                    "language must be an ISO 639-1 language code".to_string(),
+                ));
             }
         }
         let roles: BTreeSet<String> = self.roles.iter().map(|r| r.trim().to_string()).collect();

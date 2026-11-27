@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sqlx::types::Json;
 use sqlx::{FromRow, PgConnection, PgPool};
-use tradocraft_core::{new_id, today, AppError, AppResult, LANGUAGES};
+use tradocraft_core::{new_id, today, AppError, AppResult};
 use tradocraft_documents::{format_amount, format_number};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -225,9 +225,9 @@ pub async fn update_settings(
 ) -> AppResult<RebateSettings> {
     let mut seen = Vec::new();
     for wording in &input.wording {
-        if !LANGUAGES.contains(&wording.language.as_str()) || seen.contains(&&wording.language) {
+        if !tradocraft_core::is_language(&wording.language) || seen.contains(&&wording.language) {
             return Err(AppError::Validation(
-                "Provide at most one rebate wording per supported language".into(),
+                "Provide at most one rebate wording per language (ISO 639-1 code)".into(),
             ));
         }
         seen.push(&wording.language);

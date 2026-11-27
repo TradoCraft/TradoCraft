@@ -120,3 +120,68 @@ async fn a_company_inserted_directly_has_its_default_language(db: PgPool) {
     .unwrap();
     assert_eq!(langs, ["fr"]);
 }
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn stored_content_takes_any_iso_language(db: PgPool) {
+    let _app = setup(db.clone()).await;
+    // The checks of the database only want two lower-case letters now.
+    let customer: uuid::Uuid = sqlx::query_scalar("SELECT id FROM crm.customers LIMIT 1")
+        .fetch_one(&db)
+        .await
+        .unwrap();
+    sqlx::query("UPDATE crm.customers SET language = 'pt' WHERE id = $1")
+        .bind(customer)
+        .execute(&db)
+        .await
+        .unwrap();
+    let refused = sqlx::query("UPDATE crm.customers SET language = 'PT' WHERE id = $1")
+        .bind(customer)
+        .execute(&db)
+        .await;
+    assert!(refused.is_err());
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn price_list_zones_publish_only_company_languages(db: PgPool) {
+    let app = setup(db).await;
+    let (s, list) = call(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/api/v1/price-lists",
+        Some(json!({ "code": "LANG", "name": "Languages", "valid_from": "2027-01-01" })),
+    )
+    .await;
+    assert!(s.is_success(), "{list}");
+    let zones = format!("/api/v1/price-lists/{}/zones", list["id"].as_str().unwrap());
+    let z1 = "00000000-0000-7000-8000-000000000201";
+    let body = json!([{ "price_zone_id": z1, "languages": ["nl", "pt"] }]);
+    let (s, e) = call(&app, ADMIN, Method::PUT, &zones, Some(body.clone())).await;
+    assert_eq!(s, StatusCode::UNPROCESSABLE_ENTITY, "{e}");
+    assert!(e["message"].as_str().unwrap().contains("\"pt\""), "{e}");
+
+    let (s, _) = call(
+        &app,
+        ADMIN,
+        Method::PUT,
+        "/api/v1/admin/company/languages",
+        Some(json!({ "languages": ["nl", "pt"], "default_language": "nl" })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK);
+    let (s, e) = call(&app, ADMIN, Method::PUT, &zones, Some(body.clone())).await;
+    assert_eq!(s, StatusCode::OK, "{e}");
+
+    // Portuguese leaves the company: the zone that publishes it can still be saved.
+    let (s, _) = call(
+        &app,
+        ADMIN,
+        Method::PUT,
+        "/api/v1/admin/company/languages",
+        Some(json!({ "languages": ["nl"], "default_language": "nl" })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK);
+    let (s, e) = call(&app, ADMIN, Method::PUT, &zones, Some(body)).await;
+    assert_eq!(s, StatusCode::OK, "{e}");
+}

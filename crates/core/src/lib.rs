@@ -42,11 +42,10 @@ pub use blob_store::BlobStore;
 pub use error::{AppError, AppResult};
 pub use state::{AppState, DocumentConfig};
 
-/// Languages used for customer communication.
-pub const LANGUAGES: [&str; 5] = ["nl", "fr", "en", "de", "es"];
-
+/// Whether `code` is a valid language code for stored content: any ISO 639-1 code (ADR 0101).
+/// Which languages a company offers is configuration ([`languages`]), not this check.
 pub fn is_language(code: &str) -> bool {
-    LANGUAGES.contains(&code)
+    language::is_iso_639_1(code)
 }
 
 /// New primary keys are UUIDv7: globally unique (safe to generate offline on

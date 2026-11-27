@@ -1,7 +1,5 @@
 //! Pure helpers: slugs, plain text from Markdown, search words, tag clean-up, language choice.
 
-use tradocraft_core::LANGUAGES;
-
 /// A URL-friendly slug: lower-case ASCII letters and digits separated by single dashes.
 /// Accented letters are reduced to their base letter. Never empty.
 pub fn slugify(title: &str) -> String {
@@ -169,19 +167,16 @@ pub fn any_word_query(text: &str, max_words: usize) -> Option<String> {
     }
 }
 
-/// Index of the text to show: the wanted language, else English, else the first in the usual
-/// language order. The flag tells that it is not the wanted language.
+/// Index of the text to show: the wanted language, else English, else the first one (texts come
+/// in the company's language order, ADR 0101). The flag tells that it is not the wanted language.
 pub fn pick_language(available: &[&str], wanted: &str) -> Option<(usize, bool)> {
-    if let Some(i) = available.iter().position(|l| *l == wanted) {
-        return Some((i, false));
-    }
-    if let Some(i) = available.iter().position(|l| *l == "en") {
-        return Some((i, true));
-    }
-    LANGUAGES
-        .iter()
-        .find_map(|l| available.iter().position(|a| a == l))
-        .map(|i| (i, true))
+    tradocraft_core::languages::pick(
+        available,
+        &[
+            wanted.to_string(),
+            tradocraft_core::languages::SOURCE_LANGUAGE.to_string(),
+        ],
+    )
 }
 
 /// A short plain-text excerpt for a list without a search term.
@@ -257,10 +252,11 @@ mod tests {
     }
 
     #[test]
-    fn language_falls_back_to_english_then_the_usual_order() {
+    fn language_falls_back_to_english_then_the_first() {
         assert_eq!(pick_language(&["nl", "en"], "nl"), Some((0, false)));
         assert_eq!(pick_language(&["nl", "en"], "de"), Some((1, true)));
-        assert_eq!(pick_language(&["de", "fr"], "es"), Some((1, true)));
+        assert_eq!(pick_language(&["de", "fr"], "es"), Some((0, true)));
+        assert_eq!(pick_language(&["pt", "sv"], "sv"), Some((1, false)));
         assert_eq!(pick_language(&[], "nl"), None);
     }
 

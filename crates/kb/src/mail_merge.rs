@@ -19,8 +19,6 @@ use crate::unsubscribe;
 
 type ErrorBody = tradocraft_core::error::ErrorBody;
 
-const LANGUAGES: [&str; 5] = ["en", "nl", "fr", "de", "es"];
-
 #[derive(Deserialize, Serialize, ToSchema)]
 struct MailMergeMessage {
     subject: String,
@@ -119,7 +117,7 @@ async fn save_draft(
 ) -> AppResult<Json<MailMergePreview>> {
     authorize(&user)?;
     for (language, message) in &draft.messages {
-        if !LANGUAGES.contains(&language.as_str())
+        if !tradocraft_core::is_language(language)
             || message.subject.contains(['\r', '\n'])
             || message.subject.len() > 500
             || message.body.len() > 32_000

@@ -176,10 +176,9 @@ async fn production_order_pdf(
     let language = match p.lang.as_deref().map(str::to_lowercase) {
         Some(l) if tradocraft_core::is_language(&l) => Some(l),
         Some(_) => {
-            return Err(AppError::Validation(format!(
-                "lang must be one of {}",
-                tradocraft_core::LANGUAGES.join(", ")
-            )))
+            return Err(AppError::Validation(
+                "lang must be an ISO 639-1 language code".to_string(),
+            ))
         }
         None => None,
     };

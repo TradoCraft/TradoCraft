@@ -11,7 +11,7 @@ use tradocraft_core::{AppError, AppResult};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::model::{CategoryName, LANGUAGE_ORDER};
+use crate::model::{language_order, CategoryName};
 use crate::text::{excerpt, pick_language, plain_text};
 
 /// Marks the start and end of a matched word in a snippet (private-use characters, so they
@@ -117,8 +117,7 @@ WITH eff AS (
       AND ($5::uuid IS NULL OR e.category_id = $5
            OR e.category_id IN (SELECT c.id FROM kb.categories c WHERE c.parent_id = $5 AND c.company_id = $1))
       AND ($6::text IS NULL OR EXISTS (SELECT 1 FROM kb.entry_tags g WHERE g.entry_id = e.id AND g.tag = $6))
-    ORDER BY e.id, (t.language::text = $4) DESC, (t.language::text = 'en') DESC,
-             array_position(ARRAY['nl','fr','en','de','es'], t.language::text)
+    ORDER BY e.id, core.language_rank($1, $4, t.language::text), t.language
 ), ranked AS (
     SELECT eff.*, CASE WHEN $7::text IS NULL THEN NULL
                        ELSE ts_rank_cd(eff.search, kb.query(eff.language, $7, $8)) END AS rank
@@ -272,7 +271,9 @@ async fn titles(
 ) -> AppResult<HashMap<Uuid, String>> {
     let rows: Vec<(Uuid, String)> = sqlx::query_as(
         "SELECT DISTINCT ON (entry_id) entry_id, title FROM kb.entry_texts WHERE entry_id = ANY($1)
-         ORDER BY entry_id, (language::text = $2) DESC, (language::text = 'en') DESC, array_position(ARRAY['nl','fr','en','de','es'], language::text)",
+         ORDER BY entry_id,
+                  core.language_rank((SELECT e.company_id FROM kb.entries e WHERE e.id = entry_id), $2, language::text),
+                  language",
     )
     .bind(ids)
     .bind(language)
@@ -475,7 +476,8 @@ pub async fn names_of(
     }
     let rows: Vec<N> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "SELECT category_id, language::text AS language, name FROM kb.category_names
-         WHERE category_id = ANY($1) ORDER BY category_id, {LANGUAGE_ORDER}"
+         WHERE category_id = ANY($1) ORDER BY category_id, {}",
+        language_order("(SELECT c.company_id FROM kb.categories c WHERE c.id = category_id)")
     )))
     .bind(ids)
     .fetch_all(conn)

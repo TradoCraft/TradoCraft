@@ -677,16 +677,16 @@ async fn validate(
     check_list("priorities", &c.priorities, &PRIORITIES)?;
     check_list("categories", &c.categories, &CATEGORIES)?;
     check_list("statuses", &c.statuses, &STATUSES)?;
-    check_list(
-        "customer_languages",
-        &c.customer_languages,
-        &tradocraft_core::LANGUAGES,
-    )?;
-    check_list(
-        "ticket_languages",
-        &c.ticket_languages,
-        &tradocraft_core::LANGUAGES,
-    )?;
+    for (field, values) in [
+        ("customer_languages", &c.customer_languages),
+        ("ticket_languages", &c.ticket_languages),
+    ] {
+        if let Some(bad) = values.iter().find(|l| !tradocraft_core::is_language(l)) {
+            return Err(AppError::Validation(format!(
+                "{field}: {bad:?} is not an ISO 639-1 language code"
+            )));
+        }
+    }
     check_list("channels", &c.channels, &CHANNELS)?;
     if c.owner
         .as_deref()

@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgConnection};
 use tradocraft_core::files::FileInfo;
-use tradocraft_core::{is_language, AppError, AppResult, LANGUAGES};
+use tradocraft_core::{is_language, AppError, AppResult};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -27,8 +27,11 @@ pub const MAX_TAGS: usize = 20;
 pub const MAX_RELATED: usize = 20;
 pub const MAX_IMAGES: i64 = 30;
 
-/// SQL fragment that orders language columns the usual way.
-pub const LANGUAGE_ORDER: &str = "array_position(ARRAY['nl','fr','en','de','es'], language::text)";
+/// SQL fragment that orders a `language` column in the configured order of the company given by
+/// the SQL expression `company` (ADR 0101).
+pub fn language_order(company: &str) -> String {
+    format!("core.language_order({company}, language::text), language")
+}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, FromRow, ToSchema)]
 pub struct EntryText {
@@ -105,10 +108,9 @@ pub fn check_languages<'a>(langs: impl Iterator<Item = &'a str>) -> AppResult<()
     let mut seen: Vec<&str> = Vec::new();
     for l in langs {
         if !is_language(l) {
-            return Err(AppError::Validation(format!(
-                "language must be one of {}",
-                LANGUAGES.join(", ")
-            )));
+            return Err(AppError::Validation(
+                "language must be an ISO 639-1 language code".to_string(),
+            ));
         }
         if seen.contains(&l) {
             return Err(AppError::Validation(format!("language {l} appears twice")));
@@ -254,7 +256,8 @@ struct EntryRow {
 pub async fn texts_of(conn: &mut PgConnection, entry_id: Uuid) -> AppResult<Vec<EntryText>> {
     Ok(sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "SELECT language::text AS language, title, summary, body FROM kb.entry_texts
-         WHERE entry_id = $1 ORDER BY {LANGUAGE_ORDER}"
+         WHERE entry_id = $1 ORDER BY {}",
+        language_order("(SELECT e.company_id FROM kb.entries e WHERE e.id = entry_id)")
     )))
     .bind(entry_id)
     .fetch_all(conn)

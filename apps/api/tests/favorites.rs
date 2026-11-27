@@ -319,7 +319,7 @@ async fn validation_and_limits(db: PgPool) {
     ));
     cases.push((
         "bad language",
-        with(&|p| p["items"][0]["remarks"] = json!([{ "language": "it", "text": "x" }])),
+        with(&|p| p["items"][0]["remarks"] = json!([{ "language": "xx", "text": "x" }])),
     ));
     cases.push((
         "duplicate language",
@@ -570,7 +570,7 @@ async fn remarks_endpoint_is_add_only_by_default(db: PgPool) {
         &app,
         SALES,
         Method::PUT,
-        &uri("it"),
+        &uri("xx"),
         Some(json!({ "text": "x" })),
     )
     .await;
@@ -811,7 +811,7 @@ async fn line_fields_are_validated(db: PgPool) {
         assert_eq!(status, bad);
     }
     let (status, e) = send(&app, SALES, Method::POST, "/quotations", Some(json!({ "customer_id": ALPHA, "lines": [
-        { "product_id": UNIT, "quantity": "1", "customer_remark": "x", "customer_remark_language": "it" }] }))).await;
+        { "product_id": UNIT, "quantity": "1", "customer_remark": "x", "customer_remark_language": "xx" }] }))).await;
     assert_eq!(status, bad, "{e}");
 }
 

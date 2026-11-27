@@ -19,7 +19,7 @@ use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use session::{new_token, PortalUser, LINK_PREFIX, SESSION_PREFIX};
 use tradocraft_core::files::FileInfo;
-use tradocraft_core::{audit, is_language, new_id, AppError, AppResult, AppState, LANGUAGES};
+use tradocraft_core::{audit, is_language, new_id, AppError, AppResult, AppState};
 use tradocraft_crm::contacts::{self, Contact, ADDRESS_FORMS, TITLES};
 use tradocraft_helpdesk::portal::{self, PortalTicket, PortalTicketDetail};
 use tradocraft_kb::public::{BrowseParams, LanguageParams, SuggestQuery};
@@ -300,10 +300,9 @@ async fn update_me(
 ) -> AppResult<Json<PortalProfile>> {
     let language = input.language.as_deref().map(str::to_lowercase);
     if language.as_deref().is_some_and(|l| !is_language(l)) {
-        return Err(AppError::Validation(format!(
-            "language must be one of {}",
-            LANGUAGES.join(", ")
-        )));
+        return Err(AppError::Validation(
+            "language must be an ISO 639-1 language code".to_string(),
+        ));
     }
     if !ADDRESS_FORMS.contains(&input.address_form.as_str()) {
         return Err(AppError::Validation(format!(
