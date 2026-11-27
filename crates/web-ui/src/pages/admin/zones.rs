@@ -9,7 +9,7 @@ use rust_decimal::Decimal;
 use tradocraft_api_client::price_zones::{PriceZone, PriceZoneInput};
 use uuid::Uuid;
 
-use super::{spawn_api, Feedback, FeedbackView};
+use super::{bump, is_current, spawn_api, Feedback, FeedbackView};
 use crate::pages::set_alive;
 use crate::state::AppContext;
 
@@ -125,18 +125,26 @@ pub fn ZonesSection() -> impl IntoView {
     let saving = RwSignal::new(false);
     let confirm_delete = RwSignal::new(Option::<Uuid>::None);
 
+    // Only the newest list request may fill the list; set_alive only covers the page being left.
+    let list_seq = StoredValue::new(0_u64);
     Effect::new(move |_| {
         let _ = reload.get();
         load_error.set(None);
+        let gen = bump(list_seq);
         spawn_api(
             ctx,
             |c| async move { c.list_price_zones().await },
-            move |res| match res {
-                Ok(list) => {
-                    set_alive(zones, Some(list));
+            move |res| {
+                if !is_current(list_seq, gen) {
+                    return;
                 }
-                Err(err) => {
-                    set_alive(load_error, Some(err.user_message()));
+                match res {
+                    Ok(list) => {
+                        set_alive(zones, Some(list));
+                    }
+                    Err(err) => {
+                        set_alive(load_error, Some(err.user_message()));
+                    }
                 }
             },
         );
@@ -232,45 +240,48 @@ pub fn ZonesSection() -> impl IntoView {
                     <h3 id="admin-zone-editor-title" style="margin-top: 0;">
                         {move || if editor.get() == Some(Editor::New) { "New price zone" } else { "Edit price zone" }}
                     </h3>
-                    <div class="tc-form-grid">
-                        <div class="tc-field">
-                            <label class="tc-label" for="admin-zone-code">"Code"</label>
-                            <input id="admin-zone-code" data-target="admin-zone-code" class="tc-input" type="text"
-                                prop:value=move || draft.with(|d| d.code.clone())
-                                on:input=move |ev| draft.update(|d| d.code = event_target_value(&ev)) />
+                    // Disabled while saving, so no edit is made after the request was sent and then lost.
+                    <fieldset style="border: none; padding: 0; margin: 0; min-width: 0;" disabled=move || saving.get()>
+                        <div class="tc-form-grid">
+                            <div class="tc-field">
+                                <label class="tc-label" for="admin-zone-code">"Code"</label>
+                                <input id="admin-zone-code" data-target="admin-zone-code" class="tc-input" type="text"
+                                    prop:value=move || draft.with(|d| d.code.clone())
+                                    on:input=move |ev| draft.update(|d| d.code = event_target_value(&ev)) />
+                            </div>
+                            <div class="tc-field">
+                                <label class="tc-label" for="admin-zone-name">"Name"</label>
+                                <input id="admin-zone-name" data-target="admin-zone-name" class="tc-input" type="text"
+                                    prop:value=move || draft.with(|d| d.name.clone())
+                                    on:input=move |ev| draft.update(|d| d.name = event_target_value(&ev)) />
+                            </div>
+                            <div class="tc-field">
+                                <label class="tc-label" for="admin-zone-sort">"Sort order"</label>
+                                <input id="admin-zone-sort" data-target="admin-zone-sort" class="tc-input" type="text" inputmode="numeric"
+                                    prop:value=move || draft.with(|d| d.sort.clone())
+                                    on:input=move |ev| draft.update(|d| d.sort = event_target_value(&ev)) />
+                            </div>
+                            <div class="tc-field">
+                                <label class="tc-label" for="admin-zone-multiplier">"Default multiplier"</label>
+                                <input id="admin-zone-multiplier" data-target="admin-zone-multiplier" class="tc-input" type="text" inputmode="decimal"
+                                    aria-describedby="admin-zone-multiplier-help"
+                                    prop:value=move || draft.with(|d| d.multiplier.clone())
+                                    on:input=move |ev| draft.update(|d| d.multiplier = event_target_value(&ev)) />
+                                <span id="admin-zone-multiplier-help" class="tc-label">"Relative to the first zone (e.g. 1.15 = +15%)"</span>
+                            </div>
+                            <div class="tc-field">
+                                <label class="tc-label" for="admin-zone-rounding">"Rounding"</label>
+                                <select id="admin-zone-rounding" data-target="admin-zone-rounding" class="tc-select"
+                                    on:change=move |ev| draft.update(|d| d.rounding = event_target_value(&ev))>
+                                    {ROUNDING_OPTIONS.into_iter().map(|r| view! {
+                                        <option value=r selected=move || draft.with(|d| d.rounding == r)>
+                                            {if r == "none" { "None" } else { r }}
+                                        </option>
+                                    }).collect_view()}
+                                </select>
+                            </div>
                         </div>
-                        <div class="tc-field">
-                            <label class="tc-label" for="admin-zone-name">"Name"</label>
-                            <input id="admin-zone-name" data-target="admin-zone-name" class="tc-input" type="text"
-                                prop:value=move || draft.with(|d| d.name.clone())
-                                on:input=move |ev| draft.update(|d| d.name = event_target_value(&ev)) />
-                        </div>
-                        <div class="tc-field">
-                            <label class="tc-label" for="admin-zone-sort">"Sort order"</label>
-                            <input id="admin-zone-sort" data-target="admin-zone-sort" class="tc-input" type="text" inputmode="numeric"
-                                prop:value=move || draft.with(|d| d.sort.clone())
-                                on:input=move |ev| draft.update(|d| d.sort = event_target_value(&ev)) />
-                        </div>
-                        <div class="tc-field">
-                            <label class="tc-label" for="admin-zone-multiplier">"Default multiplier"</label>
-                            <input id="admin-zone-multiplier" data-target="admin-zone-multiplier" class="tc-input" type="text" inputmode="decimal"
-                                aria-describedby="admin-zone-multiplier-help"
-                                prop:value=move || draft.with(|d| d.multiplier.clone())
-                                on:input=move |ev| draft.update(|d| d.multiplier = event_target_value(&ev)) />
-                            <span id="admin-zone-multiplier-help" class="tc-label">"Relative to the first zone (e.g. 1.15 = +15%)"</span>
-                        </div>
-                        <div class="tc-field">
-                            <label class="tc-label" for="admin-zone-rounding">"Rounding"</label>
-                            <select id="admin-zone-rounding" data-target="admin-zone-rounding" class="tc-select"
-                                on:change=move |ev| draft.update(|d| d.rounding = event_target_value(&ev))>
-                                {ROUNDING_OPTIONS.into_iter().map(|r| view! {
-                                    <option value=r selected=move || draft.with(|d| d.rounding == r)>
-                                        {if r == "none" { "None" } else { r }}
-                                    </option>
-                                }).collect_view()}
-                            </select>
-                        </div>
-                    </div>
+                    </fieldset>
                     {move || editor_error.get().map(|msg| view! {
                         <div class="tc-alert-error" style="margin-top: var(--space-md);" role="alert" data-target="admin-zone-editor-error">{msg}</div>
                     })}
