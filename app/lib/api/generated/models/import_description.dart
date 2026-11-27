@@ -17,6 +17,7 @@ class ImportDescription {
     required this.fileStem,
     required this.key,
     required this.keyColumn,
+    required this.keyColumns,
   });
   
   factory ImportDescription.fromJson(Map<String, Object?> json) => _$ImportDescriptionFromJson(json);
@@ -33,9 +34,13 @@ class ImportDescription {
   /// Stable key of the entity (`customers`, `products`).
   final String key;
 
-  /// The column that identifies a record; upserts match on it.
+  /// The first (for most entities the only) column of the key; upserts match on the key.
   @JsonKey(name: 'key_column')
   final String keyColumn;
+
+  /// The columns that together identify a record, e.g. `product_code`, `zone`, `valid_from`.
+  @JsonKey(name: 'key_columns')
+  final List<String> keyColumns;
 
   Map<String, Object?> toJson() => _$ImportDescriptionToJson(this);
 }

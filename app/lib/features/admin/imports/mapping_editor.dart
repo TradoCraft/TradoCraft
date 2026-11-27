@@ -6,6 +6,7 @@ import '../../../l10n/l10n.dart';
 import '../../../shared/actions.dart';
 import '../../../shared/app_icons.dart';
 import 'import_wizard.dart';
+import 'mapping_logic.dart';
 
 /// Step 3: one row per file column with the field it fills, saved mappings and the rules that
 /// block continuing (the key column must be mapped, a field only once).
@@ -66,6 +67,16 @@ class MappingEditor extends ConsumerWidget {
     final preview = s.preview!;
     final check = s.check!;
     final scheme = Theme.of(context).colorScheme;
+    final keys = keyColumns(entity);
+    final required = {
+      for (final c in entity.columns)
+        if (c.requiredValue) c.name,
+    };
+    // The plain columns, and of a per-language family the member this file column names.
+    List<String> fieldOptions(int i) => [
+      for (final c in entity.columns)
+        if (!c.perLanguage) c.name else ?familyField(c, preview.columns[i]),
+    ];
     Widget dropdown(int i) {
       final field = s.fields[i];
       final dup = field != null && check.duplicates.contains(field);
@@ -87,14 +98,14 @@ class MappingEditor extends ConsumerWidget {
               style: TextStyle(color: scheme.onSurfaceVariant),
             ),
           ),
-          for (final c in entity.columns)
+          for (final name in fieldOptions(i))
             DropdownMenuItem(
-              value: c.name,
+              value: name,
               child: Text(
                 [
-                  c.name,
-                  if (c.name == entity.keyColumn) '(${l.impKeyBadge})',
-                  if (c.requiredValue) '*',
+                  name,
+                  if (keys.contains(name)) '(${l.impKeyBadge})',
+                  if (required.contains(name)) '*',
                 ].join(' '),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -204,11 +215,14 @@ class MappingEditor extends ConsumerWidget {
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: 8),
+        const SizedBox(height: 8),
+        _FixedValues(entity: entity, fixed: s.fixed),
+        const SizedBox(height: 8),
         if (check.keyMissing)
           _Note(
             icon: AppIcons.error,
             color: scheme.error,
-            text: l.impKeyMissing(entity.keyColumn),
+            text: l.impKeyMissing(keys.join(', ')),
           ),
         for (final f in check.duplicates)
           _Note(
@@ -234,6 +248,133 @@ class MappingEditor extends ConsumerWidget {
             color: scheme.onSurfaceVariant,
             text: l.impUnmapped(check.unmapped.join(', ')),
           ),
+      ],
+    );
+  }
+}
+
+/// Fields that get one value in every row instead of a file column (ADR 0100).
+class _FixedValues extends ConsumerWidget {
+  const _FixedValues({required this.entity, required this.fixed});
+  final ImportDescription entity;
+  final Map<String, String> fixed;
+
+  Future<void> _add(BuildContext context, WidgetRef ref) async {
+    final result = await showDialog<(String, String)>(
+      context: context,
+      builder: (_) => _FixedValueDialog(
+        fields: [
+          for (final c in fixableColumns(entity))
+            if (!fixed.containsKey(c.name)) c.name,
+        ],
+      ),
+    );
+    if (result == null) return;
+    ref.read(importWizardProvider.notifier).setFixed(result.$1, result.$2);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l.impFixedValues, style: theme.textTheme.titleSmall),
+        Text(
+          l.impFixedHelp,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        for (final e in fixed.entries)
+          ListTile(
+            key: ValueKey('imp-fixed-${e.key}'),
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            title: Text(e.key),
+            subtitle: Text(e.value, overflow: TextOverflow.ellipsis),
+            trailing: IconButton(
+              key: ValueKey('imp-fixed-remove-${e.key}'),
+              tooltip: l.impRemoveFixed(e.key),
+              icon: const Icon(AppIcons.delete),
+              onPressed: () =>
+                  ref.read(importWizardProvider.notifier).removeFixed(e.key),
+            ),
+          ),
+        const SizedBox(height: 4),
+        OutlinedButton.icon(
+          key: const ValueKey('imp-add-fixed'),
+          onPressed: () => _add(context, ref),
+          icon: const Icon(AppIcons.add),
+          label: Text(l.impAddFixed),
+        ),
+      ],
+    );
+  }
+}
+
+/// Asks for a field and the value it gets in every row.
+class _FixedValueDialog extends StatefulWidget {
+  const _FixedValueDialog({required this.fields});
+  final List<String> fields;
+
+  @override
+  State<_FixedValueDialog> createState() => _FixedValueDialogState();
+}
+
+class _FixedValueDialogState extends State<_FixedValueDialog> {
+  late String? _field = widget.fields.firstOrNull;
+  final _value = TextEditingController();
+
+  @override
+  void dispose() {
+    _value.dispose();
+    super.dispose();
+  }
+
+  bool get _ok => _field != null && _value.text.trim().isNotEmpty;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    return AlertDialog(
+      title: Text(l.impAddFixed),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          DropdownButtonFormField<String>(
+            key: const ValueKey('imp-fixed-field'),
+            isExpanded: true,
+            initialValue: _field,
+            decoration: InputDecoration(labelText: l.impColField),
+            items: [
+              for (final f in widget.fields)
+                DropdownMenuItem(value: f, child: Text(f)),
+            ],
+            onChanged: (v) => setState(() => _field = v),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            key: const ValueKey('imp-fixed-value'),
+            controller: _value,
+            decoration: InputDecoration(labelText: l.impFixedValue),
+            onChanged: (_) => setState(() {}),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l.cancel),
+        ),
+        FilledButton(
+          key: const ValueKey('imp-fixed-ok'),
+          onPressed: _ok
+              ? () => Navigator.pop(context, (_field!, _value.text))
+              : null,
+          child: Text(l.save),
+        ),
       ],
     );
   }

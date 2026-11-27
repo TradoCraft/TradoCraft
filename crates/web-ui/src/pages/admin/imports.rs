@@ -8,8 +8,8 @@ use std::time::Duration;
 use leptos::ev::SubmitEvent;
 use leptos::prelude::*;
 use tradocraft_api_client::imports::{
-    ColumnPair, CreateJob, ImportDescription, ImportFile, ImportJob, ImportMapping, ImportPreview,
-    ListImportJobsParams, MappingInput,
+    ColumnPair, CreateJob, ImportColumn, ImportDescription, ImportFile, ImportJob, ImportMapping,
+    ImportPreview, ListImportJobsParams, MappingInput,
 };
 use uuid::Uuid;
 
@@ -48,10 +48,11 @@ pub(crate) fn best_saved_mapping<'a>(
     let mut best: Option<&ImportMapping> = None;
     for m in saved {
         if m.columns.is_empty()
-            || !m
-                .columns
-                .iter()
-                .all(|p| present.contains(&normalize_name(&p.column)))
+            || !m.columns.iter().all(|p| {
+                p.column
+                    .as_deref()
+                    .is_none_or(|c| present.contains(&normalize_name(c)))
+            })
         {
             continue;
         }
@@ -60,6 +61,25 @@ pub(crate) fn best_saved_mapping<'a>(
         }
     }
     best
+}
+
+/// The field of a per-language family (`name` for `name_fr`) that the file column `header` names:
+/// the prefix, `_` and a two-letter code (the server checks the code against ISO 639-1).
+pub(crate) fn family_field(column: &ImportColumn, header: &str) -> Option<String> {
+    if !column.per_language {
+        return None;
+    }
+    let h = normalize_name(header);
+    let code = h.strip_prefix(&column.name)?.strip_prefix('_')?;
+    (code.len() == 2 && code.chars().all(|c| c.is_ascii_lowercase())).then_some(h)
+}
+
+/// Whether `field` is a field of the entity: a column name or a member of a family.
+fn is_field(entity: &ImportDescription, field: &str) -> bool {
+    entity
+        .columns
+        .iter()
+        .any(|c| c.name == field || family_field(c, field).is_some())
 }
 
 /// File columns paired with the field of the same name; a repeated header name is paired once.
@@ -74,8 +94,9 @@ pub(crate) fn same_name_fields(
             let field = entity
                 .columns
                 .iter()
-                .find(|c| normalize_name(&c.name) == normalize_name(h))
-                .map(|c| c.name.clone())?;
+                .find(|c| !c.per_language && normalize_name(&c.name) == normalize_name(h))
+                .map(|c| c.name.clone())
+                .or_else(|| entity.columns.iter().find_map(|c| family_field(c, h)))?;
             if used.contains(&field) {
                 return None;
             }
@@ -94,8 +115,11 @@ pub(crate) fn fields_from_mapping(
 ) -> Vec<Option<String>> {
     let mut by_column: Vec<(String, String)> = Vec::new();
     for p in &m.columns {
-        if entity.columns.iter().any(|c| c.name == p.field) {
-            let key = normalize_name(&p.column);
+        let Some(column) = p.column.as_deref() else {
+            continue; // a fixed value: not shown on this screen
+        };
+        if is_field(entity, &p.field) {
+            let key = normalize_name(column);
             if !by_column.iter().any(|(k, _)| *k == key) {
                 by_column.push((key, p.field.clone()));
             }
@@ -164,12 +188,19 @@ pub(crate) fn check_mapping(fields: &[Option<String>], entity: &ImportDescriptio
         }
     }
     MappingCheck {
-        key_missing: !seen.contains(&entity.key_column.as_str()),
+        key_missing: if entity.key_columns.is_empty() {
+            !seen.contains(&entity.key_column.as_str())
+        } else {
+            entity
+                .key_columns
+                .iter()
+                .any(|k| !seen.contains(&k.as_str()))
+        },
         duplicates: dup,
         unmapped: entity
             .columns
             .iter()
-            .filter(|c| !seen.contains(&c.name.as_str()))
+            .filter(|c| !c.per_language && !seen.contains(&c.name.as_str()))
             .map(|c| c.name.clone())
             .collect(),
         unmapped_required: entity
@@ -199,12 +230,7 @@ pub(crate) fn columns_to_send(
         header
             .iter()
             .zip(fields)
-            .filter_map(|(h, f)| {
-                f.as_ref().map(|f| ColumnPair {
-                    column: h.clone(),
-                    field: f.clone(),
-                })
-            })
+            .filter_map(|(h, f)| f.as_ref().map(|f| ColumnPair::column(h.clone(), f.clone())))
             .collect(),
     )
 }
@@ -218,7 +244,7 @@ pub(crate) fn run_signature(
 ) -> String {
     let cols = columns.map(|c| {
         c.iter()
-            .map(|p| vec![p.column.clone(), p.field.clone()])
+            .map(|p| vec![p.column.clone(), p.value.clone(), Some(p.field.clone())])
             .collect::<Vec<_>>()
     });
     serde_json::json!([file_id, entity, sheet, cols]).to_string()
@@ -714,12 +740,7 @@ impl Wizard {
             header
                 .iter()
                 .zip(f)
-                .filter_map(|(h, f)| {
-                    f.as_ref().map(|f| ColumnPair {
-                        column: h.clone(),
-                        field: f.clone(),
-                    })
-                })
+                .filter_map(|(h, f)| f.as_ref().map(|f| ColumnPair::column(h.clone(), f.clone())))
                 .collect::<Vec<_>>()
         });
         let body = MappingInput {
@@ -1339,7 +1360,20 @@ fn MappingStep(w: Wizard) -> impl IntoView {
                         .find(|v| !v.trim().is_empty())
                         .cloned();
                     let select_id = format!("admin-import-field-{i}");
-                    let options = entity.columns.clone();
+                    // A per-language family is offered as the member the file column names.
+                    let options: Vec<ImportColumn> = entity
+                        .columns
+                        .iter()
+                        .filter_map(|c| {
+                            if !c.per_language {
+                                return Some(c.clone());
+                            }
+                            family_field(c, col).map(|name| ImportColumn {
+                                name,
+                                ..c.clone()
+                            })
+                        })
+                        .collect();
                     let key_column = entity.key_column.clone();
                     let dup = move || {
                         let f = w.fields.with(|f| f.get(i).cloned().flatten());
@@ -1925,11 +1959,13 @@ mod tests {
             name: name.into(),
             kind: ColumnKind::Text,
             required,
+            per_language: false,
         };
         ImportDescription {
             key: "customers".into(),
             audit_entity: "customer".into(),
             key_column: "code".into(),
+            key_columns: vec!["code".into()],
             file_stem: "customers".into(),
             columns: vec![col("code", true), col("name", true), col("city", false)],
         }
@@ -1942,10 +1978,7 @@ mod tests {
             name: name.into(),
             columns: pairs
                 .iter()
-                .map(|(c, f)| ColumnPair {
-                    column: c.to_string(),
-                    field: f.to_string(),
-                })
+                .map(|(c, f)| ColumnPair::column(c.to_string(), f.to_string()))
                 .collect(),
             created_at: DateTime::UNIX_EPOCH,
             updated_at: DateTime::UNIX_EPOCH,
@@ -2009,7 +2042,7 @@ mod tests {
         assert_eq!(columns_to_send(&h, &[some("code"), some("name")]), None);
         let pairs = columns_to_send(&header(&["Klantnr", "x"]), &[some("code"), None]).unwrap();
         assert_eq!(pairs.len(), 1);
-        assert_eq!(pairs[0].column, "Klantnr");
+        assert_eq!(pairs[0].column.as_deref(), Some("Klantnr"));
         // Ignoring a column is not the identity either.
         assert!(columns_to_send(&h, &[some("code"), None]).is_some());
     }
@@ -2020,10 +2053,7 @@ mod tests {
         let a = run_signature(id, "customers", None, None);
         assert_ne!(a, run_signature(id, "products", None, None));
         assert_ne!(a, run_signature(id, "customers", Some("Sheet1"), None));
-        let pairs = [ColumnPair {
-            column: "A".into(),
-            field: "code".into(),
-        }];
+        let pairs = [ColumnPair::column("A", "code")];
         assert_ne!(a, run_signature(id, "customers", None, Some(&pairs)));
         assert_eq!(a, run_signature(id, "customers", None, None));
     }
@@ -2069,5 +2099,37 @@ mod tests {
         j.status = "queued".into();
         assert!(j.is_active());
         assert_eq!(job_status_label(&j), "Queued");
+    }
+
+    #[test]
+    fn a_per_language_family_takes_the_member_the_file_names() {
+        let mut e = entity();
+        e.columns.push(ImportColumn {
+            name: "name".into(),
+            kind: ColumnKind::Text,
+            required: false,
+            per_language: true,
+        });
+        let family = e.columns.last().unwrap().clone();
+        assert_eq!(family_field(&family, " Name_FR "), Some("name_fr".into()));
+        assert_eq!(family_field(&family, "name"), None);
+        assert_eq!(family_field(&family, "name_fra"), None);
+        let header = [
+            "code".to_string(),
+            "name_it".to_string(),
+            "name".to_string(),
+        ];
+        assert_eq!(
+            same_name_fields(&header, &e),
+            [
+                Some("code".into()),
+                Some("name_it".into()),
+                Some("name".into())
+            ]
+        );
+        let check = check_mapping(&[Some("code".into())], &e);
+        assert!(!check.key_missing);
+        // The family is never "unmapped": a file has any number of its members.
+        assert_eq!(check.unmapped, ["name", "city"]);
     }
 }

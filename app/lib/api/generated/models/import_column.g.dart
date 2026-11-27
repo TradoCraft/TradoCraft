@@ -9,6 +9,7 @@ part of 'import_column.dart';
 ImportColumn _$ImportColumnFromJson(Map<String, dynamic> json) => ImportColumn(
   kind: ColumnKind.fromJson(json['kind'] as String),
   name: json['name'] as String,
+  perLanguage: json['per_language'] as bool,
   requiredValue: json['required'] as bool,
 );
 
@@ -16,5 +17,6 @@ Map<String, dynamic> _$ImportColumnToJson(ImportColumn instance) =>
     <String, dynamic>{
       'kind': instance.kind,
       'name': instance.name,
+      'per_language': instance.perLanguage,
       'required': instance.requiredValue,
     };

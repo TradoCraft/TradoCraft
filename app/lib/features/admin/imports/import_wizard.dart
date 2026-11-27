@@ -62,6 +62,7 @@ class WizardState {
     this.savedLoading = false,
     this.savedError,
     this.fields = const [],
+    this.fixed = const {},
     this.proposedFrom,
     this.dry = const RunState(),
     this.apply = const RunState(),
@@ -84,6 +85,9 @@ class WizardState {
   /// The field chosen for each file column (null = ignore), in header order.
   final List<String?> fields;
 
+  /// Fields that get a fixed value in every row instead of a file column: field -> value.
+  final Map<String, String> fixed;
+
   /// Name of the saved mapping the columns were taken from; null when paired by name.
   final String? proposedFrom;
   final RunState dry;
@@ -98,12 +102,13 @@ class WizardState {
       preview != null &&
       fields.length == preview!.columns.length;
 
-  MappingCheck? get check => mappable ? checkMapping(fields, entity!) : null;
+  MappingCheck? get check =>
+      mappable ? checkMapping(fields, entity!, fixed: fixed) : null;
 
   bool get mappingOk => mappable && !check!.blocked;
 
   List<ColumnPair>? get columns =>
-      mappable ? columnsToSend(header, fields) : null;
+      mappable ? columnsToSend(header, fields, fixed: fixed) : null;
 
   /// What a run started now would be for.
   String? get signature => mappable
@@ -138,6 +143,7 @@ class WizardState {
     bool? savedLoading,
     Object? savedError = _keep,
     List<String?>? fields,
+    Map<String, String>? fixed,
     Object? proposedFrom = _keep,
     RunState? dry,
     RunState? apply,
@@ -160,6 +166,7 @@ class WizardState {
     savedLoading: savedLoading ?? this.savedLoading,
     savedError: identical(savedError, _keep) ? this.savedError : savedError,
     fields: fields ?? this.fields,
+    fixed: fixed ?? this.fixed,
     proposedFrom: identical(proposedFrom, _keep)
         ? this.proposedFrom
         : proposedFrom as String?,
@@ -287,6 +294,7 @@ class ImportWizard extends Notifier<WizardState> {
       saved: const [],
       savedError: null,
       fields: const [],
+      fixed: const {},
       proposedFrom: null,
       dry: const RunState(),
       apply: const RunState(),
@@ -370,9 +378,11 @@ class ImportWizard extends Notifier<WizardState> {
       saved: state.saved,
     );
     _proposedFields = proposal.fields;
+    final from = proposal.from;
     state = state.copyWith(
       fields: proposal.fields,
-      proposedFrom: proposal.from?.name,
+      fixed: from == null ? const {} : fixedFromMapping(e, from),
+      proposedFrom: from?.name,
     );
   }
 
@@ -383,6 +393,7 @@ class ImportWizard extends Notifier<WizardState> {
     if (e == null || p == null) return;
     state = state.copyWith(
       fields: fieldsFromMapping(p.columns, e, m),
+      fixed: fixedFromMapping(e, m),
       proposedFrom: m.name,
     );
   }
@@ -393,6 +404,21 @@ class ImportWizard extends Notifier<WizardState> {
     state = state.copyWith(fields: f, proposedFrom: null);
   }
 
+  /// Gives [field] the fixed [value] in every row (replacing an earlier one).
+  void setFixed(String field, String value) {
+    state = state.copyWith(
+      fixed: {...state.fixed, field: value},
+      proposedFrom: null,
+    );
+  }
+
+  void removeFixed(String field) {
+    state = state.copyWith(
+      fixed: {...state.fixed}..remove(field),
+      proposedFrom: null,
+    );
+  }
+
   /// Saves the current pairs under [name] (an existing mapping with that name is replaced).
   Future<void> saveMapping(String name) async {
     final e = state.entity!;
@@ -400,6 +426,8 @@ class ImportWizard extends Notifier<WizardState> {
       for (var i = 0; i < state.header.length; i++)
         if (state.fields[i] != null)
           ColumnPair(column: state.header[i], field: state.fields[i]!),
+      for (final e in state.fixed.entries)
+        ColumnPair(value: e.value, field: e.key),
     ];
     await _api.saveImportMapping(
       body: MappingInput(columns: pairs, entity: e.key, name: name),
