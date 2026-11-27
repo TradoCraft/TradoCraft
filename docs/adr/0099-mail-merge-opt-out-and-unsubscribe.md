@@ -24,7 +24,10 @@ customers are mailed until they object, and every mailing must let them object w
    normalised, the row gets the problem `opted_out` when the address is on the company's register.
    Rows with problems are not sent, and confirming already rebuilds the preview and refuses (409)
    when the eligible recipients differ from the approved ones, so an opt-out recorded between
-   review and confirmation stops the mailing until it is reviewed again.
+   review and confirmation stops the mailing until it is reviewed again. Opt-out writes (staff and
+   link) and confirmation take the same per-company transaction advisory lock, and confirmation
+   re-reads the register after taking it, so an opt-out that commits while a mailing is being
+   confirmed is either seen (409) or waits for the mailing to be queued.
 3. **An unsubscribe link in every mail.** Confirming needs a non-empty `core.companies.portal_url`
    and is otherwise refused (422) with a message to set the portal address. Each delivery gets a
    random 256-bit token (prefix `tcu_`) of which only the SHA-256 hash is stored, in
@@ -56,7 +59,15 @@ customers are mailed until they object, and every mailing must let them object w
    reads the token from the address fragment, writes in the language of the mailing and shows the
    company and masked address, an unsubscribe button and then a confirmation, or that the address
    is already unsubscribed or the link is not valid.
-7. **Clones.** The anonymise script replaces the addresses on the register with synthetic ones.
+7. **Mail already queued is stopped.** Recording an opt-out (staff or link) marks the company's
+   mailings to that address that are still `queued` in `core.mail_outbox` as `failed`, with the
+   delivery error "not sent: the recipient unsubscribed from mailings", in the same transaction.
+   Rows the outbox worker is sending at that moment (row-locked) are skipped. The rows stay in the
+   outbox and in the mailing history; the audit event records how many were stopped. Other system
+   mail is not touched.
+8. **Clones.** The anonymise script maps each opted-out address to the anonymised addresses of the
+   customers and contacts that used it, so those stay opted out; an address without a match gets
+   a hashed placeholder. Unsubscribe token hashes are cleared.
 
 **Consequences.**
 

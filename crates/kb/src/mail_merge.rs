@@ -433,6 +433,9 @@ async fn confirm(
             "the preview has no eligible recipients".into(),
         ));
     }
+    // Opt-outs recorded from here on wait for this confirmation; the preview below re-reads the
+    // register, so an approved recipient who opted out since the review is refused (409).
+    unsubscribe::lock_register(&mut tx, user.company_id).await?;
     let current = build_preview(&mut tx, &user, Some(draft)).await?;
     let recipient_key = |row: &MailMergeRecipient| {
         (
@@ -570,6 +573,7 @@ async fn add_opt_out(
     authorize(&user)?;
     let email = normalise_email(&input.email)?;
     let mut tx = state.db.begin().await?;
+    unsubscribe::lock_register(&mut tx, user.company_id).await?;
     let added = sqlx::query(
         "INSERT INTO crm.mailing_opt_outs (company_id,email,source,recorded_by) VALUES ($1,$2,'staff',$3)
          ON CONFLICT DO NOTHING",
@@ -579,6 +583,7 @@ async fn add_opt_out(
     .bind(user.user_id)
     .execute(&mut *tx)
     .await?;
+    let cancelled = unsubscribe::cancel_queued(&mut tx, user.company_id, &email).await?;
     if added.rows_affected() > 0 {
         audit::record(
             &mut tx,
@@ -586,7 +591,7 @@ async fn add_opt_out(
             "mailing_opt_out",
             user.company_id,
             "added",
-            serde_json::json!({ "email": email, "source": "staff" }),
+            serde_json::json!({ "email": email, "source": "staff", "cancelled_mails": cancelled }),
         )
         .await?;
     }

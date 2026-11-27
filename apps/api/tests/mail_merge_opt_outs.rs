@@ -477,3 +477,149 @@ async fn staff_manage_the_register_per_company(db: PgPool) {
         ]
     );
 }
+
+const COMPANY: &str = "00000000-0000-7000-8000-000000000001";
+
+/// An opt-out that commits while the mailing is being confirmed: confirmation waits for the
+/// register lock, re-reads the register and refuses, so nothing is queued.
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn an_opt_out_committed_during_confirmation_refuses_the_mailing(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let draft = prepare(&app, &db).await;
+    let (status, preview) = call(&app, ADMIN, Method::PUT, MERGE, Some(draft)).await;
+    assert_eq!(status, StatusCode::OK, "{preview}");
+    assert_eq!(row(&preview, TWO)["issues"], json!([]));
+    let confirm = format!(
+        "{MERGE}/{}/confirm",
+        preview["approval_id"].as_str().unwrap()
+    );
+
+    // Another transaction is recording an opt-out and holds the register lock.
+    let company: uuid::Uuid = COMPANY.parse().unwrap();
+    let mut other = db.begin().await.unwrap();
+    tradocraft_kb::unsubscribe::lock_register(&mut other, company)
+        .await
+        .unwrap();
+    sqlx::query(
+        "INSERT INTO crm.mailing_opt_outs (company_id,email,source) VALUES ($1,$2,'unsubscribe_link')",
+    )
+    .bind(company)
+    .bind(TWO)
+    .execute(&mut *other)
+    .await
+    .unwrap();
+
+    let confirming = {
+        let app = app.clone();
+        tokio::spawn(async move { call(&app, ADMIN, Method::POST, &confirm, None).await })
+    };
+    // Wait until the confirmation is blocked on the lock, then let the opt-out commit.
+    for attempt in 0.. {
+        let waiting: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND NOT granted",
+        )
+        .fetch_one(&db)
+        .await
+        .unwrap();
+        if waiting > 0 {
+            break;
+        }
+        assert!(
+            attempt < 500,
+            "confirmation never waited for the register lock"
+        );
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+    }
+    other.commit().await.unwrap();
+
+    let (status, body) = confirming.await.unwrap();
+    assert_eq!(status, StatusCode::CONFLICT, "{body}");
+    assert!(queued(&db).await.is_empty());
+}
+
+/// An opt-out stops that address's mailings still waiting in the outbox; the rest of the mailing
+/// and other system mail to the same address go out.
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn an_opt_out_stops_queued_mailings_to_that_address(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let draft = prepare(&app, &db).await;
+    let (_, preview) = call(&app, ADMIN, Method::PUT, MERGE, Some(draft)).await;
+    let approval = preview["approval_id"].as_str().unwrap();
+    let (status, body) = call(
+        &app,
+        ADMIN,
+        Method::POST,
+        &format!("{MERGE}/{approval}/confirm"),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT, "{body}");
+    sqlx::query(
+        "INSERT INTO core.mail_outbox (id,company_id,to_address,subject,body)
+         VALUES (gen_random_uuid(),$1,$2,'Your login link','x')",
+    )
+    .bind(COMPANY.parse::<uuid::Uuid>().unwrap())
+    .bind(ONE)
+    .execute(&db)
+    .await
+    .unwrap();
+
+    let (status, _) = call(
+        &app,
+        ADMIN,
+        Method::POST,
+        OPT_OUTS,
+        Some(json!({"email": ONE})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    let rows: Vec<(String, String, String, Option<String>)> = sqlx::query_as(
+        "SELECT to_address, subject, delivery, delivery_error FROM core.mail_outbox
+         WHERE to_address LIKE 'opt-%' ORDER BY to_address, subject",
+    )
+    .fetch_all(&db)
+    .await
+    .unwrap();
+    let cancelled = tradocraft_kb::unsubscribe::CANCELLED.to_string();
+    assert_eq!(
+        rows,
+        vec![
+            (
+                ONE.to_string(),
+                "Nieuwe brochure".to_string(),
+                "failed".to_string(),
+                Some(cancelled.clone())
+            ),
+            (
+                ONE.to_string(),
+                "Your login link".to_string(),
+                "queued".to_string(),
+                None
+            ),
+            (
+                TWO.to_string(),
+                "New brochure".to_string(),
+                "queued".to_string(),
+                None
+            ),
+        ]
+    );
+    // The mailing history keeps the delivery, with the reason.
+    let (_, history) = call(&app, ADMIN, Method::GET, &format!("{MERGE}/history"), None).await;
+    let one = history
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|r| r["email"] == ONE)
+        .unwrap();
+    assert_eq!(one["delivery"], "failed");
+    assert_eq!(one["delivery_error"], cancelled);
+    let audited: Value = sqlx::query_scalar(
+        "SELECT data FROM audit.events WHERE entity = 'mailing_opt_out' AND action = 'added'",
+    )
+    .fetch_one(&db)
+    .await
+    .unwrap();
+    assert_eq!(audited["cancelled_mails"], 1);
+}

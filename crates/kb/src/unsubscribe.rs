@@ -65,6 +65,47 @@ pub(crate) fn footer(language: &str, company: &str, link: &str) -> String {
     }
 }
 
+/// Serialises changes to a company's opt-out register with mailing confirmations: an address
+/// opted out while a mailing is being confirmed either is seen by the confirmation or waits for
+/// it to commit (and then cancels the mail it queued, see [`cancel_queued`]).
+pub async fn lock_register(conn: &mut PgConnection, company: Uuid) -> AppResult<()> {
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended('crm.mailing_opt_outs:' || $1::text, 0))",
+    )
+    .bind(company)
+    .execute(conn)
+    .await?;
+    Ok(())
+}
+
+/// The delivery error of a mailing that was still queued when its address opted out.
+pub const CANCELLED: &str = "not sent: the recipient unsubscribed from mailings";
+
+/// Stops this company's mailings to `email` that the outbox worker has not picked up yet. They
+/// stay in the outbox and the mailing history as failed, with the reason. Mail the worker is
+/// sending right now (row locked) is skipped. Other system mail is never touched.
+pub(crate) async fn cancel_queued(
+    conn: &mut PgConnection,
+    company: Uuid,
+    email: &str,
+) -> AppResult<u64> {
+    Ok(sqlx::query(
+        "UPDATE core.mail_outbox SET delivery = 'failed', delivery_error = $3
+         WHERE id IN (
+            SELECT o.id FROM core.mail_outbox o
+            JOIN crm.mailing_deliveries a ON a.outbox_id = o.id
+            JOIN crm.mailings m ON m.id = a.mailing_id AND m.company_id = o.company_id
+            WHERE o.company_id = $1 AND o.delivery = 'queued' AND lower(btrim(o.to_address)) = $2
+            FOR UPDATE OF o SKIP LOCKED)",
+    )
+    .bind(company)
+    .bind(email)
+    .bind(CANCELLED)
+    .execute(conn)
+    .await?
+    .rows_affected())
+}
+
 /// `jane@example.com` → `j***@example.com`: enough for the recipient to recognise the address,
 /// not enough to learn it from a forwarded link.
 fn mask(email: &str) -> String {
@@ -148,6 +189,7 @@ async fn unsubscribe(
 ) -> AppResult<StatusCode> {
     let mut tx = state.db.begin().await?;
     let row = find(&mut tx, &token).await?;
+    lock_register(&mut tx, row.company_id).await?;
     let added = sqlx::query(
         "INSERT INTO crm.mailing_opt_outs (company_id, email, source) VALUES ($1, $2, 'unsubscribe_link')
          ON CONFLICT DO NOTHING",
@@ -156,6 +198,7 @@ async fn unsubscribe(
     .bind(&row.email)
     .execute(&mut *tx)
     .await?;
+    let cancelled = cancel_queued(&mut tx, row.company_id, &row.email).await?;
     if added.rows_affected() > 0 {
         audit::record_system(
             &mut tx,
@@ -168,6 +211,7 @@ async fn unsubscribe(
                 "source": "unsubscribe_link",
                 "mailing_id": row.mailing_id,
                 "customer_id": row.customer_id,
+                "cancelled_mails": cancelled,
             }),
         )
         .await?;
