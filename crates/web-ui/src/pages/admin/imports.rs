@@ -14,7 +14,8 @@ use tradocraft_api_client::imports::{
 use uuid::Uuid;
 
 use super::{
-    begin_file_read, bump, file_size, save_file, spawn_api, Feedback, FeedbackView, PickedFile,
+    begin_file_read, bump, file_size, is_current, save_file, spawn_api, Feedback, FeedbackView,
+    PickedFile,
 };
 use crate::pages::set_alive;
 use crate::state::AppContext;
@@ -350,6 +351,10 @@ struct Wizard {
     gen_apply: StoredValue<u64>,
     preview_seq: StoredValue<u64>,
     entity_seq: StoredValue<u64>,
+    /// The newest saved-mappings request.
+    saved_seq: StoredValue<u64>,
+    /// The newest file choice: a slower read or upload of an earlier choice is ignored.
+    upload_seq: StoredValue<u64>,
 }
 
 impl Wizard {
@@ -377,6 +382,8 @@ impl Wizard {
             gen_apply: StoredValue::new(0),
             preview_seq: StoredValue::new(0),
             entity_seq: StoredValue::new(0),
+            saved_seq: StoredValue::new(0),
+            upload_seq: StoredValue::new(0),
         }
     }
 
@@ -512,7 +519,12 @@ impl Wizard {
         self.apply.set(RunState::default());
     }
 
-    fn upload(self, picked: PickedFile) {
+    /// Uploads the file of the choice `gen` (from [`Self::upload_seq`]), unless a newer file was
+    /// chosen meanwhile.
+    fn upload(self, picked: PickedFile, gen: u64) {
+        if !is_current(self.upload_seq, gen) {
+            return;
+        }
         if picked.bytes.is_empty() {
             self.upload_error.set(Some("The file is empty.".into()));
             return;
@@ -525,7 +537,7 @@ impl Wizard {
             self.ctx,
             move |c| async move { c.upload_import_file(&name, bytes).await },
             move |res| {
-                if !set_alive(self.uploading, false) {
+                if !is_current(self.upload_seq, gen) || !set_alive(self.uploading, false) {
                     return;
                 }
                 match res {
@@ -647,10 +659,15 @@ impl Wizard {
         };
         self.saved_error.set(None);
         let key_check = key.clone();
+        let gen = bump(self.saved_seq);
         spawn_api(
             self.ctx,
             move |c| async move { c.list_import_mappings(&key).await },
             move |res| {
+                // A newer request (another entity, a save or a delete) answers instead.
+                if !is_current(self.saved_seq, gen) {
+                    return;
+                }
                 let current = self
                     .entity
                     .try_with_untracked(|e| e.as_ref().map(|e| e.key.clone()));
@@ -750,6 +767,10 @@ impl Wizard {
             return;
         };
         if !self.mapping_ok() {
+            return;
+        }
+        // The real import only for exactly what was checked without problems.
+        if !dry && !self.checked_clean() {
             return;
         }
         let (Some(file_id), Some(entity)) = (
@@ -1048,11 +1069,17 @@ fn Step(
 #[component]
 fn FileStep(w: Wizard) -> impl IntoView {
     let on_choose = move |ev: leptos::ev::Event| {
-        begin_file_read(ev, MAX_FILE_BYTES, TOO_LARGE, move |res| match res {
-            Ok(picked) => w.upload(picked),
-            Err(msg) if msg.is_empty() => {}
-            Err(msg) => {
-                set_alive(w.upload_error, Some(msg));
+        let gen = bump(w.upload_seq);
+        begin_file_read(ev, MAX_FILE_BYTES, TOO_LARGE, move |res| {
+            if !is_current(w.upload_seq, gen) {
+                return;
+            }
+            match res {
+                Ok(picked) => w.upload(picked, gen),
+                Err(msg) if msg.is_empty() => {}
+                Err(msg) => {
+                    set_alive(w.upload_error, Some(msg));
+                }
             }
         });
     };
@@ -1330,6 +1357,7 @@ fn MappingStep(w: Wizard) -> impl IntoView {
                                 <label class="tc-label" for=select_id.clone()>{format!("Field for {col}")}</label>
                                 <select id=select_id.clone() data-target=select_id class="tc-select"
                                     aria-invalid=move || dup().is_some().to_string()
+                                    prop:value=move || w.fields.with(|f| f.get(i).cloned().flatten().unwrap_or_default())
                                     on:change=move |ev| {
                                         let v = event_target_value(&ev);
                                         w.set_field(i, (!v.is_empty()).then_some(v));
@@ -1446,9 +1474,18 @@ fn ApplyStep(w: Wizard) -> impl IntoView {
                 <div class="tc-card" role="alertdialog" aria-labelledby="admin-import-confirm-title" data-target="admin-import-apply-confirm-box" style="margin-top: var(--space-sm);">
                     <h4 id="admin-import-confirm-title" style="margin-top: 0;">{format!("Import {entity}?")}</h4>
                     <p>{format!("{created} will be created and {updated} updated. This changes data.")}</p>
+                    <Show when=move || !w.checked_clean()>
+                        <p role="status" style="color: var(--error);" data-target="admin-import-apply-confirm-stale">
+                            "The settings changed after the check. Run the check again before importing."
+                        </p>
+                    </Show>
                     <div class="tc-toolbar">
                         <button type="button" class="tc-btn tc-btn-primary" data-target="admin-import-apply-confirm"
+                            disabled=move || !w.checked_clean()
                             on:click=move |_| {
+                                if !w.checked_clean() {
+                                    return;
+                                }
                                 confirming.set(false);
                                 w.run(false);
                             }>
@@ -1477,6 +1514,65 @@ fn ApplyStep(w: Wizard) -> impl IntoView {
     }
 }
 
+/// The most runs one history request may ask for (the API's cap).
+const MAX_JOBS_PER_REQUEST: i64 = 200;
+
+/// Appends the runs of `page` that `list` does not hold yet: the offsets of the history shift
+/// when runs are added meanwhile, so a later page can repeat earlier runs.
+pub(crate) fn push_unique(list: &mut Vec<ImportJob>, page: Vec<ImportJob>) {
+    for job in page {
+        if !list.iter().any(|j| j.id == job.id) {
+            list.push(job);
+        }
+    }
+}
+
+/// The `(offset, limit)` requests that cover the newest `want` runs within the API's cap.
+pub(crate) fn history_batches(want: i64) -> Vec<(i64, i64)> {
+    let mut out = Vec::new();
+    let mut offset = 0;
+    while offset < want {
+        let limit = (want - offset).min(MAX_JOBS_PER_REQUEST);
+        out.push((offset, limit));
+        offset += limit;
+    }
+    out
+}
+
+/// The newest `want` runs (fewer when there are not that many) and the total. The API has no
+/// stable cursor, only offsets: the whole range is read again in batches, and read once more when
+/// the total changed between batches (runs added or removed meanwhile).
+async fn fetch_history(
+    c: tradocraft_api_client::Client,
+    want: i64,
+) -> Result<(Vec<ImportJob>, i64), tradocraft_api_client::ApiError> {
+    let mut attempt = 0;
+    'attempt: loop {
+        attempt += 1;
+        let mut items = Vec::new();
+        let mut total = None;
+        for (offset, limit) in history_batches(want) {
+            let page = c
+                .list_import_jobs(&ListImportJobsParams {
+                    limit: Some(limit),
+                    offset: Some(offset),
+                    ..ListImportJobsParams::default()
+                })
+                .await?;
+            if attempt < 3 && total.is_some_and(|t| t != page.total) {
+                continue 'attempt;
+            }
+            total = Some(page.total);
+            let short = (page.items.len() as i64) < limit;
+            push_unique(&mut items, page.items);
+            if short {
+                break;
+            }
+        }
+        return Ok((items, total.unwrap_or(0)));
+    }
+}
+
 /// The runs of the company, newest first, refreshed while one is queued or running.
 #[component]
 fn JobHistory() -> impl IntoView {
@@ -1486,88 +1582,94 @@ fn JobHistory() -> impl IntoView {
     let error = RwSignal::new(Option::<String>::None);
     let loading = RwSignal::new(false);
     let seq = StoredValue::new(0_u64);
+    // How many runs the last request asked for: Retry repeats exactly that request, so a failed
+    // "Load more" is not lost.
+    let wanted = StoredValue::new(PAGE_SIZE);
     let selected = RwSignal::new(Option::<Uuid>::None);
 
-    // Reloads what is shown (at least one page), and follows active jobs.
-    fn refresh(
+    #[derive(Clone, Copy)]
+    struct History {
         ctx: AppContext,
         jobs: RwSignal<Option<Vec<ImportJob>>>,
         total: RwSignal<i64>,
         error: RwSignal<Option<String>>,
         loading: RwSignal<bool>,
         seq: StoredValue<u64>,
-    ) {
-        let my = bump(seq);
-        let shown = jobs.with_untracked(|j| j.as_ref().map(Vec::len).unwrap_or(0)) as i64;
-        let limit = shown.clamp(PAGE_SIZE, 200);
-        loading.set(true);
-        spawn_api(
-            ctx,
-            move |c| async move {
-                c.list_import_jobs(&ListImportJobsParams {
-                    limit: Some(limit),
-                    offset: Some(0),
-                    ..ListImportJobsParams::default()
-                })
-                .await
-            },
-            move |res| {
-                if seq.try_get_value() != Some(my) || !set_alive(loading, false) {
-                    return;
-                }
-                match res {
-                    Ok(page) => {
-                        let active = page.items.iter().any(ImportJob::is_active);
-                        error.set(None);
-                        total.set(page.total);
-                        jobs.set(Some(page.items));
-                        if active {
-                            set_timeout(
-                                move || {
-                                    if seq.try_get_value() == Some(my) {
-                                        refresh(ctx, jobs, total, error, loading, seq);
-                                    }
-                                },
-                                HISTORY_REFRESH,
-                            );
-                        }
-                    }
-                    Err(err) => error.set(Some(err.user_message())),
-                }
-            },
-        );
+        wanted: StoredValue<i64>,
     }
-    let reload = move || refresh(ctx, jobs, total, error, loading, seq);
+
+    impl History {
+        fn shown(self) -> i64 {
+            self.jobs
+                .with_untracked(|j| j.as_ref().map(Vec::len).unwrap_or(0)) as i64
+        }
+
+        fn has_active(self) -> bool {
+            self.jobs.with_untracked(|j| {
+                j.as_ref()
+                    .is_some_and(|j| j.iter().any(ImportJob::is_active))
+            })
+        }
+
+        /// Loads the newest `want` runs (the whole range on screen, in batches), replacing the
+        /// list, and follows active jobs; a failed refresh while a job is active is tried again
+        /// after a while. Every start drops the answers and timers of earlier ones.
+        fn load(self, want: i64) {
+            let want = want.max(PAGE_SIZE);
+            let my = bump(self.seq);
+            self.wanted.set_value(want);
+            self.loading.set(true);
+            spawn_api(
+                self.ctx,
+                move |c| fetch_history(c, want),
+                move |res| {
+                    if !is_current(self.seq, my) || !set_alive(self.loading, false) {
+                        return;
+                    }
+                    let follow = match res {
+                        Ok((items, total)) => {
+                            let active = items.iter().any(ImportJob::is_active);
+                            self.error.set(None);
+                            self.total.set(total);
+                            self.jobs.set(Some(items));
+                            active
+                        }
+                        Err(err) => {
+                            self.error.set(Some(err.user_message()));
+                            self.has_active()
+                        }
+                    };
+                    if follow {
+                        set_timeout(
+                            move || {
+                                if is_current(self.seq, my) {
+                                    self.load(self.shown().max(want));
+                                }
+                            },
+                            HISTORY_REFRESH,
+                        );
+                    }
+                },
+            );
+        }
+    }
+
+    let h = History {
+        ctx,
+        jobs,
+        total,
+        error,
+        loading,
+        seq,
+        wanted,
+    };
+    let reload = move || h.load(h.shown());
+    let retry = move || h.load(wanted.try_get_value().unwrap_or(PAGE_SIZE));
     reload();
 
-    let load_more = move |_| {
-        let my = bump(seq);
-        let offset = jobs.with_untracked(|j| j.as_ref().map(Vec::len).unwrap_or(0)) as i64;
-        loading.set(true);
-        spawn_api(
-            ctx,
-            move |c| async move {
-                c.list_import_jobs(&ListImportJobsParams {
-                    limit: Some(PAGE_SIZE),
-                    offset: Some(offset),
-                    ..ListImportJobsParams::default()
-                })
-                .await
-            },
-            move |res| {
-                if seq.try_get_value() != Some(my) || !set_alive(loading, false) {
-                    return;
-                }
-                match res {
-                    Ok(page) => {
-                        total.set(page.total);
-                        jobs.update(|j| j.get_or_insert_with(Vec::new).extend(page.items));
-                    }
-                    Err(err) => error.set(Some(err.user_message())),
-                }
-            },
-        );
-    };
+    // The next page is read together with the pages on screen, so runs added meanwhile neither
+    // repeat nor push older ones out of reach.
+    let load_more = move |_| h.load(h.shown() + PAGE_SIZE);
 
     view! {
         <div data-target="admin-import-history">
@@ -1582,7 +1684,7 @@ fn JobHistory() -> impl IntoView {
                 <div class="tc-alert-error" role="alert">
                     {msg}
                     " "
-                    <button type="button" class="tc-btn tc-btn-sm" data-target="admin-import-history-retry" on:click=move |_| reload()>"Retry"</button>
+                    <button type="button" class="tc-btn tc-btn-sm" data-target="admin-import-history-retry" disabled=move || loading.get() on:click=move |_| retry()>"Retry"</button>
                 </div>
             })}
             {move || selected.get().map(|id| view! { <JobDetail id on_close=Callback::new(move |_| selected.set(None)) on_changed=Callback::new(move |_| reload()) /> })}
@@ -1655,23 +1757,28 @@ fn JobDetail(id: Uuid, on_close: Callback<()>, on_changed: Callback<()>) -> impl
                 if seq.try_get_value() != Some(my) {
                     return;
                 }
-                match res {
+                let follow = match res {
                     Ok(j) => {
                         let active = j.is_active();
                         error.set(None);
                         job.set(Some(j));
-                        if active {
-                            set_timeout(
-                                move || {
-                                    if seq.try_get_value() == Some(my) {
-                                        load(ctx, id, job, error, seq);
-                                    }
-                                },
-                                HISTORY_REFRESH,
-                            );
-                        }
+                        active
                     }
-                    Err(err) => error.set(Some(err.user_message())),
+                    // A failed refresh of an active job (a network blip) is tried again.
+                    Err(err) => {
+                        error.set(Some(err.user_message()));
+                        job.with_untracked(|j| j.as_ref().is_some_and(ImportJob::is_active))
+                    }
+                };
+                if follow {
+                    set_timeout(
+                        move || {
+                            if is_current(seq, my) {
+                                load(ctx, id, job, error, seq);
+                            }
+                        },
+                        HISTORY_REFRESH,
+                    );
                 }
             },
         );
@@ -1751,7 +1858,14 @@ pub fn ImportsSection() -> impl IntoView {
     let columns_ready = Signal::derive(move || w.mappable());
     let check_ready = Signal::derive(move || w.mapping_ok());
     let checked_clean = Signal::derive(move || w.checked_clean());
-    let apply_active = Signal::derive(move || w.mapping_ok() && w.dry.with(|r| r.job.is_some()));
+    // A valid mapping with a check opens the step for a new import; a running import keeps it
+    // open (progress and Cancel) whatever happens to the mapping.
+    let apply_active = Signal::derive(move || {
+        (w.mapping_ok() && w.dry.with(|r| r.job.is_some()))
+            || w.apply.with(|r| {
+                r.starting || r.job.as_ref().is_some_and(ImportJob::is_active)
+            })
+    });
     let applied = Signal::derive(move || {
         w.apply
             .with(|r| r.job.as_ref().is_some_and(|j| j.status == "done"))
@@ -1913,6 +2027,32 @@ mod tests {
         }];
         assert_ne!(a, run_signature(id, "customers", None, Some(&pairs)));
         assert_eq!(a, run_signature(id, "customers", None, None));
+    }
+
+    fn job(n: u8) -> ImportJob {
+        serde_json::from_str(&format!(
+            r#"{{"id":"00000000-0000-0000-0000-0000000000{n:02}","entity":"customers","filename":"c.csv",
+            "format":"csv","dry_run":true,"status":"done","total_rows":0,"processed_rows":0,
+            "created":0,"updated":0,"unchanged":0,"error_count":0,"errors":[],
+            "created_at":"2026-11-26T10:00:00Z"}}"#
+        ))
+        .unwrap()
+    }
+
+    #[test]
+    fn history_batches_stay_within_the_cap() {
+        assert_eq!(history_batches(50), vec![(0, 50)]);
+        assert_eq!(history_batches(200), vec![(0, 200)]);
+        assert_eq!(history_batches(450), vec![(0, 200), (200, 200), (400, 50)]);
+        assert!(history_batches(0).is_empty());
+    }
+
+    #[test]
+    fn shifted_pages_do_not_repeat_runs() {
+        let mut list = vec![job(1), job(2)];
+        push_unique(&mut list, vec![job(2), job(3)]);
+        let ids: Vec<_> = list.iter().map(|j| j.id.as_u128()).collect();
+        assert_eq!(ids, vec![1, 2, 3]);
     }
 
     #[test]
