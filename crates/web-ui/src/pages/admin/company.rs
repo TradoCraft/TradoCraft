@@ -5,7 +5,9 @@
 use leptos::prelude::*;
 use tradocraft_api_client::admin::CompanySettingsInput;
 
-use super::{begin_file_read, file_size, refresh_me, spawn_api, Feedback, FeedbackView};
+use super::{
+    begin_file_read, bump, file_size, is_current, refresh_me, spawn_api, Feedback, FeedbackView,
+};
 use crate::pages::set_alive;
 use crate::state::AppContext;
 
@@ -70,6 +72,17 @@ fn revoke_url(url: &str) {
 #[cfg(not(target_arch = "wasm32"))]
 fn revoke_url(_url: &str) {}
 
+/// The autosave intervals the select offers: the presets, plus the stored interval when it is
+/// not one of them, so the select shows what is really configured.
+pub(crate) fn autosave_choices(current: i32) -> Vec<i32> {
+    let mut choices = AUTOSAVE_OPTIONS.to_vec();
+    if !choices.contains(&current) {
+        choices.push(current);
+        choices.sort_unstable();
+    }
+    choices
+}
+
 /// The loaded logo: its bytes' type and size and a preview URL.
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Logo {
@@ -87,35 +100,51 @@ pub fn CompanySection() -> impl IntoView {
     let logo = RwSignal::new(Option::<Option<Logo>>::None);
     let logo_error = RwSignal::new(Option::<String>::None);
     let reload = RwSignal::new(0_u64);
+    // The company mutation slot: held by a logo upload (from the file choice until the upload
+    // ends), a logo removal or a settings save, so they never run at the same time.
     let busy = RwSignal::new(false);
     let confirm_remove = RwSignal::new(false);
+    // Only the newest logo request may fill the preview.
+    let logo_seq = StoredValue::new(0_u64);
 
     Effect::new(move |_| {
         let _ = reload.get();
         logo_error.set(None);
+        let gen = bump(logo_seq);
         spawn_api(
             ctx,
             |c| async move { c.company_logo().await },
-            move |res| match res {
-                Ok(bytes) => {
-                    let next = bytes.map(|b| {
-                        let ct = logo_content_type(&b).unwrap_or("application/octet-stream");
-                        Logo {
-                            content_type: ct.to_string(),
-                            size: b.len(),
-                            url: object_url(&b, ct),
-                        }
-                    });
-                    let previous = logo.try_get_untracked().flatten().flatten();
-                    if set_alive(logo, Some(next)) {
-                        if let Some(url) = previous.and_then(|l| l.url) {
+            move |res| {
+                if !is_current(logo_seq, gen) {
+                    return;
+                }
+                let previous = logo.try_get_untracked().flatten().flatten();
+                match res {
+                    Ok(bytes) => {
+                        let next = bytes.map(|b| {
+                            let ct = logo_content_type(&b).unwrap_or("application/octet-stream");
+                            Logo {
+                                content_type: ct.to_string(),
+                                size: b.len(),
+                                url: object_url(&b, ct),
+                            }
+                        });
+                        let new_url = next.as_ref().and_then(|l| l.url.clone());
+                        if set_alive(logo, Some(next)) {
+                            if let Some(url) = previous.and_then(|l| l.url) {
+                                revoke_url(&url);
+                            }
+                        } else if let Some(url) = new_url {
                             revoke_url(&url);
                         }
                     }
-                }
-                Err(err) => {
-                    if set_alive(logo_error, Some(err.user_message())) {
-                        logo.set(Some(None));
+                    Err(err) => {
+                        if set_alive(logo_error, Some(err.user_message())) {
+                            logo.set(Some(None));
+                            if let Some(url) = previous.and_then(|l| l.url) {
+                                revoke_url(&url);
+                            }
+                        }
                     }
                 }
             },
@@ -133,6 +162,12 @@ pub fn CompanySection() -> impl IntoView {
     });
 
     let on_choose = move |ev: leptos::ev::Event| {
+        // Take the mutation slot before reading the file, so a removal cannot start meanwhile.
+        if busy.get_untracked() {
+            return;
+        }
+        busy.set(true);
+        confirm_remove.set(false);
         begin_file_read(
             ev,
             MAX_LOGO_BYTES,
@@ -141,17 +176,19 @@ pub fn CompanySection() -> impl IntoView {
                 let picked = match res {
                     Ok(p) => p,
                     Err(msg) => {
-                        if !msg.is_empty() {
+                        if set_alive(busy, false) && !msg.is_empty() {
                             fb.fail(msg);
                         }
                         return;
                     }
                 };
                 if let Err(msg) = check_logo(&picked.bytes) {
-                    fb.fail(msg);
+                    if set_alive(busy, false) {
+                        fb.fail(msg);
+                    }
                     return;
                 }
-                if !set_alive(busy, true) {
+                if busy.try_get_untracked().is_none() {
                     return;
                 }
                 spawn_api(
@@ -178,6 +215,9 @@ pub fn CompanySection() -> impl IntoView {
 
     let on_remove = move |_| {
         confirm_remove.set(false);
+        if busy.get_untracked() {
+            return;
+        }
         busy.set(true);
         spawn_api(
             ctx,
@@ -211,15 +251,25 @@ pub fn CompanySection() -> impl IntoView {
     });
     // What was just saved, shown until the refreshed company confirms it.
     let pending = RwSignal::new(Option::<(bool, i32)>::None);
-    let settings = Memo::new(move |_| pending.get().or(company.get()).unwrap_or((true, 5)));
+    // What the controls show while a save is on its way; dropped on failure, so the controls
+    // return to the last accepted values.
+    let draft = RwSignal::new(Option::<(bool, i32)>::None);
+    let saved = Memo::new(move |_| pending.get().or(company.get()).unwrap_or((true, 5)));
+    let settings = Memo::new(move |_| draft.get().unwrap_or_else(|| saved.get()));
     Effect::new(move |_| {
-        if pending.get_untracked().is_some() && company.get() == pending.get_untracked() {
-            pending.set(None);
+        if let Some(p) = pending.get() {
+            if company.get() == Some(p) {
+                pending.set(None);
+            }
         }
     });
 
     let save_settings = move |single_line: bool, autosave: i32| {
+        if busy.get_untracked() {
+            return;
+        }
         busy.set(true);
+        draft.set(Some((single_line, autosave)));
         let body = CompanySettingsInput {
             quotation_single_line_items: single_line,
             autosave_minutes: Some(autosave),
@@ -234,10 +284,12 @@ pub fn CompanySection() -> impl IntoView {
                 match res {
                     Ok(_) => {
                         pending.set(Some((single_line, autosave)));
+                        draft.set(None);
                         fb.ok("Company settings saved");
                         refresh_me(ctx);
                     }
                     Err(err) => {
+                        draft.set(None);
                         fb.fail(err.user_message());
                     }
                 }
@@ -305,7 +357,7 @@ pub fn CompanySection() -> impl IntoView {
             <Show when=move || confirm_remove.get()>
                 <div class="tc-toolbar" role="alert" data-target="admin-logo-remove-confirm-row">
                     <span>"Remove the company logo?"</span>
-                    <button type="button" class="tc-btn tc-btn-primary tc-btn-sm" data-target="admin-logo-remove-confirm" on:click=on_remove>
+                    <button type="button" class="tc-btn tc-btn-primary tc-btn-sm" data-target="admin-logo-remove-confirm" disabled=move || busy.get() on:click=on_remove>
                         "Remove logo"
                     </button>
                     <button type="button" class="tc-btn tc-btn-sm" on:click=move |_| confirm_remove.set(false)>"Cancel"</button>
@@ -349,21 +401,17 @@ pub fn CompanySection() -> impl IntoView {
                         }
                     }
                 >
-                    {AUTOSAVE_OPTIONS.into_iter().map(|m| {
-                        let label = if m == 0 { "Off".to_string() } else { format!("{m} min") };
-                        view! {
-                            <option
-                                value=m.to_string()
-                                selected=move || {
-                                    let current = settings.get().1;
-                                    let shown = if AUTOSAVE_OPTIONS.contains(&current) { current } else { 5 };
-                                    shown == m
-                                }
-                            >
-                                {label}
-                            </option>
-                        }
-                    }).collect_view()}
+                    {move || {
+                        let current = settings.get().1;
+                        autosave_choices(current).into_iter().map(|m| {
+                            let label = if m == 0 { "Off".to_string() } else { format!("{m} min") };
+                            view! {
+                                <option value=m.to_string() selected=m == current prop:selected=m == current>
+                                    {label}
+                                </option>
+                            }
+                        }).collect_view()
+                    }}
                 </select>
             </div>
         </section>
@@ -389,6 +437,13 @@ mod tests {
             Some("image/svg+xml")
         );
         assert_eq!(logo_content_type(b"GIF89a"), None);
+    }
+
+    #[test]
+    fn autosave_choices_keep_a_custom_interval() {
+        assert_eq!(autosave_choices(5), AUTOSAVE_OPTIONS.to_vec());
+        assert_eq!(autosave_choices(45), vec![0, 1, 2, 5, 10, 15, 30, 45]);
+        assert_eq!(autosave_choices(3), vec![0, 1, 2, 3, 5, 10, 15, 30]);
     }
 
     #[test]
