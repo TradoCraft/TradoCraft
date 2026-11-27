@@ -38,7 +38,7 @@ use uuid::Uuid;
 
 /// Languages a price list can be published in; the labels exist for exactly these.
 pub const LANGUAGES: [&str; 5] = ["nl", "fr", "en", "de", "es"];
-/// Chapter, group, sub-group, sub-sub-group (the Salesforce sort order has four levels).
+/// Chapter, group, sub-group, sub-sub-group.
 pub const MAX_DEPTH: usize = 4;
 const MAX_TEXT: usize = 300;
 
