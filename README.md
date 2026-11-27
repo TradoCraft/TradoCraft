@@ -32,8 +32,8 @@ https://github.com/user-attachments/assets/5c0a13d6-0781-4483-b2d3-06a2690ea5f5
 Short walkthroughs recorded from the real app in a tutorial environment. The voiceover is AI-generated.
 Click a picture to play the video. ([All releases](https://github.com/TradoCraft/TradoCraft/releases))
 
-**Introduction and tutorial, part one** (1 min 53 s): what TradoCraft is, the welcome chapter, the keyboard shortcut badges
-(hold Alt) and building a product with its bill of materials.
+**Introduction and tutorial, part one** (2 min 9 s): what TradoCraft is, the welcome chapter, the keyboard shortcut badges
+(hold Alt or Ctrl) and building a conveyor belt assembly with its motors, drive, assembly drawing and bill of materials.
 
 [![TradoCraft introduction and tutorial part one](docs/media/intro-tutorial-part-1.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-intro-tutorial-part-1/tradocraft-introduction-and-tutorial-part-one.mp4)
 
