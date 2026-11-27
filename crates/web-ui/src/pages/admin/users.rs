@@ -756,7 +756,7 @@ pub fn UsersSection() -> impl IntoView {
                                     view! {
                                         <tr data-target=format!("admin-user-row-{id}") style=style>
                                             <td>{u.display_name.clone()}</td>
-                                            <td data-target="admin-user-row-email">{u.email.clone()}</td>
+                                            <td data-target="admin-user-email-cell">{u.email.clone()}</td>
                                             <td>{roles_text}</td>
                                             <td>{modules_text}</td>
                                             <td>

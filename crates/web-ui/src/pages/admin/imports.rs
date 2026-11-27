@@ -1615,13 +1615,13 @@ fn JobHistory() -> impl IntoView {
                             view! {
                                 <li class="tc-card" style="margin-bottom: var(--space-sm);" data-target=format!("admin-import-job-{id}")>
                                     <button type="button" class="tc-btn tc-btn-ghost" style="width: 100%; text-align: left; display: block;"
-                                        data-target="admin-import-job-open"
+                                        data-target="admin-import-history-open"
                                         aria-label=format!("Details of the import of {}", j.filename)
                                         on:click=move |_| selected.set(Some(id))>
                                         <strong>{j.filename.clone()}</strong>
                                         <span class="tc-label" style="display: block;">{meta.join(" \u{b7} ")}</span>
-                                        <span class=status_badge(&j) data-target="admin-import-job-status">{job_status_label(&j)}</span>
-                                        {counts.map(|c| view! { <span class="tc-label" style="display: block;" data-target="admin-import-job-counts">{c}</span> })}
+                                        <span class=status_badge(&j) data-target="admin-import-history-status">{job_status_label(&j)}</span>
+                                        {counts.map(|c| view! { <span class="tc-label" style="display: block;" data-target="admin-import-history-counts">{c}</span> })}
                                     </button>
                                 </li>
                             }
@@ -1706,7 +1706,7 @@ fn JobDetail(id: Uuid, on_close: Callback<()>, on_changed: Callback<()>) -> impl
     });
 
     view! {
-        <div class="tc-card" role="region" aria-labelledby="admin-import-detail-title" data-target="admin-import-job-detail" style="margin-bottom: var(--space-md);">
+        <div class="tc-card" role="region" aria-labelledby="admin-import-detail-title" data-target="admin-import-detail" style="margin-bottom: var(--space-md);">
             <div class="tc-page-header" style="margin-bottom: var(--space-sm);">
                 <h4 id="admin-import-detail-title" style="margin: 0;">"Import details"</h4>
                 <button type="button" class="tc-btn tc-btn-sm" data-target="admin-import-detail-close" on:click=move |_| on_close.run(())>"Close"</button>
