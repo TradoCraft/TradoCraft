@@ -10,7 +10,9 @@ use tradocraft_api_client::admin::{
 use tradocraft_api_client::identity::IdentityProviderInfo;
 use uuid::Uuid;
 
-use super::{module_name, module_names, role_name, spawn_api, Feedback, FeedbackView};
+use super::{
+    bump, is_current, module_name, module_names, role_name, spawn_api, Feedback, FeedbackView,
+};
 use crate::pages::set_alive;
 use crate::state::AppContext;
 
@@ -197,6 +199,9 @@ pub fn UsersSection() -> impl IntoView {
     let link_subject = RwSignal::new(String::new());
     let link_error = RwSignal::new(Option::<String>::None);
     let linking = RwSignal::new(false);
+    // Counts link-editor openings (and closings): a provider list or a save answer belongs to
+    // the opening that asked for it.
+    let link_gen = StoredValue::new(0_u64);
 
     let me_id = Memo::new(move |_| ctx.session.with(|s| s.as_ref().map(|a| a.me.user_id)));
     let can_link = Memo::new(move |_| {
@@ -272,6 +277,7 @@ pub fn UsersSection() -> impl IntoView {
         draft.set(d);
         editor_error.set(None);
         editor_gen.update(|g| *g = g.wrapping_add(1));
+        bump(link_gen);
         link_user.set(None);
         editor.set(Some(target));
     };
@@ -353,7 +359,10 @@ pub fn UsersSection() -> impl IntoView {
                     Ok(()) => {
                         fb.ok("Invitation sent");
                     }
-                    Err(err) => editor_error.set(Some(err.user_message())),
+                    // Section-level, like the success: it stays visible when the editor closes.
+                    Err(err) => {
+                        fb.fail(err.user_message());
+                    }
                 }
             },
         );
@@ -362,43 +371,46 @@ pub fn UsersSection() -> impl IntoView {
     let open_link = move |u: AdminUser| {
         editor.set(None);
         link_subject.set(String::new());
+        link_issuer.set(String::new());
         link_error.set(None);
         providers.set(None);
         link_user.set(Some(u));
+        let gen = bump(link_gen);
         spawn_api(
             ctx,
             |c| async move { c.list_identity_providers().await },
-            move |res| match res {
-                Ok(all) => {
-                    let saved: Vec<_> = all.into_iter().filter(|p| !p.read_only).collect();
-                    let first = saved.first().map(|p| p.issuer.clone()).unwrap_or_default();
-                    if set_alive(providers, Some(saved)) {
-                        link_issuer.set(first);
-                    }
+            move |res| {
+                if !is_current(link_gen, gen) {
+                    return;
                 }
-                Err(err) => {
-                    set_alive(link_error, Some(err.user_message()));
+                match res {
+                    Ok(all) => {
+                        let saved: Vec<_> = all.into_iter().filter(|p| !p.read_only).collect();
+                        let first = saved.first().map(|p| p.issuer.clone()).unwrap_or_default();
+                        if set_alive(providers, Some(saved)) {
+                            link_issuer.set(first);
+                        }
+                    }
+                    Err(err) => {
+                        set_alive(link_error, Some(err.user_message()));
+                    }
                 }
             },
         );
     };
+    let close_link = move || {
+        bump(link_gen);
+        link_user.set(None);
+    };
 
-    let on_link_save = move |ev: SubmitEvent| {
-        ev.prevent_default();
+    // Saves the link, or removes it when `body` has no subject (the API's way to clear it).
+    let submit_link = move |body: OidcSubjectInput| {
         let Some(user) = link_user.get_untracked() else {
             return;
         };
-        let subject = link_subject.get_untracked().trim().to_string();
-        let issuer = link_issuer.get_untracked();
-        let body = if subject.is_empty() {
-            OidcSubjectInput::default()
-        } else {
-            OidcSubjectInput {
-                issuer: (!issuer.is_empty()).then_some(issuer),
-                subject: Some(subject.clone()),
-            }
-        };
+        let removing = body.subject.is_none();
         linking.set(true);
+        let gen = link_gen.try_get_value().unwrap_or_default();
         spawn_api(
             ctx,
             move |c| async move { c.set_oidc_subject(user.user_id, &body).await },
@@ -406,19 +418,42 @@ pub fn UsersSection() -> impl IntoView {
                 if !set_alive(linking, false) {
                     return;
                 }
+                let still_open = is_current(link_gen, gen);
                 match res {
                     Ok(()) => {
-                        link_user.set(None);
-                        fb.ok(if subject.is_empty() {
+                        if still_open {
+                            close_link();
+                        }
+                        fb.ok(if removing {
                             "Identity link removed"
                         } else {
                             "Identity link saved"
                         });
                     }
-                    Err(err) => link_error.set(Some(err.user_message())),
+                    Err(err) => {
+                        if still_open {
+                            link_error.set(Some(err.user_message()));
+                        } else {
+                            fb.fail(err.user_message());
+                        }
+                    }
                 }
             },
         );
+    };
+    let link_ready = Memo::new(move |_| {
+        !link_issuer.with(String::is_empty) && !link_subject.with(|s| s.trim().is_empty())
+    });
+
+    let on_link_save = move |ev: SubmitEvent| {
+        ev.prevent_default();
+        if !link_ready.get_untracked() {
+            return;
+        }
+        submit_link(OidcSubjectInput {
+            issuer: Some(link_issuer.get_untracked()),
+            subject: Some(link_subject.get_untracked().trim().to_string()),
+        });
     };
 
     view! {
@@ -667,7 +702,7 @@ pub fn UsersSection() -> impl IntoView {
                     <form class="tc-card" data-target="admin-link-editor" on:submit=on_link_save style="margin-bottom: var(--space-md);" aria-labelledby="admin-link-title">
                         <h3 id="admin-link-title" style="margin-top: 0;">{title}</h3>
                         <p style="color: var(--on-surface-variant);">
-                            "Only needed for providers that use the rule 'Only existing subjects'. Choose the provider and enter the subject (the sub claim) this person has there. Leave it empty to remove the link."
+                            "Only needed for providers that use the rule 'Only existing subjects'. Choose the provider and enter the subject (the sub claim) this person has there."
                         </p>
                         {move || match providers.get() {
                             None => view! { <p class="tc-label">"Loading providers..."</p> }.into_any(),
@@ -711,10 +746,19 @@ pub fn UsersSection() -> impl IntoView {
                             <div class="tc-alert-error" style="margin-top: var(--space-md);" role="alert" data-target="admin-link-error">{msg}</div>
                         })}
                         <div class="tc-toolbar" style="margin-top: var(--space-md);">
-                            <button type="submit" data-target="admin-link-save" class="tc-btn tc-btn-primary" disabled=move || linking.get()>
+                            <button type="submit" data-target="admin-link-save" class="tc-btn tc-btn-primary" disabled=move || linking.get() || !link_ready.get()>
                                 "Save"
                             </button>
-                            <button type="button" class="tc-btn" disabled=move || linking.get() on:click=move |_| link_user.set(None)>
+                            <button
+                                type="button"
+                                data-target="admin-link-remove"
+                                class="tc-btn"
+                                disabled=move || linking.get()
+                                on:click=move |_| submit_link(OidcSubjectInput::default())
+                            >
+                                "Remove link"
+                            </button>
+                            <button type="button" class="tc-btn" disabled=move || linking.get() on:click=move |_| close_link()>
                                 "Cancel"
                             </button>
                         </div>
