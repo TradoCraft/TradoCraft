@@ -37,13 +37,15 @@ Click a picture to play the video. ([All releases](https://github.com/TradoCraft
 
 [![TradoCraft introduction and tutorial part one](docs/media/intro-tutorial-part-1.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-intro-tutorial-part-1/tradocraft-introduction-and-tutorial-part-one.mp4)
 
-**Tutorial, part two: suppliers** (1 min 20 s): two suppliers and their price lists, with unit price, lead time and minimum order quantity.
+**Tutorial, part two: PLCs and licences** (1 min 13 s): a standard PLC with 10 outputs, licences for 30, 50 and 100 outputs,
+an RS-485 expansion module and a master network controller, and the narrator's "Do this step for me".
 
-[![TradoCraft tutorial part two: suppliers](docs/media/tutorial-part-2-suppliers.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-tutorial-part-2-suppliers/tradocraft-tutorial-part-two-suppliers.mp4)
+[![TradoCraft tutorial part two: PLCs and licences](docs/media/tutorial-part-2-plcs.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-tutorial-part-2-plcs/tradocraft-tutorial-part-two-plcs.mp4)
 
-**Tutorial, part three: purchase orders** (1 min 41 s): ordering components, approving and sending the order, receiving the goods in two deliveries and checking the stock.
+**Tutorial, part three: the operator display** (51 s): the RS-485 operator display with its I2C swipe card reader and
+temperature sensor, and the chapter map.
 
-[![TradoCraft tutorial part three: purchase orders](docs/media/tutorial-part-3-purchase-orders.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-tutorial-part-3-purchase-orders/tradocraft-tutorial-part-three-purchase-orders.mp4)
+[![TradoCraft tutorial part three: the operator display](docs/media/tutorial-part-3-displays.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-tutorial-part-3-displays/tradocraft-tutorial-part-three-the-operator-display.mp4)
 
 ## Repository layout
 
