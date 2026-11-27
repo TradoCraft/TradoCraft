@@ -47,6 +47,21 @@ temperature sensor, and the chapter map.
 
 [![TradoCraft tutorial part three: the operator display](docs/media/tutorial-part-3-displays.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-tutorial-part-3-displays/tradocraft-tutorial-part-three-the-operator-display.mp4)
 
+**Tutorial, part four: sensors and actuators** (46 s): an infrared sensor, a 4-20 mA analog sensor, a solenoid pusher and a
+label stamper switched by a PowerFET, and Ctrl+F to search a list.
+
+[![TradoCraft tutorial part four: sensors and actuators](docs/media/tutorial-part-4-sensors.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-tutorial-part-4-sensors/tradocraft-tutorial-part-four-sensors-and-actuators.mp4)
+
+**Tutorial, part five: suppliers** (1 min 17 s): two suppliers and their price lists, with unit price, lead time and minimum
+order quantity.
+
+[![TradoCraft tutorial part five: suppliers](docs/media/tutorial-part-5-suppliers.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-tutorial-part-5-suppliers/tradocraft-tutorial-part-five-suppliers.mp4)
+
+**Tutorial, part six: buying and receiving** (1 min 43 s): a purchase order, approved and sent, a new warehouse, two goods
+receipts and the stock.
+
+[![TradoCraft tutorial part six: buying and receiving](docs/media/tutorial-part-6-buying.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-tutorial-part-6-buying/tradocraft-tutorial-part-six-buying-and-receiving.mp4)
+
 ## Repository layout
 
 ```
