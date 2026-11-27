@@ -10,7 +10,7 @@ use tradocraft_api_client::attributes::{
 };
 use uuid::Uuid;
 
-use super::{spawn_api, Feedback, FeedbackView};
+use super::{bump, is_current, spawn_api, Feedback, FeedbackView};
 use crate::pages::set_alive;
 use crate::state::AppContext;
 
@@ -188,18 +188,26 @@ pub fn AttributesSection() -> impl IntoView {
     let saving = RwSignal::new(false);
     let confirm_delete = RwSignal::new(Option::<Uuid>::None);
 
+    // Only the newest list request may fill the list; set_alive only covers the page being left.
+    let list_seq = StoredValue::new(0_u64);
     Effect::new(move |_| {
         let _ = reload.get();
         load_error.set(None);
+        let gen = bump(list_seq);
         spawn_api(
             ctx,
             |c| async move { c.list_attribute_definitions().await },
-            move |res| match res {
-                Ok(list) => {
-                    set_alive(defs, Some(list));
+            move |res| {
+                if !is_current(list_seq, gen) {
+                    return;
                 }
-                Err(err) => {
-                    set_alive(load_error, Some(err.user_message()));
+                match res {
+                    Ok(list) => {
+                        set_alive(defs, Some(list));
+                    }
+                    Err(err) => {
+                        set_alive(load_error, Some(err.user_message()));
+                    }
                 }
             },
         );
@@ -307,100 +315,103 @@ pub fn AttributesSection() -> impl IntoView {
                     <h3 id="admin-attr-editor-title" style="margin-top: 0;">
                         {move || if editing.get() { "Edit attribute" } else { "New attribute" }}
                     </h3>
-                    <div class="tc-form-grid">
-                        <div class="tc-field">
-                            <label class="tc-label" for="admin-attr-key">"Key"</label>
-                            <input id="admin-attr-key" data-target="admin-attr-key" class="tc-input" type="text"
-                                disabled=move || editing.get()
-                                prop:value=move || draft.with(|d| d.key.clone())
-                                on:input=move |ev| draft.update(|d| d.key = event_target_value(&ev)) />
-                        </div>
-                        <div class="tc-field">
-                            <label class="tc-label" for="admin-attr-label">"Label"</label>
-                            <input id="admin-attr-label" data-target="admin-attr-label" class="tc-input" type="text"
-                                prop:value=move || draft.with(|d| d.label.clone())
-                                on:input=move |ev| draft.update(|d| d.label = event_target_value(&ev)) />
-                        </div>
-                        <div class="tc-field">
-                            <label class="tc-label" for="admin-attr-kind">"Type"</label>
-                            <select id="admin-attr-kind" data-target="admin-attr-kind" class="tc-select"
-                                disabled=move || editing.get()
-                                on:change=move |ev| {
-                                    if let Some(k) = DefinitionKind::parse(&event_target_value(&ev)) {
-                                        draft.update(|d| d.kind = k);
-                                    }
-                                }>
-                                {DefinitionKind::ALL.into_iter().map(|k| view! {
-                                    <option value=k.as_str() selected=move || draft.with(|d| d.kind == k)>{kind_label(k)}</option>
-                                }).collect_view()}
-                            </select>
-                        </div>
-                        <Show when=move || draft.with(AttrDraft::has_unit)>
+                    // Disabled while saving, so no edit is made after the request was sent and then lost.
+                    <fieldset style="border: none; padding: 0; margin: 0; min-width: 0;" disabled=move || saving.get()>
+                        <div class="tc-form-grid">
                             <div class="tc-field">
-                                <label class="tc-label" for="admin-attr-unit">"Unit"</label>
-                                <input id="admin-attr-unit" data-target="admin-attr-unit" class="tc-input" type="text"
-                                    prop:value=move || draft.with(|d| d.unit.clone())
-                                    on:input=move |ev| draft.update(|d| d.unit = event_target_value(&ev)) />
+                                <label class="tc-label" for="admin-attr-key">"Key"</label>
+                                <input id="admin-attr-key" data-target="admin-attr-key" class="tc-input" type="text"
+                                    disabled=move || editing.get()
+                                    prop:value=move || draft.with(|d| d.key.clone())
+                                    on:input=move |ev| draft.update(|d| d.key = event_target_value(&ev)) />
                             </div>
-                        </Show>
-                        <div class="tc-field">
-                            <label class="tc-label" for="admin-attr-scope">"Scope"</label>
-                            <select id="admin-attr-scope" data-target="admin-attr-scope" class="tc-select"
-                                disabled=move || editing.get()
-                                on:change=move |ev| draft.update(|d| d.scope = event_target_value(&ev))>
-                                {move || {
-                                    let current = draft.with(|d| d.scope.clone());
-                                    types.with(|t| scope_options(t, &current)).into_iter().map(|(code, label)| {
-                                        let selected = code == current;
-                                        view! { <option value=code selected=selected>{label}</option> }
-                                    }).collect_view()
-                                }}
-                            </select>
-                        </div>
-                        <div class="tc-field">
-                            <label class="tc-label" for="admin-attr-sort">"Sort order"</label>
-                            <input id="admin-attr-sort" data-target="admin-attr-sort" class="tc-input" type="text" inputmode="numeric"
-                                prop:value=move || draft.with(|d| d.sort.clone())
-                                on:input=move |ev| draft.update(|d| d.sort = event_target_value(&ev)) />
-                        </div>
-                    </div>
-                    <label class="tc-checkbox-row" style="margin-top: var(--space-sm);">
-                        <input type="checkbox" data-target="admin-attr-active"
-                            prop:checked=move || draft.with(|d| d.active)
-                            on:change=move |ev| {
-                                let on = event_target_checked(&ev);
-                                draft.update(|d| d.active = on);
-                            } />
-                        "Active"
-                    </label>
-                    <Show when=move || draft.with(|d| d.kind == DefinitionKind::Select)>
-                        <fieldset style="border: none; padding: 0; margin: var(--space-md) 0 0;" data-target="admin-attr-options">
-                            <legend class="tc-label">"Options"</legend>
-                            {move || (0..draft.with(|d| d.options.len())).map(|i| view! {
-                                <div class="tc-toolbar">
-                                    <input class="tc-input" type="text" data-target=format!("admin-attr-option-value-{i}")
-                                        aria-label=format!("Value of option {}", i + 1)
-                                        placeholder="Value"
-                                        prop:value=move || draft.with(|d| d.options.get(i).map(|o| o.0.clone()).unwrap_or_default())
-                                        on:input=move |ev| draft.update(|d| if let Some(o) = d.options.get_mut(i) { o.0 = event_target_value(&ev); }) />
-                                    <input class="tc-input" type="text" data-target=format!("admin-attr-option-label-{i}")
-                                        aria-label=format!("Label of option {}", i + 1)
-                                        placeholder="Option label"
-                                        prop:value=move || draft.with(|d| d.options.get(i).map(|o| o.1.clone()).unwrap_or_default())
-                                        on:input=move |ev| draft.update(|d| if let Some(o) = d.options.get_mut(i) { o.1 = event_target_value(&ev); }) />
-                                    <button type="button" class="tc-btn tc-btn-sm" data-target=format!("admin-attr-option-remove-{i}")
-                                        aria-label=format!("Remove option {}", i + 1)
-                                        on:click=move |_| draft.update(|d| { if i < d.options.len() { d.options.remove(i); } })>
-                                        "Remove"
-                                    </button>
+                            <div class="tc-field">
+                                <label class="tc-label" for="admin-attr-label">"Label"</label>
+                                <input id="admin-attr-label" data-target="admin-attr-label" class="tc-input" type="text"
+                                    prop:value=move || draft.with(|d| d.label.clone())
+                                    on:input=move |ev| draft.update(|d| d.label = event_target_value(&ev)) />
+                            </div>
+                            <div class="tc-field">
+                                <label class="tc-label" for="admin-attr-kind">"Type"</label>
+                                <select id="admin-attr-kind" data-target="admin-attr-kind" class="tc-select"
+                                    disabled=move || editing.get()
+                                    on:change=move |ev| {
+                                        if let Some(k) = DefinitionKind::parse(&event_target_value(&ev)) {
+                                            draft.update(|d| d.kind = k);
+                                        }
+                                    }>
+                                    {DefinitionKind::ALL.into_iter().map(|k| view! {
+                                        <option value=k.as_str() selected=move || draft.with(|d| d.kind == k)>{kind_label(k)}</option>
+                                    }).collect_view()}
+                                </select>
+                            </div>
+                            <Show when=move || draft.with(AttrDraft::has_unit)>
+                                <div class="tc-field">
+                                    <label class="tc-label" for="admin-attr-unit">"Unit"</label>
+                                    <input id="admin-attr-unit" data-target="admin-attr-unit" class="tc-input" type="text"
+                                        prop:value=move || draft.with(|d| d.unit.clone())
+                                        on:input=move |ev| draft.update(|d| d.unit = event_target_value(&ev)) />
                                 </div>
-                            }).collect_view()}
-                            <button type="button" class="tc-btn tc-btn-sm" data-target="admin-attr-option-add"
-                                on:click=move |_| draft.update(|d| d.options.push((String::new(), String::new())))>
-                                "Add option"
-                            </button>
-                        </fieldset>
-                    </Show>
+                            </Show>
+                            <div class="tc-field">
+                                <label class="tc-label" for="admin-attr-scope">"Scope"</label>
+                                <select id="admin-attr-scope" data-target="admin-attr-scope" class="tc-select"
+                                    disabled=move || editing.get()
+                                    on:change=move |ev| draft.update(|d| d.scope = event_target_value(&ev))>
+                                    {move || {
+                                        let current = draft.with(|d| d.scope.clone());
+                                        types.with(|t| scope_options(t, &current)).into_iter().map(|(code, label)| {
+                                            let selected = code == current;
+                                            view! { <option value=code selected=selected>{label}</option> }
+                                        }).collect_view()
+                                    }}
+                                </select>
+                            </div>
+                            <div class="tc-field">
+                                <label class="tc-label" for="admin-attr-sort">"Sort order"</label>
+                                <input id="admin-attr-sort" data-target="admin-attr-sort" class="tc-input" type="text" inputmode="numeric"
+                                    prop:value=move || draft.with(|d| d.sort.clone())
+                                    on:input=move |ev| draft.update(|d| d.sort = event_target_value(&ev)) />
+                            </div>
+                        </div>
+                        <label class="tc-checkbox-row" style="margin-top: var(--space-sm);">
+                            <input type="checkbox" data-target="admin-attr-active"
+                                prop:checked=move || draft.with(|d| d.active)
+                                on:change=move |ev| {
+                                    let on = event_target_checked(&ev);
+                                    draft.update(|d| d.active = on);
+                                } />
+                            "Active"
+                        </label>
+                        <Show when=move || draft.with(|d| d.kind == DefinitionKind::Select)>
+                            <fieldset style="border: none; padding: 0; margin: var(--space-md) 0 0;" data-target="admin-attr-options">
+                                <legend class="tc-label">"Options"</legend>
+                                {move || (0..draft.with(|d| d.options.len())).map(|i| view! {
+                                    <div class="tc-toolbar">
+                                        <input class="tc-input" type="text" data-target=format!("admin-attr-option-value-{i}")
+                                            aria-label=format!("Value of option {}", i + 1)
+                                            placeholder="Value"
+                                            prop:value=move || draft.with(|d| d.options.get(i).map(|o| o.0.clone()).unwrap_or_default())
+                                            on:input=move |ev| draft.update(|d| if let Some(o) = d.options.get_mut(i) { o.0 = event_target_value(&ev); }) />
+                                        <input class="tc-input" type="text" data-target=format!("admin-attr-option-label-{i}")
+                                            aria-label=format!("Label of option {}", i + 1)
+                                            placeholder="Option label"
+                                            prop:value=move || draft.with(|d| d.options.get(i).map(|o| o.1.clone()).unwrap_or_default())
+                                            on:input=move |ev| draft.update(|d| if let Some(o) = d.options.get_mut(i) { o.1 = event_target_value(&ev); }) />
+                                        <button type="button" class="tc-btn tc-btn-sm" data-target=format!("admin-attr-option-remove-{i}")
+                                            aria-label=format!("Remove option {}", i + 1)
+                                            on:click=move |_| draft.update(|d| { if i < d.options.len() { d.options.remove(i); } })>
+                                            "Remove"
+                                        </button>
+                                    </div>
+                                }).collect_view()}
+                                <button type="button" class="tc-btn tc-btn-sm" data-target="admin-attr-option-add"
+                                    on:click=move |_| draft.update(|d| d.options.push((String::new(), String::new())))>
+                                    "Add option"
+                                </button>
+                            </fieldset>
+                        </Show>
+                    </fieldset>
                     {move || editor_error.get().map(|msg| view! {
                         <div class="tc-alert-error" style="margin-top: var(--space-md);" role="alert" data-target="admin-attr-editor-error">{msg}</div>
                     })}
