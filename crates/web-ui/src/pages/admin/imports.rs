@@ -13,7 +13,9 @@ use tradocraft_api_client::imports::{
 };
 use uuid::Uuid;
 
-use super::{begin_file_read, file_size, save_file, spawn_api, Feedback, FeedbackView, PickedFile};
+use super::{
+    begin_file_read, bump, file_size, save_file, spawn_api, Feedback, FeedbackView, PickedFile,
+};
 use crate::pages::set_alive;
 use crate::state::AppContext;
 
@@ -348,14 +350,6 @@ struct Wizard {
     gen_apply: StoredValue<u64>,
     preview_seq: StoredValue<u64>,
     entity_seq: StoredValue<u64>,
-}
-
-fn bump(v: StoredValue<u64>) -> u64 {
-    v.try_update_value(|g| {
-        *g += 1;
-        *g
-    })
-    .unwrap_or(0)
 }
 
 impl Wizard {

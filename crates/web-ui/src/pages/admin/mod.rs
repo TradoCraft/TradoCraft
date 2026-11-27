@@ -151,17 +151,52 @@ where
     });
 }
 
+/// Starts a new request generation on `v` and returns it. A response is applied only while its
+/// generation is still [`is_current`]: a newer request (or the page being left, which disposes
+/// `v`) makes it stale.
+pub(crate) fn bump(v: StoredValue<u64>) -> u64 {
+    v.try_update_value(|g| {
+        *g = g.wrapping_add(1);
+        *g
+    })
+    .unwrap_or(0)
+}
+
+/// Whether `gen` is still the newest generation of `v` (false once the page was left).
+pub(crate) fn is_current(v: StoredValue<u64>, gen: u64) -> bool {
+    v.try_get_value() == Some(gen)
+}
+
+/// The newest `refresh_me` request; older responses are dropped.
+static REFRESH_ME_GEN: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
 /// Reloads `GET /api/v1/me` into the session: module switches and company settings change the
-/// permissions and the company the rest of the app sees.
+/// permissions and the company the rest of the app sees. Only the most recently started request
+/// is applied, and only while the session that issued it is still signed in.
 pub(crate) fn refresh_me(ctx: AppContext) {
+    use std::sync::atomic::Ordering;
+    let Some(issued_by) = ctx.session.with_untracked(|s| s.as_ref().map(|a| a.connection.clone()))
+    else {
+        return;
+    };
+    let gen = REFRESH_ME_GEN.fetch_add(1, Ordering::Relaxed) + 1;
     spawn_api(
         ctx,
         |c| async move { c.me().await },
         move |res| {
+            if REFRESH_ME_GEN.load(Ordering::Relaxed) != gen {
+                return;
+            }
             if let Ok(me) = res {
                 ctx.session.try_update(|s| {
-                    if let Some(ActiveSession { me: current, .. }) = s.as_mut() {
-                        *current = me;
+                    if let Some(ActiveSession {
+                        connection,
+                        me: current,
+                    }) = s.as_mut()
+                    {
+                        if *connection == issued_by {
+                            *current = me;
+                        }
                     }
                 });
             }
