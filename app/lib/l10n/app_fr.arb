@@ -2175,7 +2175,7 @@
   "tutWelcomeTitle": "Bienvenue",
   "tutWelcomeSummary": "Premiers repères : la bannière d'environnement, les onglets et les commandes du tutoriel.",
   "tutWelcomeBannerTitle": "La bande en haut",
-  "tutWelcomeBannerBody": "Cette bande indique toujours dans quel environnement vous êtes : son nom et son type. Orange = test, bleu = tutoriel, rouge = données réelles. Le tutoriel ne s'exécute que dans un environnement de test ou de tutoriel : rien de ce que vous faites ici ne touche aux données réelles.",
+  "tutWelcomeBannerBody": "Cette bande indique toujours dans quel environnement vous êtes : son nom et son type. Jaune = test, vert = tutoriel. Un environnement de production, avec des données réelles, n'a pas de bande ; il est bleu dans la liste Environnements. Le tutoriel ne s'exécute que dans un environnement de test ou de tutoriel : rien de ce que vous faites ici ne touche aux données réelles.",
   "tutWelcomeTabsTitle": "Onglets et sections",
   "tutWelcomeTabsBody": "Choisissez une catégorie avec Changer d'application. Ses modules apparaissent à gauche, ou en bas sur un téléphone. Lorsque vous ouvrez un enregistrement, comme un produit ou un devis, il s’affiche dans un onglet de l’espace de travail.",
   "tutWelcomeControlsTitle": "Cette carte",
