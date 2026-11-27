@@ -12,6 +12,8 @@ changes, not every commit. Items in the roadmap are linked to their ADRs in [doc
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-27
+
 ### Added
 - Leptos web frontend (`crates/web-ui`), served by the API at `/app/` and built in the Docker
   image: Helpdesk (find, create, assign, internal notes, replies with attachments, rendered Standard
@@ -42,6 +44,9 @@ changes, not every commit. Items in the roadmap are linked to their ADRs in [doc
 - `docs/RELEASING.md` (versioning policy, release procedure, signature verification) and this file.
 
 ### Changed
+- **Breaking (configuration):** the staff API refuses to start with `CORS_ALLOWED_ORIGINS=*` when
+  `AUTH_MODE=dev` or `APP_ENV_KIND=live` ([ADR 0092](docs/adr/0092-no-wildcard-cors-with-dev-auth-or-in-live.md)).
+  List the origins explicitly. The portal server still only warns on `*`.
 - **Breaking (deployment):** `docker-compose.yml` and the release `docker-compose.yml` no longer
   default the database password to `tradocraft`. Set `POSTGRES_PASSWORD` (for example in `.env`);
   Compose refuses to start without it. An existing `pgdata` volume keeps the password it was created
@@ -49,6 +54,19 @@ changes, not every commit. Items in the roadmap are linked to their ADRs in [doc
 - Docker base images are pinned to exact tags (`rust`, `debian`, `postgres`, `nginx`); the release
   workflow no longer pushes a `latest` tag.
 - README status line rewritten.
+
+### Security
+- Portal uploads can no longer claim or probe existing file ids; the stored id is derived from company,
+  contact, record and the client id.
+- Identity provider fetches (JWKS and host lookups) have timeouts; a test locks in that a first
+  sign-in never binds by an unverified e-mail.
+- Tokens in the Flutter app moved to secure storage with a one-time migration; Android backup is off.
+- Tenant isolation: a query-scan test checks every statement for `company_id`; four statements were fixed
+  and the rest are allowlisted with a reason.
+
+### Notes
+- No Android release artifacts are published with this release: the release keystore and signing
+  secrets are not provisioned yet. The Windows app, the Windows demo and the Docker images are published.
 
 ### Fixed
 - Code-scanning alerts: workflow permissions and request-sized pre-allocation.
@@ -106,6 +124,7 @@ described in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and the roadmap status
 - Safer defaults ([ADR 0070](docs/adr/0070-safer-defaults.md)): loopback-only CORS and dev
   authentication, non-root Docker user, `.env*` excluded from the Docker build context.
 
-[Unreleased]: https://github.com/TradoCraft/TradoCraft/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/TradoCraft/TradoCraft/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/TradoCraft/TradoCraft/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/TradoCraft/TradoCraft/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/TradoCraft/TradoCraft/releases/tag/v0.2.0
