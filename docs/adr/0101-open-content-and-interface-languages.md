@@ -111,5 +111,12 @@ Two different things are called "language" here:
   texts in that language remain and are shown through the fallback chain.
 - Labels and mails in a language without a shipped catalogue are English until an administrator
   adds a catalogue; the result is complete, never empty.
+- Moved to the catalogue so far: the labels of every Typst template and of the price list
+  (PDF and Excel), and the mails for the portal login link, the worker outage, the order
+  confirmation and the service report. The other system mails (helpdesk SLA notices and
+  escalations, satisfaction survey, to-do reminders, scheduled reports, chatter and planning
+  notifications, the unsubscribe page) still hold their five-language tables in code with English
+  for any other language; they move the same way (add the keys to `crates/core/i18n/mail`, take a
+  `Catalogue`).
 - The generated runtime localization class must be regenerated when ARB keys change
   (`dart run tool/gen_runtime_l10n.dart`, checked by a Flutter test).

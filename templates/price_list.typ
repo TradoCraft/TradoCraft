@@ -5,7 +5,7 @@
 #let accent = rgb(d.accent_color)
 
 #set document(title: d.title)
-#set text(size: 9pt, lang: if d.language in ("nl", "fr", "de", "es") { d.language } else { "en" })
+#set text(size: 9pt, lang: d.language)
 #set page(
   paper: "a4",
   margin: (x: 16mm, top: 18mm, bottom: 20mm),

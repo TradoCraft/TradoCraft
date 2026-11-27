@@ -1090,11 +1090,15 @@ async fn quotation_pdf(
     drop(conn);
     let company = get_company(&state.db, user.company_id).await?;
     let doc = pdf::document_with_images(&company, &q, &images);
+    let labels =
+        tradocraft_core::translations::document_labels(&state.db, user.company_id, &doc.language)
+            .await?;
     let files: Vec<(String, Vec<u8>)> = images.values().cloned().collect();
     let bytes = match tradocraft_documents::render_pdf_with_files(
         &state.documents,
         "quotation",
         &doc,
+        &labels,
         &files,
     )
     .await
@@ -1114,6 +1118,7 @@ async fn quotation_pdf(
                 &state.documents,
                 "quotation",
                 &raster_doc,
+                &labels,
                 &raster_files,
             )
             .await
@@ -1125,6 +1130,7 @@ async fn quotation_pdf(
                         &state.documents,
                         "quotation",
                         &pdf::document(&company, &q),
+                        &labels,
                     )
                     .await?
                 }
@@ -1136,6 +1142,7 @@ async fn quotation_pdf(
                 &state.documents,
                 "quotation",
                 &pdf::document(&company, &q),
+                &labels,
             )
             .await?
         }

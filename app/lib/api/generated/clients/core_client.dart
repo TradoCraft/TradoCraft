@@ -10,6 +10,9 @@ import '../models/admin_user_create.dart';
 import '../models/admin_user_update.dart';
 import '../models/bootstrap_request.dart';
 import '../models/bootstrap_result.dart';
+import '../models/catalogue_detail.dart';
+import '../models/catalogue_info.dart';
+import '../models/catalogue_input.dart';
 import '../models/company.dart';
 import '../models/company_languages_input.dart';
 import '../models/company_logo_info.dart';
@@ -70,6 +73,29 @@ abstract class CoreClient {
   @PUT('/api/v1/admin/modules')
   Future<List<ModuleInfo>> setModules({
     @Body() required ModulesInput body,
+  });
+
+  /// Replaces the company's texts of one domain and language (administrators).
+  ///
+  /// [domain] - documents | mail | app | web.
+  ///
+  /// [language] - ISO 639-1 code.
+  @PUT('/api/v1/admin/translations/{domain}/{language}')
+  Future<CatalogueDetail> putCatalogue({
+    @Path('domain') required String domain,
+    @Path('language') required String language,
+    @Body() required CatalogueInput body,
+  });
+
+  /// Removes the company's texts of one domain and language (administrators); shipped texts stay.
+  ///
+  /// [domain] - documents | mail | app | web.
+  ///
+  /// [language] - ISO 639-1 code.
+  @DELETE('/api/v1/admin/translations/{domain}/{language}')
+  Future<void> deleteCatalogue({
+    @Path('domain') required String domain,
+    @Path('language') required String language,
   });
 
   /// All members of the active company, deactivated ones included.
@@ -168,6 +194,25 @@ abstract class CoreClient {
   /// `GET /setup/status`: no sign-in needed.
   @GET('/api/v1/setup/status')
   Future<SetupStatus> setupStatus();
+
+  /// The languages that have shipped or company texts in a domain.
+  ///
+  /// [domain] - documents | mail | app | web.
+  @GET('/api/v1/translations/{domain}')
+  Future<List<CatalogueInfo>> listCatalogues({
+    @Path('domain') required String domain,
+  });
+
+  /// The texts of one domain and language.
+  ///
+  /// [domain] - documents | mail | app | web.
+  ///
+  /// [language] - ISO 639-1 code.
+  @GET('/api/v1/translations/{domain}/{language}')
+  Future<CatalogueDetail> getCatalogue({
+    @Path('domain') required String domain,
+    @Path('language') required String language,
+  });
 
   @GET('/api/v1/users')
   Future<List<CompanyUser>> listUsers();

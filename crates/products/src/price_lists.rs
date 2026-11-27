@@ -2131,6 +2131,8 @@ async fn render_price_list(
         company.currency.clone()
     };
     let has_indicative = sections.iter().flat_map(|s| &s.rows).any(|r| r.indicative);
+    let labels =
+        tradocraft_core::translations::document_labels(&state.db, user.company_id, &lang).await?;
     let document = PriceListDoc {
         language: lang.clone(),
         title: list.name.clone(),
@@ -2143,7 +2145,7 @@ async fn render_price_list(
         show_unit: settings.show_unit,
         has_indicative,
         logo_file: logo.as_ref().map(|(name, _)| name.clone()),
-        labels: doc::labels(&lang),
+        labels: doc::labels(&labels),
         sections: sections
             .into_iter()
             .map(|s| PriceListSection {
@@ -2186,7 +2188,7 @@ async fn render_price_list(
     let (content_type, extension, bytes) = match format {
         RenderFormat::Pdf => {
             let files: Vec<(String, Vec<u8>)> = logo.into_iter().collect();
-            let pdf = match doc::render_pdf(&state.documents, &document, &files).await {
+            let pdf = match doc::render_pdf(&state.documents, &document, &labels, &files).await {
                 Ok(pdf) => pdf,
                 // A logo typst cannot read must not stop the price list from printing.
                 Err(e) if !files.is_empty() => {
@@ -2195,7 +2197,7 @@ async fn render_price_list(
                         logo_file: None,
                         ..document
                     };
-                    doc::render_pdf(&state.documents, &bare, &[]).await?
+                    doc::render_pdf(&state.documents, &bare, &labels, &[]).await?
                 }
                 Err(e) => return Err(e.into()),
             };

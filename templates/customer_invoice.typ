@@ -1,15 +1,10 @@
 #let d = json("data.json")
-#let labels = (
-  en: (invoice: "Invoice", credit: "Credit note", date: "Date", due: "Due date", original: "Original invoice", reason: "Reason", seller: "Seller", customer: "Customer", code: "Code", item: "Description", qty: "Quantity", price: "Unit price", net: "Excl. VAT", vat: "VAT", total: "Total", reverse: "VAT reverse charged (intra-community supply)", domestic_reverse: "VAT reverse charge (work on immovable property)", export: "Export outside the EU, no VAT"),
-  nl: (invoice: "Factuur", credit: "Creditnota", date: "Datum", due: "Vervaldatum", original: "Oorspronkelijke factuur", reason: "Reden", seller: "Verkoper", customer: "Klant", code: "Code", item: "Omschrijving", qty: "Aantal", price: "Eenheidsprijs", net: "Excl. btw", vat: "Btw", total: "Totaal", reverse: "BTW verlegd (intracommunautaire levering)", domestic_reverse: "BTW verlegd (werken in onroerende staat, art. 20 KB nr. 1)", export: "Uitvoer buiten de EU, geen BTW"),
-  fr: (invoice: "Facture", credit: "Note de crédit", date: "Date", due: "Échéance", original: "Facture d’origine", reason: "Motif", seller: "Vendeur", customer: "Client", code: "Code", item: "Description", qty: "Quantité", price: "Prix unitaire", net: "Hors TVA", vat: "TVA", total: "Total", reverse: "TVA en autoliquidation (livraison intracommunautaire)", domestic_reverse: "Autoliquidation (travaux immobiliers, art. 20 AR n° 1)", export: "Exportation hors UE, sans TVA"),
-  de: (invoice: "Rechnung", credit: "Gutschrift", date: "Datum", due: "Fällig am", original: "Ursprüngliche Rechnung", reason: "Grund", seller: "Verkäufer", customer: "Kunde", code: "Code", item: "Beschreibung", qty: "Menge", price: "Einzelpreis", net: "Ohne MwSt.", vat: "MwSt.", total: "Gesamt", reverse: "Steuerschuldnerschaft des Leistungsempfängers (innergemeinschaftliche Lieferung)", domestic_reverse: "Steuerschuldnerschaft des Leistungsempfängers (Bauleistungen)", export: "Ausfuhr außerhalb der EU, ohne MwSt."),
-  es: (invoice: "Factura", credit: "Nota de crédito", date: "Fecha", due: "Vencimiento", original: "Factura original", reason: "Motivo", seller: "Vendedor", customer: "Cliente", code: "Código", item: "Descripción", qty: "Cantidad", price: "Precio unitario", net: "Sin IVA", vat: "IVA", total: "Total", reverse: "Inversión del sujeto pasivo (entrega intracomunitaria)", domestic_reverse: "Inversión del sujeto pasivo (ejecuciones de obra inmobiliaria)", export: "Exportación fuera de la UE, sin IVA"),
-)
-#let l = labels.at(d.language, default: labels.en)
+// Labels in the document language with English for missing ones (ADR 0101): written by the
+// renderer from the translation catalogue (crates/core/i18n/documents, company overrides).
+#let l = json("labels.json")
 #let title = if d.kind == "credit_note" { l.credit } else { l.invoice }
 #set document(title: title + " " + d.number)
-#set text(size: 10pt, lang: if d.language in labels.keys() { d.language } else { "en" })
+#set text(size: 10pt, lang: d.language)
 #set page(paper: "a4", margin: 18mm)
 #let party(label, p) = [
   #text(fill: luma(80), label) \

@@ -1,0 +1,13 @@
+{
+  "mail.order_confirmation.body": "Geachte {customer},\n\nIn bijlage vindt u de orderbevestiging {number}{rev}. Gelieve deze na te kijken en te bevestigen. Hebt u opmerkingen, laat het ons dan weten.\n\nMet vriendelijke groeten\n{company}\n",
+  "mail.order_confirmation.subject": "Orderbevestiging {number}{rev}",
+  "mail.outage.body": "De achtergrondverwerking van TradoCraft heeft van {from} tot {until} niet gedraaid (ongeveer {min} minuten). Ze draait weer.\n\nIn die periode werden geen e-mails verstuurd of opgehaald, geen SLA-escalaties gedaan en geen onderhoudsbezoeken gepland. Wat bleef liggen, wordt nu verwerkt; controleer of er tijdskritische zaken tussen zaten.\n",
+  "mail.outage.subject": "De achtergrondverwerking lag stil",
+  "mail.portal_login.ignore": "Hebt u dit niet aangevraagd? Dan kunt u deze e-mail negeren.",
+  "mail.portal_login.intro": "Via deze link meldt u zich aan bij ons klantenportaal:",
+  "mail.portal_login.regards": "Met vriendelijke groeten",
+  "mail.portal_login.subject": "Aanmelden bij het klantenportaal van {company}",
+  "mail.portal_login.valid": "De link is {minutes} minuten geldig en kan één keer gebruikt worden.",
+  "mail.service_report.body": "Geachte {customer},\n\nIn bijlage vindt u de werkbon {number} van onze interventie. Hebt u vragen, laat het ons dan weten.\n\nMet vriendelijke groeten\n{company}\n",
+  "mail.service_report.subject": "Werkbon {number}"
+}

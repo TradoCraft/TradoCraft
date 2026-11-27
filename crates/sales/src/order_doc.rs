@@ -4,6 +4,7 @@
 use rust_decimal::Decimal;
 use serde::Serialize;
 use tradocraft_core::company::Company;
+use tradocraft_core::translations::Catalogue;
 use tradocraft_documents::{format_amount, format_date, format_number, format_unit_price};
 use tradocraft_pricing::{totals, PricedLine, Totals};
 
@@ -170,9 +171,10 @@ pub fn document_with_images(
     }
 }
 
-/// Subject and body of the e-mail that carries the order confirmation.
+/// Subject and body of the e-mail that carries the order confirmation, in the language of
+/// `texts` (the `mail` catalogue, ADR 0101).
 pub fn confirmation_mail(
-    language: &str,
+    texts: &Catalogue,
     company: &str,
     customer: &str,
     number: &str,
@@ -183,37 +185,14 @@ pub fn confirmation_mail(
     } else {
         String::new()
     };
-    let (subject, body) = match language {
-        "nl" => (
-            format!("Orderbevestiging {number}{rev}"),
-            format!(
-                "Geachte {customer},\n\nIn bijlage vindt u de orderbevestiging {number}{rev}. Gelieve deze na te kijken en te bevestigen. Hebt u opmerkingen, laat het ons dan weten.\n\nMet vriendelijke groeten\n{company}\n"
-            ),
-        ),
-        "fr" => (
-            format!("Confirmation de commande {number}{rev}"),
-            format!(
-                "Bonjour {customer},\n\nVeuillez trouver ci-joint la confirmation de commande {number}{rev}. Merci de la vérifier et de nous la confirmer. Pour toute remarque, n'hésitez pas à nous contacter.\n\nCordialement\n{company}\n"
-            ),
-        ),
-        "de" => (
-            format!("Auftragsbestätigung {number}{rev}"),
-            format!(
-                "Guten Tag {customer},\n\nanbei erhalten Sie die Auftragsbestätigung {number}{rev}. Bitte prüfen und bestätigen Sie diese. Bei Anmerkungen melden Sie sich gerne bei uns.\n\nMit freundlichen Grüßen\n{company}\n"
-            ),
-        ),
-        "es" => (
-            format!("Confirmación de pedido {number}{rev}"),
-            format!(
-                "Estimado cliente ({customer}),\n\nAdjuntamos la confirmación de pedido {number}{rev}. Le rogamos que la revise y la confirme. Si tiene alguna observación, póngase en contacto con nosotros.\n\nAtentamente\n{company}\n"
-            ),
-        ),
-        _ => (
-            format!("Order confirmation {number}{rev}"),
-            format!(
-                "Dear {customer},\n\nPlease find attached order confirmation {number}{rev}. Kindly review and confirm it. If you have any remarks, let us know.\n\nKind regards\n{company}\n"
-            ),
-        ),
-    };
-    (subject, body)
+    let args = [
+        ("company", company),
+        ("customer", customer),
+        ("number", number),
+        ("rev", rev.as_str()),
+    ];
+    (
+        texts.format("mail.order_confirmation.subject", &args),
+        texts.format("mail.order_confirmation.body", &args),
+    )
 }

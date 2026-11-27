@@ -683,6 +683,139 @@
         }
       }
     },
+    "/api/v1/admin/translations/{domain}/{language}": {
+      "put": {
+        "tags": [
+          "core"
+        ],
+        "summary": "Replaces the company's texts of one domain and language (administrators).",
+        "operationId": "put_catalogue",
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "path",
+            "description": "documents | mail | app | web",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "language",
+            "in": "path",
+            "description": "ISO 639-1 code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogueInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogueDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "core"
+        ],
+        "summary": "Removes the company's texts of one domain and language (administrators); shipped texts stay.",
+        "operationId": "delete_catalogue",
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "path",
+            "description": "documents | mail | app | web",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "language",
+            "in": "path",
+            "description": "ISO 639-1 code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/users": {
       "get": {
         "tags": [
@@ -36350,6 +36483,112 @@
         }
       }
     },
+    "/api/v1/translations/{domain}": {
+      "get": {
+        "tags": [
+          "core"
+        ],
+        "summary": "The languages that have shipped or company texts in a domain.",
+        "operationId": "list_catalogues",
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "path",
+            "description": "documents | mail | app | web",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CatalogueInfo"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/translations/{domain}/{language}": {
+      "get": {
+        "tags": [
+          "core"
+        ],
+        "summary": "The texts of one domain and language.",
+        "operationId": "get_catalogue",
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "path",
+            "description": "documents | mail | app | web",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "language",
+            "in": "path",
+            "description": "ISO 639-1 code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogueDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users": {
       "get": {
         "tags": [
@@ -38763,6 +39002,105 @@
         "properties": {
           "reason": {
             "type": "string"
+          }
+        }
+      },
+      "CatalogueDetail": {
+        "type": "object",
+        "description": "One catalogue: the company's texts, the shipped texts and the English source.",
+        "required": [
+          "domain",
+          "language",
+          "entries",
+          "shipped",
+          "source"
+        ],
+        "properties": {
+          "domain": {
+            "$ref": "#/components/schemas/Domain"
+          },
+          "entries": {
+            "type": "object",
+            "description": "Texts the company added or overrides.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "language": {
+            "type": "string"
+          },
+          "shipped": {
+            "type": "object",
+            "description": "Texts the application ships in this language (documents and mail only).",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "source": {
+            "type": "object",
+            "description": "The English source texts: every key there is, the template for a translator (documents\nand mail only; the clients ship their own source for app and web).",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CatalogueInfo": {
+        "type": "object",
+        "description": "A language that has a catalogue in a domain.",
+        "required": [
+          "language",
+          "shipped",
+          "company_entries"
+        ],
+        "properties": {
+          "company_entries": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of texts the company added or overrides."
+          },
+          "language": {
+            "type": "string"
+          },
+          "shipped": {
+            "type": "boolean",
+            "description": "The application ships texts in this language."
+          },
+          "updated_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the company's texts last changed; none without company texts."
+          }
+        }
+      },
+      "CatalogueInput": {
+        "type": "object",
+        "description": "The texts a company adds or overrides in one domain and language.",
+        "required": [
+          "entries"
+        ],
+        "properties": {
+          "entries": {
+            "type": "object",
+            "description": "`key → text`; empty texts are dropped. For documents and mail the keys must exist in the\nEnglish source.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
           }
         }
       },
@@ -42223,6 +42561,16 @@
             "type": "string"
           }
         }
+      },
+      "Domain": {
+        "type": "string",
+        "description": "What a catalogue translates.",
+        "enum": [
+          "documents",
+          "mail",
+          "app",
+          "web"
+        ]
       },
       "DoneInput": {
         "type": "object",

@@ -154,8 +154,12 @@ async fn delivery_pdf(
         }
         None => customer.language.clone(),
     };
+    let labels =
+        tradocraft_core::translations::document_labels(&state.db, user.company_id, &language)
+            .await?;
     let doc = document(&company, &note, reference, &language);
-    let bytes = tradocraft_documents::render_pdf(&state.documents, "delivery_note", &doc).await?;
+    let bytes =
+        tradocraft_documents::render_pdf(&state.documents, "delivery_note", &doc, &labels).await?;
     Ok((
         [
             (header::CONTENT_TYPE, "application/pdf".to_string()),

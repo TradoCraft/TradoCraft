@@ -8,6 +8,7 @@ use axum::http::header;
 use axum::response::{IntoResponse, Response};
 use serde::{Deserialize, Serialize};
 use tradocraft_core::company::{get_company, user_language, Company};
+use tradocraft_core::translations::document_labels;
 use tradocraft_core::{AppError, AppResult, AppState, CurrentUser, Permission};
 use tradocraft_documents::{format_date, format_number};
 use utoipa::IntoParams;
@@ -189,10 +190,12 @@ async fn production_order_pdf(
         Some(l) => l,
         None => user_language(&mut *conn, user.company_id, user.user_id).await?,
     };
+    let labels = document_labels(&mut *conn, user.company_id, &language).await?;
     drop(conn);
     let doc = document(&company, &po, &language);
     let bytes =
-        tradocraft_documents::render_pdf(&state.documents, "production_order", &doc).await?;
+        tradocraft_documents::render_pdf(&state.documents, "production_order", &doc, &labels)
+            .await?;
     Ok((
         [
             (header::CONTENT_TYPE, "application/pdf".to_string()),

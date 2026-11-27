@@ -167,4 +167,5 @@ pub fn router() -> OpenApiRouter<AppState> {
         .merge(crate::admin::router())
         .merge(crate::worker::router())
         .merge(crate::languages::router())
+        .merge(crate::translations::router())
 }

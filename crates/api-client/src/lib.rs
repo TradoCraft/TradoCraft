@@ -20,6 +20,7 @@ pub mod products;
 pub mod sales;
 pub mod suppliers;
 pub mod todo;
+pub mod translations;
 pub mod vat;
 
 pub use admin::{

@@ -115,8 +115,14 @@ async fn request_login_link(
     // The token travels in the fragment, which browsers do not send to servers or in referrers.
     let link = format!("{}/login#token={token}", portal_url.trim_end_matches('/'));
     let to = input.email.trim().to_lowercase();
-    let (subject, body) = mail::login_mail(
+    let texts = tradocraft_core::translations::mail_texts(
+        &mut *tx,
+        input.company_id,
         &contact.effective_language,
+    )
+    .await?;
+    let (subject, body) = mail::login_mail(
+        &texts,
         &contact.greeting,
         &company_name,
         &link,

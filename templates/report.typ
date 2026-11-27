@@ -2,22 +2,12 @@
 // Every value is formatted by the API; this template only lays it out.
 #let d = json("data.json")
 
-#let labels = (
-  nl: (generated: "Opgesteld op", filters: "Filters", all: "Alle voorwaarden gelden", any: "Minstens één voorwaarde geldt",
-       rows: "rijen", empty: "Geen gegevens.", page: "Pagina"),
-  fr: (generated: "Établi le", filters: "Filtres", all: "Toutes les conditions s'appliquent", any: "Au moins une condition s'applique",
-       rows: "lignes", empty: "Aucune donnée.", page: "Page"),
-  en: (generated: "Generated on", filters: "Filters", all: "All conditions apply", any: "At least one condition applies",
-       rows: "rows", empty: "No data.", page: "Page"),
-  de: (generated: "Erstellt am", filters: "Filter", all: "Alle Bedingungen gelten", any: "Mindestens eine Bedingung gilt",
-       rows: "Zeilen", empty: "Keine Daten.", page: "Seite"),
-  es: (generated: "Generado el", filters: "Filtros", all: "Se aplican todas las condiciones", any: "Se aplica al menos una condición",
-       rows: "filas", empty: "Sin datos.", page: "Página"),
-)
-#let l = labels.at(d.language, default: labels.en)
+// Labels in the document language with English for missing ones (ADR 0101): written by the
+// renderer from the translation catalogue (crates/core/i18n/documents, company overrides).
+#let l = json("labels.json")
 
 #set document(title: d.title)
-#set text(size: 9pt, lang: if d.language in ("nl", "fr", "de", "es") { d.language } else { "en" })
+#set text(size: 9pt, lang: d.language)
 #set page(
   paper: "a4",
   flipped: d.columns.len() > 6,
