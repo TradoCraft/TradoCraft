@@ -8582,6 +8582,22 @@ class RuntimeAppLocalizations extends AppLocalizations {
   String get impAllMapped => _m('impAllMapped', const {}) ?? this.base.impAllMapped;
 
   @override
+  String get impFixedValues => _m('impFixedValues', const {}) ?? this.base.impFixedValues;
+
+  @override
+  String get impFixedHelp => _m('impFixedHelp', const {}) ?? this.base.impFixedHelp;
+
+  @override
+  String get impAddFixed => _m('impAddFixed', const {}) ?? this.base.impAddFixed;
+
+  @override
+  String get impFixedValue => _m('impFixedValue', const {}) ?? this.base.impFixedValue;
+
+  @override
+  String impRemoveFixed(String field) =>
+      _m('impRemoveFixed', {'field': field}) ?? this.base.impRemoveFixed(field);
+
+  @override
   String get impMappingsMenu => _m('impMappingsMenu', const {}) ?? this.base.impMappingsMenu;
 
   @override
@@ -9238,6 +9254,36 @@ class RuntimeAppLocalizations extends AppLocalizations {
 
   @override
   String get plShowLogo => _m('plShowLogo', const {}) ?? this.base.plShowLogo;
+
+  @override
+  String get plImportSettings => _m('plImportSettings', const {}) ?? this.base.plImportSettings;
+
+  @override
+  String get plImportSettingsHelp => _m('plImportSettingsHelp', const {}) ?? this.base.plImportSettingsHelp;
+
+  @override
+  String get plImportLevels => _m('plImportLevels', const {}) ?? this.base.plImportLevels;
+
+  @override
+  String get plImportTitles => _m('plImportTitles', const {}) ?? this.base.plImportTitles;
+
+  @override
+  String get plImportTitlesLowest => _m('plImportTitlesLowest', const {}) ?? this.base.plImportTitlesLowest;
+
+  @override
+  String get plImportTitlesFirst => _m('plImportTitlesFirst', const {}) ?? this.base.plImportTitlesFirst;
+
+  @override
+  String get plImportTitlesError => _m('plImportTitlesError', const {}) ?? this.base.plImportTitlesError;
+
+  @override
+  String get plImportShort => _m('plImportShort', const {}) ?? this.base.plImportShort;
+
+  @override
+  String get plImportShortShallower => _m('plImportShortShallower', const {}) ?? this.base.plImportShortShallower;
+
+  @override
+  String get plImportShortError => _m('plImportShortError', const {}) ?? this.base.plImportShortError;
 
   @override
   String plProductCount(int count) =>
@@ -13789,6 +13835,11 @@ const runtimeMessageKeys = <String>[
   'impUnmapped',
   'impUnmappedRequired',
   'impAllMapped',
+  'impFixedValues',
+  'impFixedHelp',
+  'impAddFixed',
+  'impFixedValue',
+  'impRemoveFixed',
   'impMappingsMenu',
   'impNoMappings',
   'impSaveMapping',
@@ -13997,6 +14048,16 @@ const runtimeMessageKeys = <String>[
   'plDeleteConfirm',
   'plDeleted',
   'plShowLogo',
+  'plImportSettings',
+  'plImportSettingsHelp',
+  'plImportLevels',
+  'plImportTitles',
+  'plImportTitlesLowest',
+  'plImportTitlesFirst',
+  'plImportTitlesError',
+  'plImportShort',
+  'plImportShortShallower',
+  'plImportShortError',
   'plProductCount',
   'plOpen',
   'plBack',
