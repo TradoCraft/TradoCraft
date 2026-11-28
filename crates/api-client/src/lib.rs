@@ -7,6 +7,7 @@ pub mod admin;
 pub mod attributes;
 pub mod audit;
 pub mod auth;
+pub mod chatter;
 pub mod client;
 pub mod customers;
 pub mod error;
@@ -36,6 +37,11 @@ pub use audit::{AuditEvent, AuditFacets, AuditPage, ListAuditEventsParams};
 pub use auth::{
     Auth, Company, EnvKind, EnvironmentInfo, Me, MeModule, Membership, PublicProvider, Session,
     ShortcutBinding, UserPreferences,
+};
+pub use chatter::{
+    Activity, ActivityDoneInput, ActivityInput, ActivityKind, ActivityPatch, ChatterNoteEdit,
+    ChatterNoteInput, Follower, FollowerInput, Followers, Inbox, InboxActivity, InboxRecord,
+    ListThreadParams, RecordKind, ThreadItem, ThreadPage,
 };
 pub use client::Client;
 pub use customers::{

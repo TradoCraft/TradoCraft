@@ -401,6 +401,39 @@ endpoints = [
     ("/api/v1/imports/mappings", "get", ["entity"], None, "[ImportMapping]"),
     ("/api/v1/imports/mappings", "put", None, "MappingInput", "ImportMapping"),
     ("/api/v1/imports/mappings/{id}", "delete", None, None, ""),
+    # To-do
+    (
+        "/api/v1/todo/items",
+        "get",
+        ["scope", "done", "link_kind", "link_id", "due_before"],
+        None,
+        "[TodoItem]",
+    ),
+    ("/api/v1/todo/items", "post", None, "TodoCreate", "TodoItem"),
+    ("/api/v1/todo/items/counts", "get", None, None, "TodoCounts"),
+    ("/api/v1/todo/items/{id}", "patch", None, "TodoPatch", "TodoItem"),
+    ("/api/v1/todo/items/{id}", "delete", None, None, ""),
+    ("/api/v1/todo/items/{id}/complete", "post", None, None, "TodoItem"),
+    ("/api/v1/todo/items/{id}/reopen", "post", None, None, "TodoItem"),
+    # Chatter
+    ("/api/v1/chatter/{kind}/{id}/thread", "get", ["before_id", "limit"], None, "ThreadPage"),
+    ("/api/v1/chatter/{kind}/{id}/notes", "post", None, "ChatterNoteInput", "ThreadItem"),
+    ("/api/v1/chatter/notes/{id}", "patch", None, "ChatterNoteEdit", "ThreadItem"),
+    ("/api/v1/chatter/notes/{id}", "delete", None, None, ""),
+    ("/api/v1/chatter/{kind}/{id}/files", "post", ["filename", "client_id"], None, "FileInfo"),
+    ("/api/v1/chatter/{kind}/{id}/files/{file_id}", "get", None, None, None),
+    ("/api/v1/chatter/{kind}/{id}/activities", "get", None, None, "[Activity]"),
+    ("/api/v1/chatter/{kind}/{id}/activities", "post", None, "ActivityInput", "Activity"),
+    ("/api/v1/chatter/activities/{id}", "patch", None, "ActivityPatch", "Activity"),
+    ("/api/v1/chatter/activities/{id}/done", "post", None, "ActivityDoneInput", ""),
+    ("/api/v1/chatter/activities/{id}", "delete", None, None, ""),
+    ("/api/v1/chatter/{kind}/{id}/followers", "get", None, None, "Followers"),
+    ("/api/v1/chatter/{kind}/{id}/follow", "put", None, None, "Followers"),
+    ("/api/v1/chatter/{kind}/{id}/follow", "delete", None, None, "Followers"),
+    ("/api/v1/chatter/{kind}/{id}/followers", "post", None, "FollowerInput", "Followers"),
+    ("/api/v1/chatter/{kind}/{id}/followers/{user_id}", "delete", None, None, "Followers"),
+    ("/api/v1/chatter/{kind}/{id}/read", "post", None, None, ""),
+    ("/api/v1/chatter/inbox", "get", None, None, "Inbox"),
 ]
 
 for path, method, query_params, req_schema, resp_schema in endpoints:
@@ -538,6 +571,26 @@ checks = [
     ("crates/api-client/src/imports.rs", "ImportMapping", "ImportMapping"),
     ("crates/api-client/src/imports.rs", "MappingInput", "MappingInput"),
     ("crates/api-client/src/imports.rs", "CreateJob", "CreateJob"),
+    # To-do
+    ("crates/api-client/src/todo.rs", "TodoItem", "TodoItem"),
+    ("crates/api-client/src/todo.rs", "TodoCreate", "TodoCreate"),
+    ("crates/api-client/src/todo.rs", "TodoPatch", "TodoPatch"),
+    ("crates/api-client/src/todo.rs", "TodoCounts", "TodoCounts"),
+    # Chatter
+    ("crates/api-client/src/chatter.rs", "ThreadItem", "ThreadItem"),
+    ("crates/api-client/src/chatter.rs", "ThreadPage", "ThreadPage"),
+    ("crates/api-client/src/chatter.rs", "ChatterNoteInput", "ChatterNoteInput"),
+    ("crates/api-client/src/chatter.rs", "ChatterNoteEdit", "ChatterNoteEdit"),
+    ("crates/api-client/src/chatter.rs", "Activity", "Activity"),
+    ("crates/api-client/src/chatter.rs", "ActivityInput", "ActivityInput"),
+    ("crates/api-client/src/chatter.rs", "ActivityPatch", "ActivityPatch"),
+    ("crates/api-client/src/chatter.rs", "ActivityDoneInput", "ActivityDoneInput"),
+    ("crates/api-client/src/chatter.rs", "Follower", "Follower"),
+    ("crates/api-client/src/chatter.rs", "Followers", "Followers"),
+    ("crates/api-client/src/chatter.rs", "FollowerInput", "FollowerInput"),
+    ("crates/api-client/src/chatter.rs", "InboxRecord", "InboxRecord"),
+    ("crates/api-client/src/chatter.rs", "InboxActivity", "InboxActivity"),
+    ("crates/api-client/src/chatter.rs", "Inbox", "Inbox"),
 ]
 
 rust_to_schema = {struct_name: schema_name for _, struct_name, schema_name in checks}
@@ -547,6 +600,8 @@ rust_to_schema["PercentBase"] = "PercentBase"
 rust_to_schema["DefinitionKind"] = "DefinitionKind"
 rust_to_schema["ColumnKind"] = "ColumnKind"
 rust_to_schema["WorkerState"] = "WorkerState"
+rust_to_schema["ActivityKind"] = "ActivityKind"
+rust_to_schema["TodoScope"] = "TodoScope"
 
 for rs_path, struct_name, schema_name in checks:
     check_schema_fields(rs_path, struct_name, schema_name, rust_to_schema)

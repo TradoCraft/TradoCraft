@@ -174,6 +174,27 @@ impl Client {
         Ok(())
     }
 
+    /// Sends an authenticated JSON `POST`, expecting an empty 2xx answer (`204`).
+    pub(crate) async fn post_json_empty<B>(&self, path: &str, body: &B) -> Result<(), ApiError>
+    where
+        B: Serialize + ?Sized,
+    {
+        let url = self.url(path)?;
+        let req = self.apply_headers(self.http.post(url).json(body))?;
+        let _ = self.send_checked(req).await?;
+        Ok(())
+    }
+
+    /// Sends an authenticated JSON `PUT` without a body and decodes the response.
+    pub(crate) async fn put_empty_json<T>(&self, path: &str) -> Result<T, ApiError>
+    where
+        T: DeserializeOwned,
+    {
+        let url = self.url(path)?;
+        let req = self.apply_headers(self.http.put(url))?;
+        self.send_json(req).await
+    }
+
     /// Sends an authenticated JSON `PUT`, expecting an empty 2xx answer (`204`).
     pub(crate) async fn put_json_empty<B>(&self, path: &str, body: &B) -> Result<(), ApiError>
     where
@@ -183,6 +204,16 @@ impl Client {
         let req = self.apply_headers(self.http.put(url).json(body))?;
         let _ = self.send_checked(req).await?;
         Ok(())
+    }
+
+    /// Sends an authenticated `DELETE` and decodes the response.
+    pub(crate) async fn delete_json<T>(&self, path: &str) -> Result<T, ApiError>
+    where
+        T: DeserializeOwned,
+    {
+        let url = self.url(path)?;
+        let req = self.apply_headers(self.http.delete(url))?;
+        self.send_json(req).await
     }
 
     /// Sends an authenticated `DELETE` with query parameters, expecting an empty 2xx answer.
