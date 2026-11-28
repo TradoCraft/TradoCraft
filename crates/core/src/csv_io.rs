@@ -20,8 +20,10 @@ pub use crate::import::{bind, Cell, Cells, Row as CsvRow, Table as CsvTable};
 pub const MAX_BODY_BYTES: usize = 5 * 1024 * 1024;
 /// Largest accepted number of data rows in an import.
 pub const MAX_ROWS: usize = 20_000;
-/// Largest accepted number of cells in one record (the widest known file has 19 columns).
-pub const MAX_COLUMNS: usize = 100;
+/// Largest accepted number of cells in one record. An export must read back: the widest one is the
+/// products file, 25 columns plus a name and a description per ISO 639-1 language (184 codes),
+/// 393 cells (ADR 0100).
+pub const MAX_COLUMNS: usize = 400;
 /// How often an import is planned again when a concurrent writer wins a unique key between the
 /// planning and the write (see [`with_replan`]).
 pub const MAX_PLAN_ATTEMPTS: usize = 3;

@@ -36,7 +36,7 @@ fn finish_record(
             format!("too many rows: at most {} are accepted", limits.rows),
         ));
     }
-    // The header is not counted: a file of `rows` x `cells_per_row` is within the limits.
+    // The header is not counted: a file of exactly `total_cells` cells is within the limits.
     if records.seen > 0 {
         records.cells += record.len();
     }
@@ -177,18 +177,24 @@ mod limit_tests {
     use super::*;
 
     #[test]
-    fn a_file_exactly_at_the_row_and_column_limits_is_read() {
+    fn a_file_exactly_at_the_row_column_and_cell_limits_is_read() {
         let limits = Limits::request();
-        let header = vec!["c"; limits.cells_per_row].join(",");
-        let row = vec!["x"; limits.cells_per_row].join(",");
-        let mut body = format!("{header}\n");
-        for _ in 0..limits.rows {
-            body.push_str(&row);
-            body.push('\n');
+        // The widest rows, as many as the cell limit allows; then the most rows of the width
+        // that fills the cell limit.
+        let widest_rows = limits.total_cells / limits.cells_per_row;
+        let narrow = limits.total_cells / limits.rows;
+        for (width, rows) in [(limits.cells_per_row, widest_rows), (narrow, limits.rows)] {
+            let header = vec!["c"; width].join(",");
+            let row = vec!["x"; width].join(",");
+            let mut body = format!("{header}\n");
+            for _ in 0..rows {
+                body.push_str(&row);
+                body.push('\n');
+            }
+            let t = read(body.as_bytes(), &limits).unwrap();
+            assert_eq!(t.rows.len(), rows);
+            assert_eq!(t.header.len(), width);
         }
-        let t = read(body.as_bytes(), &limits).unwrap();
-        assert_eq!(t.rows.len(), limits.rows);
-        assert_eq!(t.header.len(), limits.cells_per_row);
     }
 
     #[test]

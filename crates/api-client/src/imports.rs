@@ -26,6 +26,9 @@ pub struct ImportColumn {
     pub kind: ColumnKind,
     /// Must have a value when the row creates a record.
     pub required: bool,
+    /// A family `<name>_<language>` (one column per ISO 639-1 code).
+    #[serde(default)]
+    pub per_language: bool,
 }
 
 /// An importable entity (OpenAPI schema `ImportDescription`).
@@ -34,8 +37,11 @@ pub struct ImportDescription {
     /// `customers`, `products`.
     pub key: String,
     pub audit_entity: String,
-    /// The column that identifies a record; upserts match on it.
+    /// The first column of the key; upserts match on the key.
     pub key_column: String,
+    /// The columns that together identify a record.
+    #[serde(default)]
+    pub key_columns: Vec<String>,
     pub file_stem: String,
     pub columns: Vec<ImportColumn>,
 }
@@ -128,11 +134,25 @@ pub struct ImportJobPage {
     pub total: i64,
 }
 
-/// One `file column -> field` pair (OpenAPI schema `ColumnPair`).
+/// One field of a mapping, fed by a file column or a fixed value (OpenAPI schema `ColumnPair`).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ColumnPair {
-    pub column: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub column: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub value: Option<String>,
     pub field: String,
+}
+
+impl ColumnPair {
+    /// A pair that feeds `field` from the file column `column`.
+    pub fn column(column: impl Into<String>, field: impl Into<String>) -> Self {
+        ColumnPair {
+            column: Some(column.into()),
+            value: None,
+            field: field.into(),
+        }
+    }
 }
 
 /// A saved column mapping (OpenAPI schema `ImportMapping`).

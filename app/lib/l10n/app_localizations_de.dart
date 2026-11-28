@@ -9388,6 +9388,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String get impAllMapped => 'Jedes Feld hat eine Spalte.';
 
   @override
+  String get impFixedValues => 'Feste Werte';
+
+  @override
+  String get impFixedHelp =>
+      'Ein fester Wert füllt ein Feld in jeder Zeile und wird wie eine Zelle der Datei gelesen (ein Datum als 2027-01-01).';
+
+  @override
+  String get impAddFixed => 'Festen Wert hinzufügen';
+
+  @override
+  String get impFixedValue => 'Wert';
+
+  @override
+  String impRemoveFixed(String field) {
+    return 'Festen Wert von $field entfernen';
+  }
+
+  @override
   String get impMappingsMenu => 'Gespeicherte Zuordnungen';
 
   @override
@@ -10117,6 +10135,40 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get plShowLogo => 'Firmenlogo drucken';
+
+  @override
+  String get plImportSettings => 'Import';
+
+  @override
+  String get plImportSettingsHelp =>
+      'Wie ein Import der Preislistenartikel Positionen und Gruppentitel liest.';
+
+  @override
+  String get plImportLevels => 'Gruppenebenen in einer Position';
+
+  @override
+  String get plImportTitles =>
+      'Wenn Zeilen einer Gruppe verschiedene Titel geben';
+
+  @override
+  String get plImportTitlesLowest =>
+      'Die Zeile mit der niedrigsten Position gilt';
+
+  @override
+  String get plImportTitlesFirst => 'Die erste Zeile der Datei gilt';
+
+  @override
+  String get plImportTitlesError => 'Einen Fehler melden';
+
+  @override
+  String get plImportShort => 'Eine Position mit weniger Gruppenebenen';
+
+  @override
+  String get plImportShortShallower =>
+      'Den Artikel in die genannte Gruppe stellen';
+
+  @override
+  String get plImportShortError => 'Einen Fehler melden';
 
   @override
   String plProductCount(int count) {

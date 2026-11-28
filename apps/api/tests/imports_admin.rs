@@ -169,9 +169,13 @@ async fn running_a_job_also_needs_the_write_permission_of_the_entity(db: PgPool)
         .iter()
         .map(|e| e["key"].as_str().unwrap())
         .collect();
-    assert_eq!(keys, ["customers", "products"]);
+    assert_eq!(
+        keys,
+        ["customers", "products", "zone_prices", "price_list_items"]
+    );
     let customers_desc = &list[0];
     assert_eq!(customers_desc["key_column"], "code");
+    assert_eq!(customers_desc["key_columns"], json!(["code"]));
     assert_eq!(customers_desc["columns"][0]["name"], "code");
     assert_eq!(customers_desc["columns"][0]["kind"], "code");
     assert_eq!(customers_desc["columns"][0]["required"], true);
@@ -191,7 +195,7 @@ async fn running_a_job_also_needs_the_write_permission_of_the_entity(db: PgPool)
         .iter()
         .map(|e| e["key"].as_str().unwrap())
         .collect();
-    assert_eq!(keys, ["products"]);
+    assert_eq!(keys, ["products", "zone_prices", "price_list_items"]);
     let (status, body) = start(
         &app,
         json!({"file_id": file, "entity": "customers", "dry_run": false}),

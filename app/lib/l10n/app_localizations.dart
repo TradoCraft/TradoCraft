@@ -16578,6 +16578,36 @@ abstract class AppLocalizations {
   /// **'Every field has a column.'**
   String get impAllMapped;
 
+  /// No description provided for @impFixedValues.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixed values'**
+  String get impFixedValues;
+
+  /// No description provided for @impFixedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A fixed value fills a field in every row, read like a cell of the file (a date as 2027-01-01).'**
+  String get impFixedHelp;
+
+  /// No description provided for @impAddFixed.
+  ///
+  /// In en, this message translates to:
+  /// **'Add fixed value'**
+  String get impAddFixed;
+
+  /// No description provided for @impFixedValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get impFixedValue;
+
+  /// No description provided for @impRemoveFixed.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the fixed value of {field}'**
+  String impRemoveFixed(String field);
+
   /// No description provided for @impMappingsMenu.
   ///
   /// In en, this message translates to:
@@ -17825,6 +17855,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Print the company logo'**
   String get plShowLogo;
+
+  /// No description provided for @plImportSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get plImportSettings;
+
+  /// No description provided for @plImportSettingsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'How an import of price list items reads positions and group titles.'**
+  String get plImportSettingsHelp;
+
+  /// No description provided for @plImportLevels.
+  ///
+  /// In en, this message translates to:
+  /// **'Group levels in a position'**
+  String get plImportLevels;
+
+  /// No description provided for @plImportTitles.
+  ///
+  /// In en, this message translates to:
+  /// **'When rows give a group different titles'**
+  String get plImportTitles;
+
+  /// No description provided for @plImportTitlesLowest.
+  ///
+  /// In en, this message translates to:
+  /// **'The row with the lowest position wins'**
+  String get plImportTitlesLowest;
+
+  /// No description provided for @plImportTitlesFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'The first row of the file wins'**
+  String get plImportTitlesFirst;
+
+  /// No description provided for @plImportTitlesError.
+  ///
+  /// In en, this message translates to:
+  /// **'Report an error'**
+  String get plImportTitlesError;
+
+  /// No description provided for @plImportShort.
+  ///
+  /// In en, this message translates to:
+  /// **'A position with fewer group levels'**
+  String get plImportShort;
+
+  /// No description provided for @plImportShortShallower.
+  ///
+  /// In en, this message translates to:
+  /// **'Put the item in the group it names'**
+  String get plImportShortShallower;
+
+  /// No description provided for @plImportShortError.
+  ///
+  /// In en, this message translates to:
+  /// **'Report an error'**
+  String get plImportShortError;
 
   /// No description provided for @plProductCount.
   ///

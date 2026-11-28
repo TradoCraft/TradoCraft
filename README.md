@@ -37,13 +37,35 @@ Click a picture to play the video. ([All releases](https://github.com/TradoCraft
 
 [![TradoCraft introduction and tutorial part one](docs/media/intro-tutorial-part-1.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-intro-tutorial-part-1/tradocraft-introduction-and-tutorial-part-one.mp4)
 
-**Tutorial, part two: suppliers** (1 min 20 s): two suppliers and their price lists, with unit price, lead time and minimum order quantity.
+**Tutorial, part two: PLCs and licences** (1 min 13 s): a standard PLC with 10 outputs, licences for 30, 50 and 100 outputs,
+an RS-485 expansion module and a master network controller, and the narrator's "Do this step for me".
 
-[![TradoCraft tutorial part two: suppliers](docs/media/tutorial-part-2-suppliers.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-tutorial-part-2-suppliers/tradocraft-tutorial-part-two-suppliers.mp4)
+[![TradoCraft tutorial part two: PLCs and licences](docs/media/tutorial-part-2-plcs.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-tutorial-part-2-plcs/tradocraft-tutorial-part-two-plcs.mp4)
 
-**Tutorial, part three: purchase orders** (1 min 41 s): ordering components, approving and sending the order, receiving the goods in two deliveries and checking the stock.
+**Tutorial, part three: the operator display** (51 s): the RS-485 operator display with its I2C swipe card reader and
+temperature sensor, and the chapter map.
 
-[![TradoCraft tutorial part three: purchase orders](docs/media/tutorial-part-3-purchase-orders.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-tutorial-part-3-purchase-orders/tradocraft-tutorial-part-three-purchase-orders.mp4)
+[![TradoCraft tutorial part three: the operator display](docs/media/tutorial-part-3-displays.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-tutorial-part-3-displays/tradocraft-tutorial-part-three-the-operator-display.mp4)
+
+**Tutorial, part four: sensors and actuators** (46 s): an infrared sensor, a 4-20 mA analog sensor, a solenoid pusher and a
+label stamper switched by a PowerFET, and Ctrl+F to search a list.
+
+[![TradoCraft tutorial part four: sensors and actuators](docs/media/tutorial-part-4-sensors.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-tutorial-part-4-sensors/tradocraft-tutorial-part-four-sensors-and-actuators.mp4)
+
+**Tutorial, part five: suppliers** (1 min 17 s): two suppliers and their price lists, with unit price, lead time and minimum
+order quantity.
+
+[![TradoCraft tutorial part five: suppliers](docs/media/tutorial-part-5-suppliers.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-tutorial-part-5-suppliers/tradocraft-tutorial-part-five-suppliers.mp4)
+
+**Tutorial, part six: buying and receiving** (1 min 43 s): a purchase order, approved and sent, a new warehouse, two goods
+receipts and the stock.
+
+[![TradoCraft tutorial part six: buying and receiving](docs/media/tutorial-part-6-buying.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-tutorial-part-6-buying/tradocraft-tutorial-part-six-buying-and-receiving.mp4)
+
+**Tutorial, part seven: checking the invoices** (1 min 37 s): a supplier invoice registered from the purchase order, the
+three-way match, approving, disputing a suspicious invoice, the tolerances and paying.
+
+[![TradoCraft tutorial part seven: checking the invoices](docs/media/tutorial-part-7-invoices.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-tutorial-part-7-invoices/tradocraft-tutorial-part-seven-checking-the-invoices.mp4)
 
 ## Repository layout
 

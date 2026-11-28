@@ -5209,6 +5209,16 @@
     }
   },
   "impAllMapped": "Every field has a column.",
+  "impFixedValues": "Fixed values",
+  "impFixedHelp": "A fixed value fills a field in every row, read like a cell of the file (a date as 2027-01-01).",
+  "impAddFixed": "Add fixed value",
+  "impFixedValue": "Value",
+  "impRemoveFixed": "Remove the fixed value of {field}",
+  "@impRemoveFixed": {
+    "placeholders": {
+      "field": {"type": "String"}
+    }
+  },
   "impMappingsMenu": "Saved mappings",
   "impNoMappings": "No saved mappings for this entity yet.",
   "impSaveMapping": "Save mapping",
@@ -5706,6 +5716,16 @@
   },
   "plDeleted": "Price list deleted",
   "plShowLogo": "Print the company logo",
+  "plImportSettings": "Import",
+  "plImportSettingsHelp": "How an import of price list items reads positions and group titles.",
+  "plImportLevels": "Group levels in a position",
+  "plImportTitles": "When rows give a group different titles",
+  "plImportTitlesLowest": "The row with the lowest position wins",
+  "plImportTitlesFirst": "The first row of the file wins",
+  "plImportTitlesError": "Report an error",
+  "plImportShort": "A position with fewer group levels",
+  "plImportShortShallower": "Put the item in the group it names",
+  "plImportShortError": "Report an error",
   "plProductCount": "{count} products",
   "@plProductCount": {
     "placeholders": {

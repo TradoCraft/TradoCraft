@@ -39,11 +39,15 @@ pub enum ColumnKind {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
 #[schema(as = ImportColumn)]
 pub struct Column {
+    /// The column name; for a per-language family the prefix (`name` for `name_nl`, `name_fr`).
     pub name: &'static str,
     pub kind: ColumnKind,
     /// Must have a value when the row creates a record (the key column is always required in the
     /// file itself).
     pub required: bool,
+    /// A family of columns `<name>_<language>`, one per ISO 639-1 language code (`name_nl`,
+    /// `name_fr`); a file has any number of them.
+    pub per_language: bool,
 }
 
 impl Column {
@@ -52,8 +56,88 @@ impl Column {
             name,
             kind,
             required,
+            per_language: false,
         }
     }
+
+    /// A per-language family `<prefix>_<language>`; never required.
+    pub const fn per_language(prefix: &'static str, kind: ColumnKind) -> Self {
+        Column {
+            name: prefix,
+            kind,
+            required: false,
+            per_language: true,
+        }
+    }
+
+    /// The name a file is bound against: the name, or `<prefix>_*` for a family.
+    pub fn field(&self) -> String {
+        if self.per_language {
+            format!("{}{FAMILY_SUFFIX}", self.name)
+        } else {
+            self.name.to_string()
+        }
+    }
+}
+
+/// The suffix that marks a per-language column family in the list of known fields a file is
+/// bound against: `name_*` stands for `name_nl`, `name_fr`, ... (see [`Column::per_language`]).
+pub const FAMILY_SUFFIX: &str = "_*";
+
+/// The language code of `field` when it belongs to the family `prefix`: `name_fr` -> `fr` for
+/// `name`. The code must be an ISO 639-1 code ([`crate::language::is_iso_639_1`]).
+pub fn family_language<'a>(field: &'a str, prefix: &str) -> Option<&'a str> {
+    let code = field.strip_prefix(prefix)?.strip_prefix('_')?;
+    crate::language::is_iso_639_1(code).then_some(code)
+}
+
+/// Whether `field` is one of `known`: equal to a name, or a member of a family `prefix_*`.
+pub fn is_known_field(known: &[&str], field: &str) -> bool {
+    known.iter().any(|k| match k.strip_suffix(FAMILY_SUFFIX) {
+        Some(prefix) => family_language(field, prefix).is_some(),
+        None => *k == field,
+    })
+}
+
+/// The languages of the family `prefix` among `columns` (bound field names), sorted.
+pub fn family_languages(columns: &[String], prefix: &str) -> Vec<String> {
+    let mut languages: Vec<String> = columns
+        .iter()
+        .filter_map(|c| family_language(c, prefix))
+        .map(str::to_string)
+        .collect();
+    languages.sort();
+    languages.dedup();
+    languages
+}
+
+impl ExportTable {
+    /// The rows of an entity whose columns are all fixed: the header is [`Importable::COLUMNS`].
+    pub fn fixed<E: Importable>(rows: Vec<Vec<CellValue>>) -> Self {
+        ExportTable {
+            header: E::COLUMNS.iter().map(|c| c.name.to_string()).collect(),
+            rows,
+        }
+    }
+}
+
+/// What an export writes: the header (fixed columns and, for a per-language family, one column
+/// per language that occurs in the data) and the rows as typed cells in header order.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ExportTable {
+    pub header: Vec<String>,
+    pub rows: Vec<Vec<CellValue>>,
+}
+
+/// One audit event of an imported record: by default `created`/`updated` of the entity itself,
+/// see [`Importable::audit_event`].
+#[derive(Debug, Clone, PartialEq)]
+pub struct AuditEvent {
+    pub entity: &'static str,
+    pub id: Uuid,
+    pub action: &'static str,
+    /// Fields of `data`; the engine adds `source` and `import_job`.
+    pub data: serde_json::Map<String, serde_json::Value>,
 }
 
 /// The serialisable description of an importable entity: what a later admin endpoint lists.
@@ -63,11 +147,33 @@ pub struct ImportDescription {
     pub key: String,
     /// Name of the entity in audit events (`customer`, `product`).
     pub audit_entity: String,
-    /// The column that identifies a record; upserts match on it.
+    /// The first (for most entities the only) column of the key; upserts match on the key.
     pub key_column: String,
+    /// The columns that together identify a record, e.g. `product_code`, `zone`, `valid_from`.
+    pub key_columns: Vec<String>,
     /// File stem of an export and name of its sheet.
     pub file_stem: String,
     pub columns: Vec<Column>,
+}
+
+/// The key of a record from the trimmed values of its key columns (see
+/// [`Importable::KEY_COLUMNS`]). A key of one column is its value as it is; a key of several is a
+/// JSON array of the values, so no character of a value (a code may hold any) can be mistaken for
+/// the boundary between two parts.
+pub fn composite_key(parts: &[&str]) -> String {
+    match parts {
+        [one] => one.to_string(),
+        _ => serde_json::to_string(parts).unwrap_or_default(),
+    }
+}
+
+/// The `count` parts of a key made by [`composite_key`]; None when it is not such a key.
+pub fn key_parts(key: &str, count: usize) -> Option<Vec<String>> {
+    if count == 1 {
+        return Some(vec![key.to_string()]);
+    }
+    let parts: Vec<String> = serde_json::from_str(key).ok()?;
+    (parts.len() == count).then_some(parts)
 }
 
 /// A step of an import that a progress sink is told about.
@@ -128,10 +234,31 @@ pub trait Importable: Send + Sync + 'static {
     const WRITE: Permission;
     /// File stem of an export and name of its sheet.
     const FILE_STEM: &'static str;
-    /// The columns, in export order.
+    /// The columns, in export order (a per-language family stands for its columns).
     const COLUMNS: &'static [Column];
     /// The column that identifies a record.
     const KEY_COLUMN: &'static str = "code";
+    /// The columns that together identify a record; the engine encodes their trimmed values with
+    /// [`composite_key`] into the key passed to [`Importable::load`] and
+    /// [`Importable::plan_row`]. One column ([`Importable::KEY_COLUMN`]) unless an entity says
+    /// otherwise.
+    const KEY_COLUMNS: &'static [&'static str] = &[Self::KEY_COLUMN];
+
+    /// The audit event of a written record (`id` is the record's id, `key` its key). By default
+    /// `created` (with the key column) or `updated` of [`Importable::AUDIT_ENTITY`]; an entity whose
+    /// manual edits are audited on another record (a price on its product) says so here.
+    fn audit_event(id: Uuid, key: &str, _change: &Self::Change, created: bool) -> AuditEvent {
+        let mut data = serde_json::Map::new();
+        if created {
+            data.insert(Self::KEY_COLUMN.to_string(), key.into());
+        }
+        AuditEvent {
+            entity: Self::AUDIT_ENTITY,
+            id,
+            action: if created { "created" } else { "updated" },
+            data,
+        }
+    }
 
     /// Loads the lookups the rows need (and the state shared between rows) once per attempt.
     fn context(
@@ -184,19 +311,20 @@ pub trait Importable: Send + Sync + 'static {
         change: &Self::Change,
     ) -> impl Future<Output = AppResult<()>> + Send;
 
-    /// All records of the active company, ordered by key, as typed cells in [`Self::COLUMNS`]
-    /// order.
+    /// All records of the active company, ordered by key: the header and the typed cells
+    /// ([`ExportTable::fixed`] for an entity without per-language columns).
     fn export(
         pool: &PgPool,
         user: &CurrentUser,
-    ) -> impl Future<Output = AppResult<Vec<Vec<CellValue>>>> + Send;
+    ) -> impl Future<Output = AppResult<ExportTable>> + Send;
 
     /// The description of the entity.
     fn describe() -> ImportDescription {
         ImportDescription {
             key: Self::KEY.to_string(),
             audit_entity: Self::AUDIT_ENTITY.to_string(),
-            key_column: Self::KEY_COLUMN.to_string(),
+            key_column: Self::KEY_COLUMNS[0].to_string(),
+            key_columns: Self::KEY_COLUMNS.iter().map(|c| c.to_string()).collect(),
             file_stem: Self::FILE_STEM.to_string(),
             columns: Self::COLUMNS.to_vec(),
         }

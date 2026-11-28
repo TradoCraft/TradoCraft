@@ -9378,6 +9378,24 @@ class AppLocalizationsFr extends AppLocalizations {
   String get impAllMapped => 'Chaque champ a une colonne.';
 
   @override
+  String get impFixedValues => 'Valeurs fixes';
+
+  @override
+  String get impFixedHelp =>
+      'Une valeur fixe remplit un champ dans chaque ligne, lue comme une cellule du fichier (une date sous la forme 2027-01-01).';
+
+  @override
+  String get impAddFixed => 'Ajouter une valeur fixe';
+
+  @override
+  String get impFixedValue => 'Valeur';
+
+  @override
+  String impRemoveFixed(String field) {
+    return 'Supprimer la valeur fixe de $field';
+  }
+
+  @override
   String get impMappingsMenu => 'Correspondances enregistrées';
 
   @override
@@ -10104,6 +10122,40 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get plShowLogo => 'Imprimer le logo de l\'entreprise';
+
+  @override
+  String get plImportSettings => 'Import';
+
+  @override
+  String get plImportSettingsHelp =>
+      'Comment un import des articles de la liste lit les positions et les titres des groupes.';
+
+  @override
+  String get plImportLevels => 'Niveaux de groupe dans une position';
+
+  @override
+  String get plImportTitles =>
+      'Si des lignes donnent des titres différents à un groupe';
+
+  @override
+  String get plImportTitlesLowest =>
+      'La ligne à la position la plus basse l\'emporte';
+
+  @override
+  String get plImportTitlesFirst => 'La première ligne du fichier l\'emporte';
+
+  @override
+  String get plImportTitlesError => 'Signaler une erreur';
+
+  @override
+  String get plImportShort => 'Une position avec moins de niveaux de groupe';
+
+  @override
+  String get plImportShortShallower =>
+      'Placer l\'article dans le groupe indiqué';
+
+  @override
+  String get plImportShortError => 'Signaler une erreur';
 
   @override
   String plProductCount(int count) {

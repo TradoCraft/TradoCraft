@@ -248,6 +248,8 @@ export 'models/import_mapping.dart';
 export 'models/import_preview.dart';
 export 'models/import_preview_item.dart';
 export 'models/import_report.dart';
+export 'models/import_short_position.dart';
+export 'models/import_title_conflict.dart';
 export 'models/import_warning.dart';
 export 'models/inbound_result.dart';
 export 'models/inbox.dart';

@@ -28,7 +28,7 @@ most 5 MB and 20 000 data rows (413 for a larger body). The delimiter (`;` or `,
 the header line; a byte order mark is accepted; quoted values may contain delimiters, quotes and
 line breaks. Quoting is strict: a quote inside an unquoted value, or any text after a closing quote,
 is a format error (line of the record), as is an unclosed quote. The limits (20 000 rows, 100 cells
-per record) are checked while reading, so an oversized file stops with one error before anything
+per record; 400 since ADR 0100) are checked while reading, so an oversized file stops with one error before anything
 else is checked. Header names are trimmed and case-insensitive and may come in any order. Unknown or
 duplicate columns, a missing `code` column, an empty file or a bad encoding are rejected.
 

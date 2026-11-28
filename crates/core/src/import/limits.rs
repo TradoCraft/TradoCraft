@@ -71,7 +71,7 @@ mod tests {
         let r = Limits::request();
         assert_eq!(r.file_bytes, 5 * 1024 * 1024);
         assert_eq!(r.rows, 20_000);
-        assert_eq!(r.cells_per_row, 100);
+        assert_eq!(r.cells_per_row, 400);
         assert_eq!(r.total_cells, 2_000_000);
         assert_eq!(r.unpacked_bytes, 64 * 1024 * 1024);
         assert_eq!(r.archive_entries, 1_000);
@@ -81,7 +81,7 @@ mod tests {
         let j = Limits::job();
         assert_eq!(j.file_bytes, 50 * 1024 * 1024);
         assert_eq!(j.rows, 200_000);
-        assert_eq!(j.cells_per_row, 100);
+        assert_eq!(j.cells_per_row, 400);
         assert_eq!(j.total_cells, 5_000_000);
         assert_eq!(j.unpacked_bytes, 512 * 1024 * 1024);
         assert_eq!(j.archive_entries, 1_000);
