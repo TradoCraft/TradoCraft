@@ -229,8 +229,15 @@ async fn download_customer_document(
         "gross_total": format_amount(document.gross_total),
         "rebate": progress,
     });
+    let labels = tradocraft_core::translations::document_labels(
+        &state.db,
+        user.company_id,
+        &detail.language,
+    )
+    .await?;
     let bytes =
-        tradocraft_documents::render_pdf(&state.documents, "customer_invoice", &data).await?;
+        tradocraft_documents::render_pdf(&state.documents, "customer_invoice", &data, &labels)
+            .await?;
     Ok((
         [
             (header::CONTENT_TYPE, "application/pdf"),

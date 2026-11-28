@@ -33,7 +33,7 @@ class PriceListGroupInput {
   @JsonKey(includeIfNull: false,name: 'sort_order')
   final int? sortOrder;
 
-  /// Title per language code (nl, fr, en, de, es); at least one.
+  /// Title per language (ISO 639-1 code); at least one.
   final Map<String, String> title;
 
   Map<String, Object?> toJson() => _$PriceListGroupInputToJson(this);

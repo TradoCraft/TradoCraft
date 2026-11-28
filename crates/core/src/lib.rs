@@ -20,6 +20,7 @@ pub mod identity;
 pub mod identity_admin;
 pub mod import;
 pub mod language;
+pub mod languages;
 pub mod live_events;
 pub mod logo;
 pub mod mail;
@@ -30,6 +31,7 @@ pub mod search;
 pub mod serde_util;
 pub mod sort;
 pub mod state;
+pub mod translations;
 pub mod vat;
 pub mod vat_check;
 pub mod vat_rates;
@@ -41,15 +43,14 @@ pub use blob_store::BlobStore;
 pub use error::{AppError, AppResult};
 pub use state::{AppState, DocumentConfig};
 
-/// New primary keys are UUIDv7: globally unique (safe to generate offline on
-/// mobile devices) and time-ordered (index friendly).
-/// Languages used for customer communication.
-pub const LANGUAGES: [&str; 5] = ["nl", "fr", "en", "de", "es"];
-
+/// Whether `code` is a valid language code for stored content: any ISO 639-1 code (ADR 0101).
+/// Which languages a company offers is configuration ([`languages`]), not this check.
 pub fn is_language(code: &str) -> bool {
-    LANGUAGES.contains(&code)
+    language::is_iso_639_1(code)
 }
 
+/// New primary keys are UUIDv7: globally unique (safe to generate offline on
+/// mobile devices) and time-ordered (index friendly).
 pub fn new_id() -> uuid::Uuid {
     uuid::Uuid::now_v7()
 }

@@ -604,9 +604,16 @@ async fn export_report(
                 &company.default_language,
                 today,
             );
-            let bytes = tradocraft_documents::render_pdf(&state.documents, "report", &data)
-                .await
-                .map_err(AppError::Internal)?;
+            let labels = tradocraft_core::translations::document_labels(
+                &mut *conn,
+                user.company_id,
+                &company.default_language,
+            )
+            .await?;
+            let bytes =
+                tradocraft_documents::render_pdf(&state.documents, "report", &data, &labels)
+                    .await
+                    .map_err(AppError::Internal)?;
             let file = format!("report-{}-{}.pdf", slug(&report.name), today);
             let mut headers = HeaderMap::new();
             headers.insert(

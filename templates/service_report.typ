@@ -2,57 +2,12 @@
 // Photos and the signature are files next to data.json. Nothing internal is in the data.
 #let d = json("data.json")
 
-#let labels = (
-  nl: (title: "Werkbon", number: "Nummer", kind: "Soort", contract: "Onderhoudscontract", customer: "Klant", site: "Plaats van uitvoering",
-       contact: "Contactpersoon", scheduled: "Gepland", started: "Gestart", completed: "Afgerond", technicians: "Technici",
-       tasks: "Taken", task: "Taak", result: "Resultaat", done: "Uitgevoerd", open: "Niet uitgevoerd",
-       time: "Tijd", work: "Werktijd", travel: "Reistijd", parts: "Gebruikte onderdelen", qty: "Aantal", billable: "Aangerekend", free: "Niet aangerekend",
-       yes: "ja", no: "nee", equipment: "Installatie", serial: "Serienummer", warranty: "Garantie", until: "tot",
-       in_warranty: "onder garantie", expired: "garantie verlopen", unknown: "garantie onbekend",
-       report: "Verslag", photos: "Foto's", not_shown: "niet afgedrukt", signature: "Handtekening klant",
-       signed_by: "Getekend door", declined: "De klant weigerde te tekenen", reason: "Reden", draft: "CONCEPT", page: "Pagina", vat: "BTW",
-       kinds: (installation: "Installatie", maintenance: "Onderhoud", repair: "Herstelling", inspection: "Inspectie", other: "Andere")),
-  fr: (title: "Rapport d'intervention", number: "Numéro", kind: "Type", contract: "Contrat d'entretien", customer: "Client", site: "Lieu d'intervention",
-       contact: "Personne de contact", scheduled: "Prévu", started: "Début", completed: "Terminé", technicians: "Techniciens",
-       tasks: "Tâches", task: "Tâche", result: "Résultat", done: "Effectuée", open: "Non effectuée",
-       time: "Temps", work: "Temps de travail", travel: "Temps de trajet", parts: "Pièces utilisées", qty: "Quantité", billable: "Facturé", free: "Non facturé",
-       yes: "oui", no: "non", equipment: "Installation", serial: "Numéro de série", warranty: "Garantie", until: "jusqu'au",
-       in_warranty: "sous garantie", expired: "garantie expirée", unknown: "garantie inconnue",
-       report: "Rapport", photos: "Photos", not_shown: "non imprimées", signature: "Signature du client",
-       signed_by: "Signé par", declined: "Le client a refusé de signer", reason: "Motif", draft: "BROUILLON", page: "Page", vat: "TVA",
-       kinds: (installation: "Installation", maintenance: "Entretien", repair: "Réparation", inspection: "Inspection", other: "Autre")),
-  en: (title: "Service report", number: "Number", kind: "Type", contract: "Maintenance contract", customer: "Customer", site: "Site",
-       contact: "Contact person", scheduled: "Scheduled", started: "Started", completed: "Completed", technicians: "Technicians",
-       tasks: "Tasks", task: "Task", result: "Result", done: "Done", open: "Not done",
-       time: "Time", work: "Work time", travel: "Travel time", parts: "Parts used", qty: "Quantity", billable: "Charged", free: "Not charged",
-       yes: "yes", no: "no", equipment: "Equipment", serial: "Serial number", warranty: "Warranty", until: "until",
-       in_warranty: "in warranty", expired: "warranty expired", unknown: "warranty unknown",
-       report: "Report", photos: "Photos", not_shown: "not printed", signature: "Customer signature",
-       signed_by: "Signed by", declined: "The customer declined to sign", reason: "Reason", draft: "DRAFT", page: "Page", vat: "VAT",
-       kinds: (installation: "Installation", maintenance: "Maintenance", repair: "Repair", inspection: "Inspection", other: "Other")),
-  de: (title: "Servicebericht", number: "Nummer", kind: "Art", contract: "Wartungsvertrag", customer: "Kunde", site: "Einsatzort",
-       contact: "Ansprechpartner", scheduled: "Geplant", started: "Beginn", completed: "Abgeschlossen", technicians: "Techniker",
-       tasks: "Aufgaben", task: "Aufgabe", result: "Ergebnis", done: "Erledigt", open: "Nicht erledigt",
-       time: "Zeit", work: "Arbeitszeit", travel: "Fahrzeit", parts: "Verwendete Teile", qty: "Menge", billable: "Berechnet", free: "Nicht berechnet",
-       yes: "ja", no: "nein", equipment: "Anlage", serial: "Seriennummer", warranty: "Garantie", until: "bis",
-       in_warranty: "in Garantie", expired: "Garantie abgelaufen", unknown: "Garantie unbekannt",
-       report: "Bericht", photos: "Fotos", not_shown: "nicht gedruckt", signature: "Unterschrift des Kunden",
-       signed_by: "Unterschrieben von", declined: "Der Kunde hat die Unterschrift verweigert", reason: "Grund", draft: "ENTWURF", page: "Seite", vat: "MwSt.",
-       kinds: (installation: "Installation", maintenance: "Wartung", repair: "Reparatur", inspection: "Inspektion", other: "Sonstiges")),
-  es: (title: "Informe de servicio", number: "Número", kind: "Tipo", contract: "Contrato de mantenimiento", customer: "Cliente", site: "Lugar de intervención",
-       contact: "Persona de contacto", scheduled: "Previsto", started: "Inicio", completed: "Finalizado", technicians: "Técnicos",
-       tasks: "Tareas", task: "Tarea", result: "Resultado", done: "Realizada", open: "No realizada",
-       time: "Tiempo", work: "Tiempo de trabajo", travel: "Tiempo de desplazamiento", parts: "Piezas utilizadas", qty: "Cantidad", billable: "Facturado", free: "No facturado",
-       yes: "sí", no: "no", equipment: "Equipo", serial: "Número de serie", warranty: "Garantía", until: "hasta",
-       in_warranty: "en garantía", expired: "garantía vencida", unknown: "garantía desconocida",
-       report: "Informe", photos: "Fotos", not_shown: "no impresas", signature: "Firma del cliente",
-       signed_by: "Firmado por", declined: "El cliente se negó a firmar", reason: "Motivo", draft: "BORRADOR", page: "Página", vat: "IVA",
-       kinds: (installation: "Instalación", maintenance: "Mantenimiento", repair: "Reparación", inspection: "Inspección", other: "Otro")),
-)
-#let l = labels.at(d.language, default: labels.en)
+// Labels in the document language with English for missing ones (ADR 0101): written by the
+// renderer from the translation catalogue (crates/core/i18n/documents, company overrides).
+#let l = json("labels.json")
 
 #set document(title: l.title + " " + d.number)
-#set text(size: 9.5pt, lang: if d.language in ("nl", "fr", "de", "es") { d.language } else { "en" })
+#set text(size: 9.5pt, lang: d.language)
 #set page(
   paper: "a4",
   margin: (x: 18mm, top: 18mm, bottom: 22mm),
@@ -102,7 +57,7 @@
   stroke: none,
   inset: (x: 0pt, right: 6mm, y: 2.5pt),
   muted(l.number), [*#d.number*],
-  muted(l.kind), l.kinds.at(d.kind, default: d.kind),
+  muted(l.kind), l.at("kinds." + d.kind, default: d.kind),
   ..if d.contract_number != "" { (muted(l.contract), d.contract_number) } else { () },
   ..if d.site != "" { (muted(l.site), d.site) } else { () },
   ..if d.contact_name != "" { (muted(l.contact), d.contact_name) } else { () },

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'api.dart';
+import 'interface_languages.dart';
 import 'brand.dart';
 import 'detail_routes.dart';
 import 'environment_ui.dart';
@@ -399,7 +400,8 @@ class AppShell extends ConsumerWidget {
           checked: ref.watch(localeProvider) == null,
           child: Text(context.l10n.deviceLanguage),
         ),
-        for (final code in languageCodes)
+        // Interface languages: the shipped ones and those installed as catalogues (ADR 0101).
+        for (final code in ref.watch(interfaceLanguagesProvider))
           CheckedPopupMenuItem(
             value: 'lang:$code',
             checked: ref.watch(localeProvider)?.languageCode == code,

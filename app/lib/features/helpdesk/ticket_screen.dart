@@ -1592,7 +1592,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
                     initialValue: _language,
                     decoration: InputDecoration(labelText: l.customerLanguage),
                     items: [
-                      for (final c in languageCodes)
+                      for (final c in languageChoices(_language))
                         DropdownMenuItem(
                           value: c,
                           child: Text(languageName(c)),

@@ -8,6 +8,7 @@ use axum::http::header;
 use axum::response::{IntoResponse, Response};
 use serde::{Deserialize, Serialize};
 use tradocraft_core::company::{get_company, user_language, Company};
+use tradocraft_core::translations::document_labels;
 use tradocraft_core::{AppError, AppResult, AppState, CurrentUser, Permission};
 use tradocraft_documents::{format_date, format_number};
 use utoipa::IntoParams;
@@ -158,7 +159,7 @@ fn document(company: &Company, po: &ProductionOrder, language: &str) -> Doc {
 
 #[derive(Debug, Deserialize, IntoParams)]
 pub struct ProductionPdfParams {
-    /// nl | fr | en | de | es; default: the language of the user, else of the company.
+    /// ISO 639-1 code; default: the language of the user, else of the company.
     pub lang: Option<String>,
 }
 
@@ -176,10 +177,9 @@ async fn production_order_pdf(
     let language = match p.lang.as_deref().map(str::to_lowercase) {
         Some(l) if tradocraft_core::is_language(&l) => Some(l),
         Some(_) => {
-            return Err(AppError::Validation(format!(
-                "lang must be one of {}",
-                tradocraft_core::LANGUAGES.join(", ")
-            )))
+            return Err(AppError::Validation(
+                "lang must be an ISO 639-1 language code".to_string(),
+            ))
         }
         None => None,
     };
@@ -190,10 +190,12 @@ async fn production_order_pdf(
         Some(l) => l,
         None => user_language(&mut *conn, user.company_id, user.user_id).await?,
     };
+    let labels = document_labels(&mut *conn, user.company_id, &language).await?;
     drop(conn);
     let doc = document(&company, &po, &language);
     let bytes =
-        tradocraft_documents::render_pdf(&state.documents, "production_order", &doc).await?;
+        tradocraft_documents::render_pdf(&state.documents, "production_order", &doc, &labels)
+            .await?;
     Ok((
         [
             (header::CONTENT_TYPE, "application/pdf".to_string()),

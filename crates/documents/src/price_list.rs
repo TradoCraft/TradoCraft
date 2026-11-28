@@ -4,85 +4,37 @@
 
 use rust_xlsxwriter::{Format, Workbook, XlsxError};
 use serde::Serialize;
+use tradocraft_core::translations::Catalogue;
 
 /// The labels of a price list in one language.
 #[derive(Debug, Clone, Serialize)]
 pub struct PriceListLabels {
-    pub code: &'static str,
-    pub description: &'static str,
-    pub unit: &'static str,
-    pub price: &'static str,
-    pub on_request: &'static str,
-    pub net: &'static str,
-    pub indicative: &'static str,
-    pub valid_from: &'static str,
-    pub zone: &'static str,
-    pub page: &'static str,
+    pub code: String,
+    pub description: String,
+    pub unit: String,
+    pub price: String,
+    pub on_request: String,
+    pub net: String,
+    pub indicative: String,
+    pub valid_from: String,
+    pub zone: String,
+    pub page: String,
 }
 
-/// Labels for `language` (nl, fr, en, de, es); anything else gets English.
-pub fn labels(language: &str) -> PriceListLabels {
-    match language {
-        "nl" => PriceListLabels {
-            code: "Code",
-            description: "Omschrijving",
-            unit: "Eenheid",
-            price: "Prijs",
-            on_request: "OP AANVRAAG",
-            net: "NETTO",
-            indicative: "Indicatieve prijs, nog te bevestigen",
-            valid_from: "Geldig vanaf",
-            zone: "Prijszone",
-            page: "Pagina",
-        },
-        "fr" => PriceListLabels {
-            code: "Code",
-            description: "Description",
-            unit: "Unité",
-            price: "Prix",
-            on_request: "SUR DEMANDE",
-            net: "NET",
-            indicative: "Prix indicatif, à confirmer",
-            valid_from: "Valable à partir du",
-            zone: "Zone de prix",
-            page: "Page",
-        },
-        "de" => PriceListLabels {
-            code: "Artikel",
-            description: "Beschreibung",
-            unit: "Einheit",
-            price: "Preis",
-            on_request: "AUF ANFRAGE",
-            net: "NETTO",
-            indicative: "Richtpreis, noch zu bestätigen",
-            valid_from: "Gültig ab",
-            zone: "Preiszone",
-            page: "Seite",
-        },
-        "es" => PriceListLabels {
-            code: "Código",
-            description: "Descripción",
-            unit: "Unidad",
-            price: "Precio",
-            on_request: "BAJO PEDIDO",
-            net: "NETO",
-            indicative: "Precio orientativo, por confirmar",
-            valid_from: "Válido desde",
-            zone: "Zona de precios",
-            page: "Página",
-        },
-        _ => PriceListLabels {
-            code: "Code",
-            description: "Description",
-            unit: "Unit",
-            price: "Price",
-            on_request: "ON REQUEST",
-            net: "NET",
-            indicative: "Indicative price, to be confirmed",
-            valid_from: "Valid from",
-            zone: "Price zone",
-            page: "Page",
-        },
+/// The `price_list.*` labels of a document catalogue (ADR 0101); English for missing ones.
+pub fn labels(catalogue: &Catalogue) -> PriceListLabels {
+    let l = |k: &str| catalogue.get(&format!("price_list.{k}")).to_string();
+    PriceListLabels {
+        code: l("code"),
+        description: l("description"),
+        unit: l("unit"),
+        price: l("price"),
+        on_request: l("on_request"),
+        net: l("net"),
+        indicative: l("indicative"),
+        valid_from: l("valid_from"),
+        zone: l("zone"),
+        page: l("page"),
     }
 }
 
@@ -139,9 +91,10 @@ pub struct PriceListDoc {
 pub async fn render_pdf(
     config: &tradocraft_core::DocumentConfig,
     doc: &PriceListDoc,
+    labels: &Catalogue,
     files: &[(String, Vec<u8>)],
 ) -> anyhow::Result<Vec<u8>> {
-    crate::render_pdf_with_files(config, "price_list", doc, files).await
+    crate::render_pdf_with_files(config, "price_list", doc, labels, files).await
 }
 
 /// A valid Excel sheet name from a title: at most 31 characters, none of `[]:*?/\\`, and no
@@ -178,12 +131,12 @@ pub fn render_xlsx(doc: &PriceListDoc) -> Result<Vec<u8>, XlsxError> {
     )?;
     row += 2;
     let (c_code, c_desc, c_unit, c_price) = (0u16, 1u16, 2u16, 3u16);
-    ws.write_string_with_format(row, c_code, doc.labels.code, &bold)?;
-    ws.write_string_with_format(row, c_desc, doc.labels.description, &bold)?;
+    ws.write_string_with_format(row, c_code, &doc.labels.code, &bold)?;
+    ws.write_string_with_format(row, c_desc, &doc.labels.description, &bold)?;
     if doc.show_unit {
-        ws.write_string_with_format(row, c_unit, doc.labels.unit, &bold)?;
+        ws.write_string_with_format(row, c_unit, &doc.labels.unit, &bold)?;
     }
-    ws.write_string_with_format(row, c_price, doc.labels.price, &bold)?;
+    ws.write_string_with_format(row, c_price, &doc.labels.price, &bold)?;
     ws.set_freeze_panes(row + 1, 0)?;
     row += 1;
     for section in &doc.sections {
@@ -227,6 +180,7 @@ pub fn render_xlsx(doc: &PriceListDoc) -> Result<Vec<u8>, XlsxError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tradocraft_core::translations::Domain;
 
     fn doc() -> PriceListDoc {
         PriceListDoc {
@@ -241,7 +195,7 @@ mod tests {
             show_unit: true,
             has_indicative: true,
             logo_file: None,
-            labels: labels("nl"),
+            labels: labels(&Catalogue::shipped(Domain::Documents, "nl")),
             sections: vec![PriceListSection {
                 level: 0,
                 print_level: 0,
@@ -275,8 +229,9 @@ mod tests {
 
     #[test]
     fn unknown_language_gets_english_labels() {
-        assert_eq!(labels("xx").on_request, "ON REQUEST");
-        assert_eq!(labels("nl").on_request, "OP AANVRAAG");
+        let label = |l: &str| labels(&Catalogue::shipped(Domain::Documents, l)).on_request;
+        assert_eq!(label("pt"), "ON REQUEST");
+        assert_eq!(label("nl"), "OP AANVRAAG");
     }
 
     #[test]

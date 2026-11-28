@@ -7,9 +7,10 @@ import 'package:path/path.dart' as p;
 
 import 'app/router.dart';
 import 'app/secret_store.dart';
-import 'l10n/l10n.dart';
+import 'l10n/runtime_l10n.dart';
 import 'app/brand.dart';
 import 'app/environments.dart';
+import 'app/interface_languages.dart';
 import 'app/profile.dart';
 import 'app/session.dart';
 import 'app/shortcuts/host.dart';
@@ -121,10 +122,11 @@ class TradocraftApp extends ConsumerWidget {
       ),
       routerConfig: router,
       locale: ref.watch(localeProvider),
-      supportedLocales: AppLocalizations.supportedLocales,
+      // Shipped languages plus those an administrator installed as catalogues (ADR 0101).
+      supportedLocales: interfaceLocales(ref.watch(interfaceLanguagesProvider)),
       localizationsDelegates: [
-        AppLocalizations.delegate,
-        ...GlobalMaterialLocalizations.delegates,
+        RuntimeLocalizationsDelegate(ref.watch(runtimeCataloguesProvider)),
+        ...fallbackFlutterDelegates,
       ],
       onGenerateTitle: (context) {
         final profile = ref.read(profileProvider);

@@ -20,6 +20,9 @@ Company _$CompanyFromJson(Map<String, dynamic> json) => Company(
   street: json['street'] as String,
   email: json['email'] as String?,
   iban: json['iban'] as String?,
+  languages: (json['languages'] as List<dynamic>?)
+      ?.map((e) => e as String)
+      .toList(),
   phone: json['phone'] as String?,
   vatNumber: json['vat_number'] as String?,
 );
@@ -34,6 +37,7 @@ Map<String, dynamic> _$CompanyToJson(Company instance) => <String, dynamic>{
   'iban': ?instance.iban,
   'id': instance.id,
   'is_primary': instance.isPrimary,
+  'languages': ?instance.languages,
   'name': instance.name,
   'phone': ?instance.phone,
   'postal_code': instance.postalCode,

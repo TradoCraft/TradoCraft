@@ -96,8 +96,15 @@ class _CategoryDialog extends ConsumerStatefulWidget {
 
 class _CategoryDialogState extends ConsumerState<_CategoryDialog> {
   late final c = widget.category;
+
+  /// The company's languages plus any the category already has a name in (ADR 0101).
+  late final _langs = [
+    ...languageCodes,
+    for (final n in c?.names ?? const <CategoryName>[])
+      if (!languageCodes.contains(n.language)) n.language,
+  ];
   late final _names = {
-    for (final code in languageCodes)
+    for (final code in _langs)
       code: TextEditingController(
         text: c?.names.where((n) => n.language == code).firstOrNull?.name,
       ),
@@ -122,7 +129,7 @@ class _CategoryDialogState extends ConsumerState<_CategoryDialog> {
       sortOrder: int.tryParse(_order.text.trim()) ?? 0,
       active: _active,
       names: [
-        for (final code in languageCodes)
+        for (final code in _langs)
           if (_names[code]!.text.trim().isNotEmpty)
             CategoryName(language: code, name: _names[code]!.text.trim()),
       ],
@@ -164,7 +171,7 @@ class _CategoryDialogState extends ConsumerState<_CategoryDialog> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(l.kbCategoryNames),
-              for (final code in languageCodes)
+              for (final code in _langs)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: TextField(

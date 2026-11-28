@@ -85,8 +85,7 @@ pub fn validate_structure(inputs: &[QuotationLineInput]) -> AppResult<()> {
             .is_some_and(|c| !tradocraft_core::is_language(c))
         {
             return Err(AppError::Validation(format!(
-                "line {n}: customer_remark_language must be one of {}",
-                tradocraft_core::LANGUAGES.join(", ")
+                "line {n}: customer_remark_language must be an ISO 639-1 language code"
             )));
         }
         match l.percent_of_parent {

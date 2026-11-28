@@ -1,0 +1,13 @@
+{
+  "mail.order_confirmation.body": "Bonjour {customer},\n\nVeuillez trouver ci-joint la confirmation de commande {number}{rev}. Merci de la vérifier et de nous la confirmer. Pour toute remarque, n'hésitez pas à nous contacter.\n\nCordialement\n{company}\n",
+  "mail.order_confirmation.subject": "Confirmation de commande {number}{rev}",
+  "mail.outage.body": "Le traitement en arrière-plan de TradoCraft ne fonctionnait pas du {from} au {until} (environ {min} minutes). Il fonctionne à nouveau.\n\nPendant cette période, aucun e-mail n'a été envoyé ni relevé, aucune escalade SLA n'a eu lieu et aucune visite de maintenance n'a été planifiée. Ce qui était en attente est traité maintenant ; vérifiez si des points urgents s'y trouvaient.\n",
+  "mail.outage.subject": "Le traitement en arrière-plan était arrêté",
+  "mail.portal_login.ignore": "Vous n'avez pas fait cette demande ? Vous pouvez ignorer cet e-mail.",
+  "mail.portal_login.intro": "Utilisez ce lien pour vous connecter à notre portail client :",
+  "mail.portal_login.regards": "Cordialement",
+  "mail.portal_login.subject": "Connexion au portail client de {company}",
+  "mail.portal_login.valid": "Ce lien est valable {minutes} minutes et ne peut être utilisé qu'une seule fois.",
+  "mail.service_report.body": "Bonjour {customer},\n\nVeuillez trouver ci-joint le rapport d'intervention {number}. Pour toute question, n'hésitez pas à nous contacter.\n\nCordialement\n{company}\n",
+  "mail.service_report.subject": "Rapport d'intervention {number}"
+}

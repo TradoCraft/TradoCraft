@@ -25,7 +25,7 @@ class FavoriteSummary {
   
   final String id;
 
-  /// The languages (nl, fr, en, de, es) in which at least one customer remark exists.
+  /// The languages (ISO 639-1 codes) in which at least one customer remark exists.
   final List<String> languages;
 
   /// Whether the main product is still active.

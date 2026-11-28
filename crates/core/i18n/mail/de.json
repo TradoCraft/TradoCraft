@@ -1,0 +1,13 @@
+{
+  "mail.order_confirmation.body": "Guten Tag {customer},\n\nanbei erhalten Sie die Auftragsbestätigung {number}{rev}. Bitte prüfen und bestätigen Sie diese. Bei Anmerkungen melden Sie sich gerne bei uns.\n\nMit freundlichen Grüßen\n{company}\n",
+  "mail.order_confirmation.subject": "Auftragsbestätigung {number}{rev}",
+  "mail.outage.body": "Die Hintergrundverarbeitung von TradoCraft lief von {from} bis {until} nicht (etwa {min} Minuten). Sie läuft wieder.\n\nIn dieser Zeit wurden keine E-Mails gesendet oder abgerufen, keine SLA-Eskalationen ausgelöst und keine Wartungsbesuche geplant. Liegengebliebenes wird jetzt verarbeitet; prüfen Sie, ob Zeitkritisches dabei war.\n",
+  "mail.outage.subject": "Die Hintergrundverarbeitung war ausgefallen",
+  "mail.portal_login.ignore": "Sie haben das nicht angefordert? Dann können Sie diese E-Mail ignorieren.",
+  "mail.portal_login.intro": "Mit diesem Link melden Sie sich in unserem Kundenportal an:",
+  "mail.portal_login.regards": "Mit freundlichen Grüßen",
+  "mail.portal_login.subject": "Anmeldung im Kundenportal von {company}",
+  "mail.portal_login.valid": "Der Link ist {minutes} Minuten gültig und kann nur einmal verwendet werden.",
+  "mail.service_report.body": "Guten Tag {customer},\n\nanbei erhalten Sie den Servicebericht {number} zu unserem Einsatz. Bei Fragen melden Sie sich gerne bei uns.\n\nMit freundlichen Grüßen\n{company}\n",
+  "mail.service_report.subject": "Servicebericht {number}"
+}

@@ -51,7 +51,7 @@ pub struct TicketSummary {
     pub category: String,
     #[serde(default)]
     pub suggested_category: Option<String>,
-    /// `nl | fr | en | de | es`
+    /// an ISO 639-1 code
     pub language: String,
     /// `record | detected | agent`
     pub language_source: String,
@@ -384,7 +384,7 @@ pub struct TicketStatusInput {
 /// Localized variant of a [`PreparedAnswer`] (OpenAPI schema `AnswerText`).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AnswerText {
-    /// `nl | fr | en | de | es`
+    /// an ISO 639-1 code
     pub language: String,
     #[serde(default)]
     pub subject: String,

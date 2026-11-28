@@ -91,7 +91,7 @@ pub struct ReaderEntry {
     pub updated_at: DateTime<Utc>,
 }
 
-/// Optional language query parameter (`nl | fr | en | de | es`).
+/// Optional language query parameter (an ISO 639-1 code).
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 pub struct KbLanguageParams {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -120,7 +120,7 @@ pub struct ListPublicKbEntriesParams {
     pub category_id: Option<Uuid>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
-    /// `nl | fr | en | de | es` (default: the company's language).
+    /// an ISO 639-1 code (default: the company's language).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -213,6 +213,9 @@ pub struct PortalProfile {
     pub roles: Vec<String>,
     /// `own | customer`
     pub scope: String,
+    /// The company's content languages (ADR 0101).
+    #[serde(default)]
+    pub languages: Vec<String>,
 }
 
 /// Session response returned by `POST /api/v1/portal/sessions`

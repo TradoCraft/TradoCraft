@@ -119,7 +119,7 @@ fn document(
 
 #[derive(Debug, Deserialize, IntoParams)]
 pub struct PdfParams {
-    /// nl | fr | en | de | es; default: the language of the customer.
+    /// ISO 639-1 code; default: the language of the customer.
     pub lang: Option<String>,
 }
 
@@ -148,15 +148,18 @@ async fn delivery_pdf(
     let language = match p.lang.as_deref().map(str::to_lowercase) {
         Some(l) if tradocraft_core::is_language(&l) => l,
         Some(_) => {
-            return Err(AppError::Validation(format!(
-                "lang must be one of {}",
-                tradocraft_core::LANGUAGES.join(", ")
-            )))
+            return Err(AppError::Validation(
+                "lang must be an ISO 639-1 language code".to_string(),
+            ))
         }
         None => customer.language.clone(),
     };
+    let labels =
+        tradocraft_core::translations::document_labels(&state.db, user.company_id, &language)
+            .await?;
     let doc = document(&company, &note, reference, &language);
-    let bytes = tradocraft_documents::render_pdf(&state.documents, "delivery_note", &doc).await?;
+    let bytes =
+        tradocraft_documents::render_pdf(&state.documents, "delivery_note", &doc, &labels).await?;
     Ok((
         [
             (header::CONTENT_TYPE, "application/pdf".to_string()),

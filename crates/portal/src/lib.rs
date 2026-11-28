@@ -10,6 +10,8 @@
 mod mail;
 pub mod session;
 
+use std::collections::BTreeMap;
+
 use axum::body::Bytes;
 use axum::extract::{DefaultBodyLimit, Path, Query, State};
 use axum::http::StatusCode;
@@ -19,7 +21,8 @@ use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use session::{new_token, PortalUser, LINK_PREFIX, SESSION_PREFIX};
 use tradocraft_core::files::FileInfo;
-use tradocraft_core::{audit, is_language, new_id, AppError, AppResult, AppState, LANGUAGES};
+use tradocraft_core::translations::{self, Domain};
+use tradocraft_core::{audit, is_language, new_id, AppError, AppResult, AppState};
 use tradocraft_crm::contacts::{self, Contact, ADDRESS_FORMS, TITLES};
 use tradocraft_helpdesk::portal::{self, PortalTicket, PortalTicketDetail};
 use tradocraft_kb::public::{BrowseParams, LanguageParams, SuggestQuery};
@@ -115,8 +118,14 @@ async fn request_login_link(
     // The token travels in the fragment, which browsers do not send to servers or in referrers.
     let link = format!("{}/login#token={token}", portal_url.trim_end_matches('/'));
     let to = input.email.trim().to_lowercase();
-    let (subject, body) = mail::login_mail(
+    let texts = tradocraft_core::translations::mail_texts(
+        &mut *tx,
+        input.company_id,
         &contact.effective_language,
+    )
+    .await?;
+    let (subject, body) = mail::login_mail(
+        &texts,
         &contact.greeting,
         &company_name,
         &link,
@@ -156,6 +165,10 @@ pub struct PortalProfile {
     pub roles: Vec<String>,
     /// own | customer
     pub scope: String,
+    /// The company's content languages (ADR 0101): what the person can choose as their
+    /// language. Empty in the profile returned with a new session.
+    #[serde(default)]
+    pub languages: Vec<String>,
 }
 
 impl From<Contact> for PortalProfile {
@@ -176,8 +189,20 @@ impl From<Contact> for PortalProfile {
             greeting: c.greeting,
             roles: c.roles,
             scope: c.portal_scope,
+            languages: Vec::new(),
         }
     }
+}
+
+/// The profile of a contact with the company's content languages filled in.
+async fn profile(
+    conn: &mut sqlx::PgConnection,
+    company_id: Uuid,
+    contact: Contact,
+) -> AppResult<PortalProfile> {
+    let mut p = PortalProfile::from(contact);
+    p.languages = tradocraft_core::languages::company_languages(&mut *conn, company_id).await?;
+    Ok(p)
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -273,17 +298,14 @@ async fn end_session(State(state): State<AppState>, user: PortalUser) -> AppResu
     responses((status = 200, body = PortalProfile), (status = 401, body = ErrorBody)))]
 async fn get_me(State(state): State<AppState>, user: PortalUser) -> AppResult<Json<PortalProfile>> {
     let mut conn = state.db.acquire().await?;
-    Ok(Json(
-        contacts::get_contact(&mut conn, user.contact_id)
-            .await?
-            .into(),
-    ))
+    let contact = contacts::get_contact(&mut conn, user.contact_id).await?;
+    Ok(Json(profile(&mut conn, user.company_id, contact).await?))
 }
 
 /// What a customer may change about themselves: how they want to be addressed.
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct ProfileInput {
-    /// nl | fr | en | de | es; null = same as the company.
+    /// ISO 639-1 code; null = same as the company.
     pub language: Option<String>,
     /// formal | informal
     pub address_form: String,
@@ -300,10 +322,9 @@ async fn update_me(
 ) -> AppResult<Json<PortalProfile>> {
     let language = input.language.as_deref().map(str::to_lowercase);
     if language.as_deref().is_some_and(|l| !is_language(l)) {
-        return Err(AppError::Validation(format!(
-            "language must be one of {}",
-            LANGUAGES.join(", ")
-        )));
+        return Err(AppError::Validation(
+            "language must be an ISO 639-1 language code".to_string(),
+        ));
     }
     if !ADDRESS_FORMS.contains(&input.address_form.as_str()) {
         return Err(AppError::Validation(format!(
@@ -337,8 +358,9 @@ async fn update_me(
     )
     .await?;
     let contact = contacts::get_contact(&mut tx, user.contact_id).await?;
+    let p = profile(&mut tx, user.company_id, contact).await?;
     tx.commit().await?;
-    Ok(Json(contact.into()))
+    Ok(Json(p))
 }
 
 #[utoipa::path(get, path = "/portal/tickets", tag = "portal", operation_id = "list_portal_tickets",
@@ -699,6 +721,40 @@ async fn kb_language(
     tradocraft_kb::public::language(asked, &own.unwrap_or_else(|| "en".into()))
 }
 
+/// The interface languages the company installed for the app (ADR 0101), besides the shipped ones.
+#[utoipa::path(get, path = "/portal/translations/app", tag = "portal",
+    operation_id = "list_portal_interface_languages",
+    responses((status = 200, body = Vec<String>), (status = 401, body = ErrorBody)))]
+async fn portal_interface_languages(
+    State(state): State<AppState>,
+    user: PortalUser,
+) -> AppResult<Json<Vec<String>>> {
+    Ok(Json(
+        translations::languages_with_company_texts(&state.db, user.company_id, Domain::App).await?,
+    ))
+}
+
+/// The company's interface texts of the app in one language (`key → ICU message`).
+#[utoipa::path(get, path = "/portal/translations/app/{language}", tag = "portal",
+    operation_id = "get_portal_interface_catalogue",
+    params(("language" = String, Path, description = "ISO 639-1 code")),
+    responses((status = 200, body = BTreeMap<String, String>), (status = 401, body = ErrorBody),
+        (status = 422, body = ErrorBody)))]
+async fn portal_interface_catalogue(
+    State(state): State<AppState>,
+    user: PortalUser,
+    Path(language): Path<String>,
+) -> AppResult<Json<BTreeMap<String, String>>> {
+    if !is_language(&language) {
+        return Err(AppError::Validation(
+            "language must be an ISO 639-1 language code".into(),
+        ));
+    }
+    Ok(Json(
+        translations::company_texts(&state.db, user.company_id, Domain::App, &language).await?,
+    ))
+}
+
 #[utoipa::path(get, path = "/portal/kb/categories", tag = "portal", operation_id = "list_portal_kb_categories",
     params(LanguageParams),
     responses((status = 200, body = Vec<ReaderCategory>), (status = 401, body = ErrorBody)))]
@@ -822,6 +878,8 @@ async fn kb_image(
 pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(request_login_link))
+        .routes(routes!(portal_interface_languages))
+        .routes(routes!(portal_interface_catalogue))
         .routes(routes!(create_session))
         .routes(routes!(end_session))
         .routes(routes!(get_me, update_me))

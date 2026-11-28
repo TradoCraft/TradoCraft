@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
+import '../../l10n/l10n.dart' show languageCodes;
 
 /// All price lists of the company.
 final priceListsProvider = FutureProvider<List<PriceList>>(
@@ -25,20 +26,22 @@ final priceListItemsProvider = FutureProvider.family<List<PriceListItem>, String
   (ref, id) => ref.watch(apiProvider).products.listItems(id: id),
 );
 
-/// The languages a price list can be published in, in the order the app shows them.
-const priceListLanguages = ['nl', 'fr', 'en', 'de', 'es'];
+/// The languages a price list can be published in: the company's content languages (ADR 0101).
+List<String> get priceListLanguages => languageCodes;
 
 /// Deepest nesting of groups the server accepts.
 const maxGroupDepth = 4;
 
 /// The languages the zones of a list are published in, in the app's order. Titles and
-/// descriptions are edited in these; a list without zones offers all five.
+/// descriptions are edited in these; a list without zones offers all of the company's languages.
 extension PriceListLanguages on PriceList {
   List<String> get publishedLanguages {
     final used = {for (final z in zones) ...z.languages};
     final ordered = [
       for (final c in priceListLanguages)
         if (used.contains(c)) c,
+      for (final c in used)
+        if (!priceListLanguages.contains(c)) c,
     ];
     return ordered.isEmpty ? priceListLanguages : ordered;
   }

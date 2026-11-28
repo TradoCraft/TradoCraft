@@ -164,6 +164,7 @@ fn me_with(permissions: &[&str]) -> Me {
             phone: None,
             iban: None,
             default_language: "en".into(),
+            languages: vec!["en".into()],
             is_primary: true,
             quotation_single_line_items: true,
             autosave_minutes: 5,

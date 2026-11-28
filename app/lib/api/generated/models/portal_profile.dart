@@ -25,6 +25,7 @@ class PortalProfile {
     required this.title,
     this.email,
     this.language,
+    this.languages,
   });
   
   factory PortalProfile.fromJson(Map<String, Object?> json) => _$PortalProfileFromJson(json);
@@ -55,6 +56,11 @@ class PortalProfile {
   /// The person's own language; null means the same as the company.
   @JsonKey(includeIfNull: false)
   final String? language;
+
+  /// The company's content languages (ADR 0101): what the person can choose as their.
+  /// language. Empty in the profile returned with a new session.
+  @JsonKey(includeIfNull: false)
+  final List<String>? languages;
   @JsonKey(name: 'last_name')
   final String lastName;
   final List<String> roles;

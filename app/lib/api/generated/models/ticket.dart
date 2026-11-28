@@ -109,7 +109,7 @@ class Ticket {
   final String id;
   final bool internal;
 
-  /// nl | fr | en | de | es — the language to answer in.
+  /// ISO 639-1 code: the language to answer in.
   final String language;
 
   /// record | detected | agent: where `language` came from.

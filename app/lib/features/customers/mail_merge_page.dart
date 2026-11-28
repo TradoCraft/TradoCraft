@@ -17,9 +17,16 @@ class MailMergePage extends ConsumerStatefulWidget {
 
 class _MailMergePageState extends ConsumerState<MailMergePage> {
   static const _path = '/api/v1/customers/mail-merge';
-  static const _languages = ['en', 'nl', 'fr', 'de', 'es'];
-  final _subjects = {for (final l in _languages) l: TextEditingController()};
-  final _bodies = {for (final l in _languages) l: TextEditingController()};
+  /// The company's content languages (ADR 0101), English first as the mailing's base text.
+  final _languages = [
+    'en',
+    for (final l in languageCodes)
+      if (l != 'en') l,
+  ];
+  late final _subjects = {
+    for (final l in _languages) l: TextEditingController(),
+  };
+  late final _bodies = {for (final l in _languages) l: TextEditingController()};
   final _recipients = <String, String>{};
   List<Document> _documents = [];
   List<int> _revisions = [];

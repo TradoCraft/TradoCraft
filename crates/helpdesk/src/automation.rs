@@ -53,10 +53,10 @@ pub struct RuleConditions {
     #[serde(default)]
     pub statuses: Vec<String>,
     pub customer_id: Option<Uuid>,
-    /// The language of the customer (nl, fr, en, de, es).
+    /// The language of the customer (ISO 639-1 codes).
     #[serde(default)]
     pub customer_languages: Vec<String>,
-    /// The language of the ticket itself (nl, fr, en, de, es), which may differ from its customer's.
+    /// The language of the ticket itself (ISO 639-1 codes), which may differ from its customer's.
     #[serde(default)]
     pub ticket_languages: Vec<String>,
     /// email | portal | phone | manual | internal
@@ -677,16 +677,16 @@ async fn validate(
     check_list("priorities", &c.priorities, &PRIORITIES)?;
     check_list("categories", &c.categories, &CATEGORIES)?;
     check_list("statuses", &c.statuses, &STATUSES)?;
-    check_list(
-        "customer_languages",
-        &c.customer_languages,
-        &tradocraft_core::LANGUAGES,
-    )?;
-    check_list(
-        "ticket_languages",
-        &c.ticket_languages,
-        &tradocraft_core::LANGUAGES,
-    )?;
+    for (field, values) in [
+        ("customer_languages", &c.customer_languages),
+        ("ticket_languages", &c.ticket_languages),
+    ] {
+        if let Some(bad) = values.iter().find(|l| !tradocraft_core::is_language(l)) {
+            return Err(AppError::Validation(format!(
+                "{field}: {bad:?} is not an ISO 639-1 language code"
+            )));
+        }
+    }
     check_list("channels", &c.channels, &CHANNELS)?;
     if c.owner
         .as_deref()

@@ -103,7 +103,7 @@ async fn contacts_are_validated_and_permissions_enforced(db: PgPool) {
 
     for (patch, what) in [
         (json!({ "last_name": " " }), "last name"),
-        (json!({ "language": "it" }), "language"),
+        (json!({ "language": "xx" }), "language"),
         (json!({ "title": "dr" }), "title"),
         (json!({ "address_form": "casual" }), "address form"),
         (json!({ "roles": ["boss"] }), "role"),

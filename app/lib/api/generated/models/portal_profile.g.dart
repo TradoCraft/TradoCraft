@@ -23,6 +23,9 @@ PortalProfile _$PortalProfileFromJson(Map<String, dynamic> json) =>
       title: json['title'] as String,
       email: json['email'] as String?,
       language: json['language'] as String?,
+      languages: (json['languages'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
     );
 
 Map<String, dynamic> _$PortalProfileToJson(PortalProfile instance) =>
@@ -38,6 +41,7 @@ Map<String, dynamic> _$PortalProfileToJson(PortalProfile instance) =>
       'greeting': instance.greeting,
       'job_title': instance.jobTitle,
       'language': ?instance.language,
+      'languages': ?instance.languages,
       'last_name': instance.lastName,
       'roles': instance.roles,
       'scope': instance.scope,

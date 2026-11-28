@@ -70,7 +70,7 @@ class FavoriteItem {
   /// Main item: the default quantity. Other items: the quantity per ONE unit of the main item.
   final String quantity;
 
-  /// The customer remark per language, in the order nl, fr, en, de, es.
+  /// The customer remark per language, in the order of the company's languages.
   final List<FavoriteRemark> remarks;
   @JsonKey(includeIfNull: false)
   final String? section;

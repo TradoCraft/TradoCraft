@@ -174,10 +174,9 @@ async fn upload(
     body: Bytes,
 ) -> AppResult<StatusCode> {
     user.require(Permission::KbAdmin)?;
-    if !matches!(language.as_str(), "en" | "nl" | "fr" | "de" | "es") || !body.starts_with(b"%PDF-")
-    {
+    if !tradocraft_core::is_language(&language) || !body.starts_with(b"%PDF-") {
         return Err(AppError::Validation(
-            "a PDF in a supported language is required".into(),
+            "a PDF and an ISO 639-1 language code are required".into(),
         ));
     }
     let mut tx = state.db.begin().await?;

@@ -36,9 +36,7 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use uuid::Uuid;
 
-/// Languages a price list can be published in; the labels exist for exactly these.
-pub const LANGUAGES: [&str; 5] = ["nl", "fr", "en", "de", "es"];
-/// Chapter, group, sub-group, sub-sub-group.
+/// Chapter, group, sub-group, sub-sub-group (the Salesforce sort order has four levels).
 pub const MAX_DEPTH: usize = 4;
 const MAX_TEXT: usize = 300;
 
@@ -544,17 +542,20 @@ pub struct PriceListInput {
     pub settings: PriceListSettings,
 }
 
-/// Normalises and checks a language list: non-empty, no duplicates, only [`LANGUAGES`].
-fn clean_languages(languages: &[String]) -> AppResult<Vec<String>> {
+/// Normalises and checks a zone's language list: non-empty, no duplicates, and only languages in
+/// `allowed` (the company's content languages and those the list already publishes, ADR 0101).
+fn clean_languages(languages: &[String], allowed: &[String]) -> AppResult<Vec<String>> {
     let languages: Vec<String> = languages.iter().map(|l| l.trim().to_lowercase()).collect();
     let unique: HashSet<&String> = languages.iter().collect();
-    if languages.is_empty()
-        || unique.len() != languages.len()
-        || !languages.iter().all(|l| LANGUAGES.contains(&l.as_str()))
-    {
+    if languages.is_empty() || unique.len() != languages.len() {
+        return Err(AppError::Validation(
+            "languages must be a non-empty list without duplicates".into(),
+        ));
+    }
+    if let Some(bad) = languages.iter().find(|l| !allowed.contains(l)) {
         return Err(AppError::Validation(format!(
-            "languages must be a non-empty list without duplicates from {}",
-            LANGUAGES.join(", ")
+            "languages: {bad:?} is not one of the company's languages ({})",
+            allowed.join(", ")
         )));
     }
     Ok(languages)
@@ -580,7 +581,7 @@ impl PriceListInput {
 #[derive(Debug, Clone, Deserialize, ToSchema)]
 pub struct PriceListZoneInput {
     pub price_zone_id: Uuid,
-    /// Subset of nl, fr, en, de, es; the first is the default.
+    /// Languages of the company (ISO 639-1); the first is the default.
     pub languages: Vec<String>,
 }
 
@@ -615,7 +616,7 @@ pub struct PriceListGroupInput {
     pub parent_id: Option<Uuid>,
     #[serde(default)]
     pub sort_order: i32,
-    /// Title per language code (nl, fr, en, de, es); at least one.
+    /// Title per language (ISO 639-1 code); at least one.
     pub title: BTreeMap<String, String>,
     #[serde(default)]
     pub page_break: bool,
@@ -943,6 +944,20 @@ async fn replace_zones(
     Json(input): Json<Vec<PriceListZoneInput>>,
 ) -> AppResult<Json<PriceList>> {
     user.require(Permission::PriceListsWrite)?;
+    // The company's languages, plus those the list already publishes in (so a language that was
+    // removed from the company does not block saving the zones it is still on).
+    let allowed: Vec<String> = sqlx::query_scalar(
+        "SELECT language FROM core.company_languages WHERE company_id = $1
+         UNION
+         SELECT zl.language::text FROM pricing.price_list_zone_languages zl
+         JOIN pricing.price_list_zones z ON z.id = zl.price_list_zone_id
+         JOIN pricing.price_lists l ON l.id = z.price_list_id
+         WHERE l.id = $2 AND l.company_id = $1",
+    )
+    .bind(user.company_id)
+    .bind(id)
+    .fetch_all(&state.db)
+    .await?;
     let mut zones = Vec::new();
     let mut seen = HashSet::new();
     for z in &input {
@@ -951,7 +966,7 @@ async fn replace_zones(
                 "a price zone can be listed only once".into(),
             ));
         }
-        zones.push((z.price_zone_id, clean_languages(&z.languages)?));
+        zones.push((z.price_zone_id, clean_languages(&z.languages, &allowed)?));
     }
     let mut tx = state.db.begin().await?;
     lock_list(&mut tx, user.company_id, id).await?;
@@ -2157,6 +2172,8 @@ async fn render_price_list(
         company.currency.clone()
     };
     let has_indicative = sections.iter().flat_map(|s| &s.rows).any(|r| r.indicative);
+    let labels =
+        tradocraft_core::translations::document_labels(&state.db, user.company_id, &lang).await?;
     let document = PriceListDoc {
         language: lang.clone(),
         title: list.name.clone(),
@@ -2169,7 +2186,7 @@ async fn render_price_list(
         show_unit: settings.show_unit,
         has_indicative,
         logo_file: logo.as_ref().map(|(name, _)| name.clone()),
-        labels: doc::labels(&lang),
+        labels: doc::labels(&labels),
         sections: sections
             .into_iter()
             .map(|s| PriceListSection {
@@ -2212,7 +2229,7 @@ async fn render_price_list(
     let (content_type, extension, bytes) = match format {
         RenderFormat::Pdf => {
             let files: Vec<(String, Vec<u8>)> = logo.into_iter().collect();
-            let pdf = match doc::render_pdf(&state.documents, &document, &files).await {
+            let pdf = match doc::render_pdf(&state.documents, &document, &labels, &files).await {
                 Ok(pdf) => pdf,
                 // A logo typst cannot read must not stop the price list from printing.
                 Err(e) if !files.is_empty() => {
@@ -2221,7 +2238,7 @@ async fn render_price_list(
                         logo_file: None,
                         ..document
                     };
-                    doc::render_pdf(&state.documents, &bare, &[]).await?
+                    doc::render_pdf(&state.documents, &bare, &labels, &[]).await?
                 }
                 Err(e) => return Err(e.into()),
             };

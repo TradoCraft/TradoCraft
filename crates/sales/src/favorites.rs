@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgConnection};
 use tradocraft_core::audit::{self, Changes};
 use tradocraft_core::{
-    is_language, new_id, search, AppError, AppResult, AppState, CurrentUser, Permission, LANGUAGES,
+    is_language, new_id, search, AppError, AppResult, AppState, CurrentUser, Permission,
 };
 use utoipa::{IntoParams, ToSchema};
 use utoipa_axum::router::OpenApiRouter;
@@ -48,7 +48,7 @@ pub struct FavoriteSummary {
     pub main_product_active: bool,
     /// The number of lines below the main item.
     pub option_count: i64,
-    /// The languages (nl, fr, en, de, es) in which at least one customer remark exists.
+    /// The languages (ISO 639-1 codes) in which at least one customer remark exists.
     pub languages: Vec<String>,
     pub updated_at: DateTime<Utc>,
 }
@@ -56,7 +56,7 @@ pub struct FavoriteSummary {
 /// The customer remark of an item in one language.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct FavoriteRemark {
-    /// nl | fr | en | de | es
+    /// ISO 639-1 code
     pub language: String,
     pub text: String,
 }
@@ -89,7 +89,7 @@ pub struct FavoriteItem {
     #[schema(value_type = Option<String>, example = "20")]
     pub percent_of_parent: Option<Decimal>,
     pub percent_base: Option<PercentBase>,
-    /// The customer remark per language, in the order nl, fr, en, de, es.
+    /// The customer remark per language, in the order of the company's languages.
     pub remarks: Vec<FavoriteRemark>,
 }
 
@@ -274,7 +274,11 @@ async fn load_items(conn: &mut PgConnection, favorite_id: Uuid) -> AppResult<Vec
     let remarks: Vec<RemarkRow> = sqlx::query_as(
         "SELECT item_id, language::text AS language, text FROM sales.favorite_item_remarks
          WHERE item_id = ANY($1)
-         ORDER BY array_position(ARRAY['nl','fr','en','de','es'], language::text)",
+         ORDER BY core.language_order(
+                      (SELECT f.company_id FROM sales.favorite_items i
+                       JOIN sales.favorites f ON f.id = i.favorite_id WHERE i.id = item_id),
+                      language::text),
+                  language",
     )
     .bind(&ids)
     .fetch_all(&mut *conn)
@@ -408,8 +412,7 @@ fn validate(input: &FavoriteInput) -> AppResult<Vec<Vec<FavoriteRemark>>> {
         for r in &it.remarks {
             if !is_language(&r.language) {
                 return Err(invalid(format!(
-                    "item {pos}: language must be one of {}",
-                    LANGUAGES.join(", ")
+                    "item {pos}: language must be an ISO 639-1 language code"
                 )));
             }
             if r.text.trim().is_empty() {
@@ -556,14 +559,13 @@ async fn write_item(
 type TextSig = (Option<String>, String, Vec<(String, String)>);
 
 fn sig_of_stored(i: &FavoriteItem) -> TextSig {
-    (
-        i.comment.clone(),
-        i.production_remark.clone(),
-        i.remarks
-            .iter()
-            .map(|r| (r.language.clone(), r.text.clone()))
-            .collect(),
-    )
+    let mut r: Vec<(String, String)> = i
+        .remarks
+        .iter()
+        .map(|r| (r.language.clone(), r.text.clone()))
+        .collect();
+    r.sort();
+    (i.comment.clone(), i.production_remark.clone(), r)
 }
 
 fn sig_of_input(it: &FavoriteItemInput, remarks: &[FavoriteRemark]) -> TextSig {
@@ -571,7 +573,7 @@ fn sig_of_input(it: &FavoriteItemInput, remarks: &[FavoriteRemark]) -> TextSig {
         .iter()
         .map(|r| (r.language.clone(), r.text.clone()))
         .collect();
-    r.sort_by_key(|(l, _)| LANGUAGES.iter().position(|x| *x == l).unwrap_or(99));
+    r.sort();
     (
         clean(&it.comment),
         it.production_remark.trim().to_string(),
@@ -619,11 +621,17 @@ async fn list_favorites(
         .bind(params.offset.unwrap_or(0).max(0))
         .fetch_all(&state.db)
         .await?;
+    let order = tradocraft_core::languages::company_languages(&state.db, user.company_id).await?;
     Ok(Json(
         rows.into_iter()
             .map(|r| {
                 let mut languages = r.languages;
-                languages.sort_by_key(|l| LANGUAGES.iter().position(|x| x == l).unwrap_or(99));
+                languages.sort_by_key(|l| {
+                    (
+                        order.iter().position(|x| x == l).unwrap_or(usize::MAX),
+                        l.clone(),
+                    )
+                });
                 FavoriteSummary {
                     id: r.id,
                     name: r.name,
@@ -880,10 +888,9 @@ async fn put_remark(
 ) -> AppResult<Json<Favorite>> {
     user.require(Permission::QuotationsWrite)?;
     if !is_language(&language) {
-        return Err(invalid(format!(
-            "language must be one of {}",
-            LANGUAGES.join(", ")
-        )));
+        return Err(invalid(
+            "language must be an ISO 639-1 language code".to_string(),
+        ));
     }
     let text = input.text.trim();
     if text.is_empty() {

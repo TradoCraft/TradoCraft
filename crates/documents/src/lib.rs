@@ -10,6 +10,7 @@ use anyhow::{bail, Context};
 use chrono::NaiveDate;
 use rust_decimal::{Decimal, RoundingStrategy};
 use serde::Serialize;
+use tradocraft_core::translations::Catalogue;
 use tradocraft_core::DocumentConfig;
 
 pub mod price_list;
@@ -67,13 +68,16 @@ fn format_grouped(d: Decimal, scale: u32) -> String {
     out
 }
 
-/// Renders `templates/<template>.typ` with `data` to PDF bytes.
+/// Renders `templates/<template>.typ` with `data` to PDF bytes. The template reads its fixed
+/// words from `labels.json`: the `<template>.*` section of `labels` (ADR 0101), which the caller
+/// loads with `tradocraft_core::translations::document_labels` in the document's language.
 pub async fn render_pdf<T: Serialize>(
     config: &DocumentConfig,
     template: &str,
     data: &T,
+    labels: &Catalogue,
 ) -> anyhow::Result<Vec<u8>> {
-    render_pdf_with_files(config, template, data, &[]).await
+    render_pdf_with_files(config, template, data, labels, &[]).await
 }
 
 /// Like [`render_pdf`], with extra files (images) placed next to `data.json`. `files` are
@@ -82,6 +86,7 @@ pub async fn render_pdf_with_files<T: Serialize>(
     config: &DocumentConfig,
     template: &str,
     data: &T,
+    labels: &Catalogue,
     files: &[(String, Vec<u8>)],
 ) -> anyhow::Result<Vec<u8>> {
     let template_path = config.template_dir.join(format!("{template}.typ"));
@@ -91,6 +96,11 @@ pub async fn render_pdf_with_files<T: Serialize>(
         .await
         .with_context(|| format!("reading template {}", template_path.display()))?;
     tokio::fs::write(work.path().join("data.json"), serde_json::to_vec(data)?).await?;
+    tokio::fs::write(
+        work.path().join("labels.json"),
+        serde_json::to_vec(&labels.section(template))?,
+    )
+    .await?;
     for (name, bytes) in files {
         if name.contains(['/', '\\']) || name.starts_with('.') {
             bail!("invalid attachment name {name}");

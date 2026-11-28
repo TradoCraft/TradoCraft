@@ -12121,4 +12121,96 @@ class AppLocalizationsDe extends AppLocalizations {
   String listGroupCollapsed(String label, int count) {
     return '$label, $count Zeilen, zugeklappt';
   }
+
+  @override
+  String get adminLanguagesTitle => 'Inhaltssprachen';
+
+  @override
+  String get adminLanguagesHelp =>
+      'Die Sprachen, in denen Ihr Unternehmen schreibt und druckt: Produkttexte, Preislisten, Wissensdatenbank, Antworten, E-Mails und Dokumente. Sprachauswahlen bieten diese Sprachen in dieser Reihenfolge an.';
+
+  @override
+  String get adminLanguagesDefault => 'Standard';
+
+  @override
+  String get adminLanguagesMakeDefault => 'Als Standard';
+
+  @override
+  String get adminLanguagesRemove => 'Sprache entfernen';
+
+  @override
+  String get adminLanguagesAdd => 'Sprache hinzufügen';
+
+  @override
+  String get adminLanguagesSearch => 'Nach Name oder Code suchen';
+
+  @override
+  String get adminLanguagesSaved => 'Sprachen gespeichert';
+
+  @override
+  String get adminTranslations => 'Übersetzungen';
+
+  @override
+  String get translationsTitle => 'Übersetzungen';
+
+  @override
+  String get translationsHelp =>
+      'Fügen Sie eine Oberflächensprache hinzu oder korrigieren Sie Texte ohne neue Version: Exportieren Sie die englische Vorlage, übersetzen Sie sie und importieren Sie die Datei. Fehlende Texte erscheinen auf Englisch.';
+
+  @override
+  String get translationsDomainApp => 'Oberfläche';
+
+  @override
+  String get translationsDomainDocuments => 'Dokumente';
+
+  @override
+  String get translationsDomainMail => 'System-E-Mails';
+
+  @override
+  String get translationsExportTemplate => 'Englische Vorlage exportieren';
+
+  @override
+  String get translationsImport => 'Datei importieren';
+
+  @override
+  String get translationsExport => 'Exportieren';
+
+  @override
+  String get translationsDelete => 'Firmentexte entfernen';
+
+  @override
+  String get translationsShipped => 'Mitgeliefert';
+
+  @override
+  String translationsCompanyTexts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Firmentexte',
+      one: '1 Firmentext',
+      zero: 'keine Firmentexte',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get translationsSaved => 'Übersetzungen gespeichert';
+
+  @override
+  String get translationsDeleted => 'Firmentexte entfernt';
+
+  @override
+  String get translationsExported => 'Datei exportiert';
+
+  @override
+  String get translationsBadFile =>
+      'Die Datei ist keine ARB- oder JSON-Datei mit Texten.';
+
+  @override
+  String translationsBadKeys(String keys) {
+    return 'Unbekannte Schlüssel oder ungültige Meldungen: $keys';
+  }
+
+  @override
+  String get translationsMissingOnly => 'Nur fehlende';
 }

@@ -182,7 +182,7 @@ abstract class ProductionClient {
 
   /// The production order as a PDF to print and take to the shop floor.
   ///
-  /// [lang] - nl | fr | en | de | es; default: the language of the user, else of the company.
+  /// [lang] - ISO 639-1 code; default: the language of the user, else of the company.
   @GET('/api/v1/production-orders/{id}/pdf')
   Future<void> productionOrderPdf({
     @Path('id') required String id,

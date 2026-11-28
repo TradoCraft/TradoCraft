@@ -12,6 +12,7 @@ import '../../shared/app_icons.dart';
 import '../../shared/attachments.dart' show fileSize;
 import '../../shared/csv_transfer.dart' show PickedFile;
 import '../price_lists/price_lists_api.dart';
+import 'company_languages_section.dart';
 
 /// Lets the person choose a logo file; null when they cancel. Replaced in tests.
 typedef LogoPicker = Future<PickedFile?> Function();
@@ -245,6 +246,8 @@ class _CompanyLogoPageState extends ConsumerState<CompanyLogoPage> {
               ),
           ],
         ),
+        const Divider(height: 32),
+        const CompanyLanguagesSection(),
         const Divider(height: 32),
         Text(
           l.quotationLineLayoutTitle,

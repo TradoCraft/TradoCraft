@@ -21,7 +21,7 @@ class ProfileInput {
   @JsonKey(name: 'address_form')
   final String addressForm;
 
-  /// nl | fr | en | de | es; null = same as the company.
+  /// ISO 639-1 code; null = same as the company.
   @JsonKey(includeIfNull: false)
   final String? language;
 

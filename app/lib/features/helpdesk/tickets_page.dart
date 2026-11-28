@@ -550,7 +550,7 @@ class _NewTicketDialogState extends ConsumerState<NewTicketDialog> {
                           value: null,
                           child: Text(l.automatic),
                         ),
-                        for (final c in languageCodes)
+                        for (final c in languageChoices(_language))
                           DropdownMenuItem<String?>(
                             value: c,
                             child: Text(languageName(c)),

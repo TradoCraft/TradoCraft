@@ -12029,4 +12029,96 @@ class AppLocalizationsEn extends AppLocalizations {
   String listGroupCollapsed(String label, int count) {
     return '$label, $count rows, collapsed';
   }
+
+  @override
+  String get adminLanguagesTitle => 'Content languages';
+
+  @override
+  String get adminLanguagesHelp =>
+      'The languages your company writes and prints in: product texts, price lists, knowledge base, answers, mails and documents. Language pickers offer these languages in this order.';
+
+  @override
+  String get adminLanguagesDefault => 'Default';
+
+  @override
+  String get adminLanguagesMakeDefault => 'Make default';
+
+  @override
+  String get adminLanguagesRemove => 'Remove language';
+
+  @override
+  String get adminLanguagesAdd => 'Add language';
+
+  @override
+  String get adminLanguagesSearch => 'Search by name or code';
+
+  @override
+  String get adminLanguagesSaved => 'Languages saved';
+
+  @override
+  String get adminTranslations => 'Translations';
+
+  @override
+  String get translationsTitle => 'Translations';
+
+  @override
+  String get translationsHelp =>
+      'Add an interface language or correct texts without a new release: export the English template, translate it and import the file. Texts missing in a language are shown in English.';
+
+  @override
+  String get translationsDomainApp => 'Interface';
+
+  @override
+  String get translationsDomainDocuments => 'Documents';
+
+  @override
+  String get translationsDomainMail => 'System mails';
+
+  @override
+  String get translationsExportTemplate => 'Export English template';
+
+  @override
+  String get translationsImport => 'Import file';
+
+  @override
+  String get translationsExport => 'Export';
+
+  @override
+  String get translationsDelete => 'Remove company texts';
+
+  @override
+  String get translationsShipped => 'Included';
+
+  @override
+  String translationsCompanyTexts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count company texts',
+      one: '1 company text',
+      zero: 'no company texts',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get translationsSaved => 'Translations saved';
+
+  @override
+  String get translationsDeleted => 'Company texts removed';
+
+  @override
+  String get translationsExported => 'File exported';
+
+  @override
+  String get translationsBadFile =>
+      'The file is not an ARB or JSON file with texts.';
+
+  @override
+  String translationsBadKeys(String keys) {
+    return 'Unknown keys or invalid messages: $keys';
+  }
+
+  @override
+  String get translationsMissingOnly => 'Missing only';
 }

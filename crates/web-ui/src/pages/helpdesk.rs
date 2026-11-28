@@ -43,14 +43,6 @@ const TICKET_CATEGORIES: &[(&str, &str)] = &[
     ("other", "Other"),
 ];
 
-const TICKET_LANGUAGES: &[(&str, &str)] = &[
-    ("en", "English (en)"),
-    ("nl", "Nederlands (nl)"),
-    ("fr", "Français (fr)"),
-    ("de", "Deutsch (de)"),
-    ("es", "Español (es)"),
-];
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum DrawerSection {
     Thread,
@@ -2599,9 +2591,12 @@ pub fn HelpdeskPage() -> impl IntoView {
                                                                                         tab_id_sv.with_value(|tid| update_ticket_tab(&open_tabs, tid, |t| t.prop_language = val));
                                                                                     }
                                                                                 >
-                                                                                    {TICKET_LANGUAGES.iter().map(|(val, label)| view! {
-                                                                                        <option value=*val>{*label}</option>
-                                                                                    }).collect_view()}
+                                                                                    {move || {
+                                                                                        let current = tab_id_sv.with_value(|tid| read_ticket_tab(&open_tabs, tid, |t| t.prop_language.clone()).unwrap_or_default());
+                                                                                        crate::i18n::language_options(&ctx, Some(&current)).into_iter().map(|(val, label)| view! {
+                                                                                            <option value=val.clone() selected=val == current>{label}</option>
+                                                                                        }).collect_view()
+                                                                                    }}
                                                                                 </select>
                                                                             </div>
 
@@ -2746,8 +2741,8 @@ pub fn HelpdeskPage() -> impl IntoView {
                                                         }
                                                     >
                                                         <option value="">"Auto (customer / company)"</option>
-                                                        {TICKET_LANGUAGES.iter().map(|(val, label)| view! {
-                                                            <option value=*val>{*label}</option>
+                                                        {crate::i18n::language_options(&ctx, None).into_iter().map(|(val, label)| view! {
+                                                            <option value=val>{label}</option>
                                                         }).collect_view()}
                                                     </select>
                                                 </div>

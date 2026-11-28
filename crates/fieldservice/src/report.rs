@@ -15,6 +15,7 @@ use sqlx::PgConnection;
 use tradocraft_core::company::{get_company, Company};
 use tradocraft_core::files;
 use tradocraft_core::mail::Attachment;
+use tradocraft_core::translations::{document_labels, mail_texts, Catalogue};
 use tradocraft_core::{audit, AppError, AppResult, AppState, CurrentUser, Permission};
 use tradocraft_crm::Customer;
 use tradocraft_documents::{format_date, format_number, render_pdf_with_files};
@@ -219,35 +220,23 @@ pub fn document(
     }
 }
 
-/// Subject and body of the e-mail that carries the report.
+/// Subject and body of the e-mail that carries the report, in the language of `texts` (the
+/// `mail` catalogue, ADR 0101).
 pub fn report_mail(
-    language: &str,
+    texts: &Catalogue,
     company: &str,
     customer: &str,
     number: &str,
 ) -> (String, String) {
-    match language {
-        "nl" => (
-            format!("Werkbon {number}"),
-            format!("Geachte {customer},\n\nIn bijlage vindt u de werkbon {number} van onze interventie. Hebt u vragen, laat het ons dan weten.\n\nMet vriendelijke groeten\n{company}\n"),
-        ),
-        "fr" => (
-            format!("Rapport d'intervention {number}"),
-            format!("Bonjour {customer},\n\nVeuillez trouver ci-joint le rapport d'intervention {number}. Pour toute question, n'hésitez pas à nous contacter.\n\nCordialement\n{company}\n"),
-        ),
-        "de" => (
-            format!("Servicebericht {number}"),
-            format!("Guten Tag {customer},\n\nanbei erhalten Sie den Servicebericht {number} zu unserem Einsatz. Bei Fragen melden Sie sich gerne bei uns.\n\nMit freundlichen Grüßen\n{company}\n"),
-        ),
-        "es" => (
-            format!("Informe de servicio {number}"),
-            format!("Estimado cliente ({customer}),\n\nAdjuntamos el informe de servicio {number} de nuestra intervención. Si tiene alguna pregunta, póngase en contacto con nosotros.\n\nAtentamente\n{company}\n"),
-        ),
-        _ => (
-            format!("Service report {number}"),
-            format!("Dear {customer},\n\nPlease find attached service report {number} for our visit. If you have any questions, let us know.\n\nKind regards\n{company}\n"),
-        ),
-    }
+    let args = [
+        ("company", company),
+        ("customer", customer),
+        ("number", number),
+    ];
+    (
+        texts.format("mail.service_report.subject", &args),
+        texts.format("mail.service_report.body", &args),
+    )
 }
 
 struct Rendered {
@@ -301,6 +290,7 @@ async fn render(
         None => "en".to_string(),
     };
     let company = get_company(&state.db, user.company_id).await?;
+    let labels = document_labels(&mut *conn, user.company_id, &language).await?;
 
     // Pictures next to the data: the signature, and up to six photos Typst can read and that are
     // small enough to embed as they are.
@@ -350,14 +340,22 @@ async fn render(
         photos,
         signature_file,
     );
-    let pdf = match render_pdf_with_files(&state.documents, "service_report", &doc, &images).await {
+    let pdf = match render_pdf_with_files(
+        &state.documents,
+        "service_report",
+        &doc,
+        &labels,
+        &images,
+    )
+    .await
+    {
         Ok(pdf) => pdf,
         Err(e) if !images.is_empty() => {
             // A picture Typst cannot decode must not make the report impossible.
             tracing::warn!(error = ?e, "service report with pictures failed; rendering without");
             let mut bare = document(&company, &customer, &detail, &language, vec![], None);
             bare.photos_not_shown = detail.photos.len();
-            render_pdf_with_files(&state.documents, "service_report", &bare, &[]).await?
+            render_pdf_with_files(&state.documents, "service_report", &bare, &labels, &[]).await?
         }
         Err(e) => return Err(e.into()),
     };
@@ -372,7 +370,7 @@ async fn render(
 
 #[derive(Debug, Deserialize, IntoParams)]
 pub struct ReportParams {
-    /// nl, fr, en, de or es. Default: the language of the contact, else of the customer.
+    /// ISO 639-1 code. Default: the language of the contact, else of the customer.
     pub language: Option<String>,
 }
 
@@ -439,7 +437,8 @@ async fn send_report(
         .filename
         .trim_end_matches("-service-report.pdf")
         .to_string();
-    let (subject, body) = report_mail(&r.language, &company.name, &r.customer.name, &number);
+    let texts = mail_texts(&mut *tx, user.company_id, &r.language).await?;
+    let (subject, body) = report_mail(&texts, &company.name, &r.customer.name, &number);
     tradocraft_core::mail::enqueue_with_attachment(
         &mut tx,
         &state.blobs,
@@ -482,6 +481,7 @@ pub fn router() -> OpenApiRouter<AppState> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tradocraft_core::translations::Domain;
 
     #[test]
     fn internal_instructions_and_log_notes_never_reach_the_document() {
@@ -565,6 +565,7 @@ mod tests {
             phone: None,
             iban: None,
             default_language: "nl".into(),
+            languages: vec!["nl".into()],
             is_primary: true,
             quotation_single_line_items: true,
             autosave_minutes: 5,
@@ -611,7 +612,8 @@ mod tests {
             ("es", "Informe"),
             ("en", "Service report"),
         ] {
-            let (subject, body) = report_mail(lang, "Acme", "Alpha", "J2026-00001");
+            let texts = Catalogue::shipped(Domain::Mail, lang);
+            let (subject, body) = report_mail(&texts, "Acme", "Alpha", "J2026-00001");
             assert!(subject.starts_with(word), "{lang}");
             assert!(body.contains("J2026-00001") && body.contains("Acme"));
         }
