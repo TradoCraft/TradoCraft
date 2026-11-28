@@ -1,3 +1,10 @@
+pub mod async_ops;
 pub mod banners;
+pub mod feedback;
+pub mod files;
+pub mod inputs;
+pub mod modal;
 pub mod shell;
+pub mod table;
+pub mod tabs;
 pub mod tutorial_overlay;

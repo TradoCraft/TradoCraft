@@ -805,3 +805,316 @@ select {
   color: var(--success);
   border-color: var(--success);
 }
+
+/* Shared Primitive Buttons, Alerts, Modals, Pickers & Tables */
+.tc-btn-danger {
+  background: var(--error);
+  color: var(--on-error);
+  border-color: transparent;
+}
+
+.tc-btn-danger:hover:not(:disabled) {
+  filter: brightness(1.06);
+  background: var(--error);
+}
+
+.tc-alert-dismissible {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.tc-alert-dismiss {
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.tc-input-error {
+  border-color: var(--error);
+}
+
+.tc-input-error:focus {
+  border-color: var(--error);
+  box-shadow: 0 0 0 1px var(--error);
+}
+
+.tc-field-error {
+  font-size: 11px;
+  color: var(--error);
+}
+
+/* Segmented Tabs */
+.tc-segments {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--outline-variant);
+  background: var(--surface-container-low);
+}
+
+.tc-segment-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 28px;
+  padding: 4px var(--space-md);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--on-surface-variant);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.tc-segment-btn:hover {
+  background: var(--surface-container-high);
+  color: var(--on-surface);
+}
+
+.tc-segment-btn-active {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+  font-weight: 600;
+}
+
+/* Modal & Confirm Dialog */
+.tc-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.56);
+  display: grid;
+  place-items: center;
+  padding: var(--space-lg);
+}
+
+.tc-modal {
+  width: 100%;
+  max-width: 520px;
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-container);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.42);
+  outline: none;
+}
+
+.tc-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+.tc-modal-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.tc-modal-subtitle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--on-surface-variant);
+}
+
+.tc-modal-close {
+  flex-shrink: 0;
+}
+
+.tc-modal-body {
+  padding: var(--space-lg);
+  overflow-y: auto;
+}
+
+.tc-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--outline-variant);
+}
+
+/* Async SearchPicker (Many2One) */
+.tc-picker {
+  position: relative;
+}
+
+.tc-picker-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.tc-picker-input {
+  width: 100%;
+  padding-right: 32px;
+}
+
+.tc-picker-clear {
+  position: absolute;
+  right: 4px;
+}
+
+.tc-picker-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  margin-top: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--surface-container);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  display: flex;
+  flex-direction: column;
+}
+
+.tc-picker-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  border-bottom: 1px solid var(--outline-variant);
+  background: transparent;
+  color: var(--on-surface);
+  text-align: left;
+  cursor: pointer;
+}
+
+.tc-picker-option:last-child {
+  border-bottom: none;
+}
+
+.tc-picker-option-active,
+.tc-picker-option:hover {
+  background: var(--surface-container-high);
+}
+
+.tc-picker-option-title {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.tc-picker-option-sub {
+  font-size: 11px;
+  color: var(--on-surface-variant);
+}
+
+.tc-picker-state {
+  padding: var(--space-sm) var(--space-md);
+  font-size: 12px;
+  color: var(--on-surface-variant);
+}
+
+.tc-picker-error {
+  color: var(--error);
+}
+
+/* EntityTable Toolbar, Sorting & Pagination */
+.tc-entity-table {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.tc-entity-table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.tc-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 220px;
+  flex: 1 1 240px;
+}
+
+.tc-search-input {
+  width: 100%;
+  padding-right: 32px;
+}
+
+.tc-search-clear {
+  position: absolute;
+  right: 4px;
+}
+
+.tc-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.tc-chip-active {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+  border-color: var(--primary);
+  font-weight: 600;
+}
+
+.tc-table-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  padding: 0;
+  cursor: pointer;
+}
+
+.tc-table-sort:hover {
+  color: var(--on-surface);
+}
+
+.tc-table-sort-ind {
+  font-size: 10px;
+  color: var(--primary);
+}
+
+.tc-table-group-row {
+  background: var(--surface-container);
+  cursor: pointer;
+}
+
+.tc-table-group-row:hover {
+  background: var(--surface-container-high);
+}
+
+.tc-table-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  font-size: 12px;
+  color: var(--on-surface-variant);
+}
+
+.tc-pagination {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
