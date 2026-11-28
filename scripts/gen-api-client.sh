@@ -191,12 +191,27 @@ def check_type_compat(rust_type, oa_node, rust_to_schema):
         )
     return True
 
+def collect_schema_props(schema_obj):
+    if "allOf" in schema_obj:
+        props = {}
+        required = set()
+        for part in schema_obj["allOf"]:
+            if "$ref" in part:
+                ref_name = part["$ref"].split("/")[-1]
+                assert ref_name in schemas, f"Missing referenced schema in allOf: {ref_name}"
+                part_props, part_req = collect_schema_props(schemas[ref_name])
+            else:
+                part_props, part_req = collect_schema_props(part)
+            props.update(part_props)
+            required.update(part_req)
+        return props, required
+    return schema_obj.get("properties", {}), set(schema_obj.get("required", []))
+
 def check_schema_fields(rs_path, struct_name, schema_name, rust_to_schema):
     assert schema_name in schemas, f"Missing schema in api/openapi.json: {schema_name}"
     schema_obj = schemas[schema_name]
-    props = schema_obj.get("properties", {})
+    props, required_props = collect_schema_props(schema_obj)
     schema_props = set(props.keys())
-    required_props = set(schema_obj.get("required", []))
     fields = rust_struct_fields(rs_path, struct_name)
     rust_fields = set(fields.keys())
     extra = rust_fields - schema_props
@@ -235,6 +250,8 @@ endpoints = [
     # Auth / meta
     ("/api/v1/auth/providers", "get", None, None, "[PublicProvider]"),
     ("/api/v1/meta/environment", "get", None, None, "EnvironmentInfo"),
+    ("/api/v1/setup/status", "get", None, None, "SetupStatus"),
+    ("/api/v1/setup/bootstrap", "post", None, "BootstrapRequest", "BootstrapResult"),
     ("/api/v1/me", "get", None, None, "Me"),
     ("/api/v1/me/preferences", "get", None, None, "UserPreferences"),
     ("/api/v1/me/preferences", "put", None, "UserPreferences", "UserPreferences"),
@@ -336,6 +353,8 @@ endpoints = [
     ("/api/v1/roles", "get", None, None, "[RoleInfo]"),
     ("/api/v1/admin/modules", "get", None, None, "[ModuleInfo]"),
     ("/api/v1/admin/modules", "put", None, "ModulesInput", "[ModuleInfo]"),
+    ("/api/v1/admin/worker", "get", None, None, "WorkerStatus"),
+    ("/api/v1/purchase-orders", "get", ["supplier_id", "status"], None, "[PurchaseOrderSummary]"),
     ("/api/v1/admin/company/logo", "put", None, None, "CompanyLogoInfo"),
     ("/api/v1/admin/company/logo", "delete", None, None, ""),
     ("/api/v1/admin/company/settings", "put", None, "CompanySettingsInput", "Company"),
@@ -479,6 +498,15 @@ checks = [
     ("crates/api-client/src/admin.rs", "CompanySettingsInput", "CompanySettingsInput"),
     ("crates/api-client/src/admin.rs", "CompanyLanguagesInput", "CompanyLanguagesInput"),
     ("crates/api-client/src/admin.rs", "LanguageInfo", "LanguageInfo"),
+    ("crates/api-client/src/admin.rs", "Outage", "Outage"),
+    ("crates/api-client/src/admin.rs", "WorkerStatus", "WorkerStatus"),
+    # Setup & Purchasing summary
+    ("crates/api-client/src/setup.rs", "SetupStatus", "SetupStatus"),
+    ("crates/api-client/src/setup.rs", "ProvisionSpec", "ProvisionSpec"),
+    ("crates/api-client/src/setup.rs", "BootstrapRequest", "BootstrapRequest"),
+    ("crates/api-client/src/setup.rs", "AdminSummary", "AdminSummary"),
+    ("crates/api-client/src/setup.rs", "BootstrapResult", "BootstrapResult"),
+    ("crates/api-client/src/suppliers.rs", "PurchaseOrderSummary", "PurchaseOrderSummary"),
     ("crates/api-client/src/translations.rs", "CatalogueInfo", "CatalogueInfo"),
     ("crates/api-client/src/translations.rs", "CatalogueDetail", "CatalogueDetail"),
     ("crates/api-client/src/translations.rs", "CatalogueInput", "CatalogueInput"),
@@ -518,6 +546,7 @@ rust_to_schema["QuotationStatus"] = "QuotationStatus"
 rust_to_schema["PercentBase"] = "PercentBase"
 rust_to_schema["DefinitionKind"] = "DefinitionKind"
 rust_to_schema["ColumnKind"] = "ColumnKind"
+rust_to_schema["WorkerState"] = "WorkerState"
 
 for rs_path, struct_name, schema_name in checks:
     check_schema_fields(rs_path, struct_name, schema_name, rust_to_schema)

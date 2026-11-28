@@ -226,6 +226,36 @@ impl Client {
         Ok(())
     }
 
+    /// Sends an unauthenticated JSON `GET` and decodes the response.
+    pub(crate) async fn get_json_unauthenticated<Q, T>(
+        &self,
+        path: &str,
+        query: &Q,
+    ) -> Result<T, ApiError>
+    where
+        Q: Serialize + ?Sized,
+        T: DeserializeOwned,
+    {
+        let url = self.url(path)?;
+        let req = self.http.get(url).query(query);
+        self.send_json(req).await
+    }
+
+    /// Sends an unauthenticated JSON `POST` and decodes the response.
+    pub(crate) async fn post_json_unauthenticated<B, T>(
+        &self,
+        path: &str,
+        body: &B,
+    ) -> Result<T, ApiError>
+    where
+        B: Serialize + ?Sized,
+        T: DeserializeOwned,
+    {
+        let url = self.url(path)?;
+        let req = self.http.post(url).json(body);
+        self.send_json(req).await
+    }
+
     /// Sends an unauthenticated JSON `POST` expecting an empty 2xx body (such as `202 Accepted`).
     pub(crate) async fn post_json_unauthenticated_empty<B>(
         &self,
@@ -241,6 +271,11 @@ impl Client {
         Ok(())
     }
 
+    /// Enforces HTTPS-or-loopback transport before sending sensitive credentials such as a setup token.
+    pub(crate) fn validate_secret_base_url(&self, secret_label: &str) -> Result<(), ApiError> {
+        validate_secret_transport(&self.session.base_url, secret_label)
+    }
+
     fn apply_headers(
         &self,
         mut req: reqwest::RequestBuilder,
@@ -251,7 +286,7 @@ impl Client {
                     req = req.header(DEV_USER_HEADER, email.trim());
                 }
                 Auth::BearerToken(token) if !token.trim().is_empty() => {
-                    validate_bearer_base_url(&self.session.base_url)?;
+                    validate_secret_transport(&self.session.base_url, "bearer credentials")?;
                     req = req.bearer_auth(token.trim());
                 }
                 _ => {}
@@ -290,20 +325,20 @@ impl Client {
     }
 }
 
-/// Enforces HTTPS for bearer token transport, with an explicit loopback HTTP exemption for local
+/// Enforces HTTPS for secret transport, with an explicit loopback HTTP exemption for local
 /// development (`http://localhost`, `http://127.0.0.1`, `http://[::1]`).
-fn validate_bearer_base_url(base_url: &str) -> Result<(), ApiError> {
+fn validate_secret_transport(base_url: &str, secret_label: &str) -> Result<(), ApiError> {
     let base = base_url.trim();
     let parsed = reqwest::Url::parse(base).map_err(|err| {
         ApiError::InvalidConfig(format!(
-            "cannot send bearer credentials to invalid base_url '{base}': {err}"
+            "cannot send {secret_label} to invalid base_url '{base}': {err}"
         ))
     })?;
     match parsed.scheme() {
         "https" if parsed.host_str().is_some() => Ok(()),
         "http" if parsed.host_str().is_some_and(is_loopback_host) => Ok(()),
         _ => Err(ApiError::InvalidConfig(format!(
-            "refusing to send bearer credentials over insecure base_url '{base}'; \
+            "refusing to send {secret_label} over insecure base_url '{base}'; \
              use https:// (loopback http://localhost, http://127.0.0.1, and http://[::1] \
              are permitted for local development)"
         ))),
