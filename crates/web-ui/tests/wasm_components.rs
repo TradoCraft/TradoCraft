@@ -7,7 +7,12 @@ use leptos_router::components::Routes;
 use tradocraft_api_client::{EnvKind, EnvironmentInfo, WorkerState, WorkerStatus};
 use tradocraft_web_ui::api::{Company, ConnectionMode, Me};
 use tradocraft_web_ui::components::banners::{EnvironmentBanner, WorkerBanner};
+use tradocraft_web_ui::components::feedback::{Feedback, FeedbackView};
+use tradocraft_web_ui::components::inputs::{DecimalInput, SearchPicker};
+use tradocraft_web_ui::components::modal::{ConfirmDialog, Modal};
 use tradocraft_web_ui::components::shell::AppShell;
+use tradocraft_web_ui::components::table::{EntityTable, FilterChip, TableColumn, TableQuery};
+use tradocraft_web_ui::components::tabs::{SegmentTab, SegmentedTabs};
 use tradocraft_web_ui::components::tutorial_overlay::TutorialOverlay;
 use tradocraft_web_ui::pages::admin::AdminPage;
 use tradocraft_web_ui::pages::home::HomePage;
@@ -18,7 +23,9 @@ use tradocraft_web_ui::state::{ActiveSession, AppContext};
 use tradocraft_web_ui::tutorial::TutorialState;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
-use web_sys::{Element, HtmlElement};
+use web_sys::{
+    Element, Event, EventInit, HtmlElement, HtmlInputElement, KeyboardEvent, KeyboardEventInit,
+};
 
 wasm_bindgen_test_configure!(run_in_browser);
 
@@ -61,6 +68,40 @@ impl ContainerGuard {
             .unwrap_or_else(|| panic!("expected element matching {selector}"))
             .text_content()
             .unwrap_or_default()
+    }
+
+    fn set_input(&self, selector: &str, value: &str) {
+        let input: HtmlInputElement = self
+            .query(selector)
+            .unwrap_or_else(|| panic!("expected input matching {selector}"))
+            .unchecked_into();
+        input.set_value(value);
+        let init = EventInit::new();
+        init.set_bubbles(true);
+        let ev = Event::new_with_event_init_dict("input", &init).expect("input event");
+        input.dispatch_event(&ev).expect("dispatch input");
+    }
+
+    fn dispatch(&self, selector: &str, event_type: &str) {
+        let el = self
+            .query(selector)
+            .unwrap_or_else(|| panic!("expected element matching {selector}"));
+        let init = EventInit::new();
+        init.set_bubbles(true);
+        let ev = Event::new_with_event_init_dict(event_type, &init).expect("dom event");
+        el.dispatch_event(&ev).expect("dispatch dom event");
+    }
+
+    fn press_key(&self, selector: &str, key: &str) {
+        let el = self
+            .query(selector)
+            .unwrap_or_else(|| panic!("expected element matching {selector}"));
+        let init = KeyboardEventInit::new();
+        init.set_key(key);
+        init.set_bubbles(true);
+        let ev =
+            KeyboardEvent::new_with_keyboard_event_init_dict("keydown", &init).expect("key event");
+        el.dispatch_event(&ev).expect("dispatch key event");
     }
 }
 
@@ -413,4 +454,270 @@ async fn setup_page_renders_without_panicking() {
     tick().await;
 
     assert!(guard.query("[data-target=\"setup-page\"]").is_some());
+}
+
+#[wasm_bindgen_test]
+async fn feedback_view_renders_error_notice_and_dismisses() {
+    let guard = ContainerGuard::new();
+    let fb = Feedback::new();
+    let _handle = leptos::mount::mount_to(guard.el().clone(), move || {
+        view! { <FeedbackView fb prefix="demo" dismissible=true /> }
+    });
+    tick().await;
+
+    assert!(guard.query("[data-target=\"demo-error\"]").is_none());
+    fb.fail("Something went wrong");
+    tick().await;
+    assert_eq!(
+        guard.text("[data-target=\"demo-error\"]"),
+        "Something went wrong×"
+    );
+
+    guard.click("[data-target=\"demo-error-dismiss\"]");
+    tick().await;
+    assert!(guard.query("[data-target=\"demo-error\"]").is_none());
+
+    fb.ok("Saved cleanly");
+    tick().await;
+    assert!(guard.query("[data-target=\"demo-notice\"]").is_some());
+}
+
+#[wasm_bindgen_test]
+async fn segmented_tabs_hides_single_tab_and_switches_active() {
+    let guard = ContainerGuard::new();
+    let tabs = RwSignal::new(vec![SegmentTab::new("one", "Only one")]);
+    let active = RwSignal::new("one".to_string());
+    let _handle = leptos::mount::mount_to(guard.el().clone(), move || {
+        view! {
+            <Router>
+                <SegmentedTabs
+                    tabs=tabs
+                    active=active
+                    on_select=Callback::new(move |k| active.set(k))
+                    target="hub-tabs"
+                />
+            </Router>
+        }
+    });
+    tick().await;
+    assert!(guard.query("[data-target=\"hub-tabs\"]").is_none());
+
+    tabs.set(vec![
+        SegmentTab::new("suppliers", "Suppliers"),
+        SegmentTab::new("orders", "Purchase orders").with_badge("4"),
+    ]);
+    active.set("suppliers".to_string());
+    tick().await;
+
+    assert!(guard.query("[data-target=\"hub-tabs\"]").is_some());
+    guard.click("[data-target=\"hub-tabs-orders\"]");
+    tick().await;
+    assert_eq!(active.get_untracked(), "orders");
+}
+
+#[wasm_bindgen_test]
+async fn modal_and_confirm_dialog_open_confirm_and_close() {
+    let guard = ContainerGuard::new();
+    let open = RwSignal::new(false);
+    let confirm_open = RwSignal::new(false);
+    let confirmed = RwSignal::new(0_u32);
+    let _handle = leptos::mount::mount_to(guard.el().clone(), move || {
+        view! {
+            <div>
+                <Modal
+                    open=open
+                    title="Edit item"
+                    on_close=Callback::new(move |()| open.set(false))
+                    target="edit-modal"
+                >
+                    <p data-target="modal-body-text">"Body"</p>
+                </Modal>
+                <ConfirmDialog
+                    open=confirm_open
+                    title="Delete record"
+                    message="This cannot be undone."
+                    destructive=true
+                    target="del-confirm"
+                    on_confirm=Callback::new(move |()| {
+                        confirmed.update(|n| *n += 1);
+                        confirm_open.set(false);
+                    })
+                    on_cancel=Callback::new(move |()| confirm_open.set(false))
+                />
+            </div>
+        }
+    });
+    tick().await;
+
+    open.set(true);
+    tick().await;
+    assert!(guard.query("[data-target=\"edit-modal\"]").is_some());
+    guard.press_key("[data-target=\"edit-modal\"]", "Escape");
+    tick().await;
+    assert!(guard.query("[data-target=\"edit-modal\"]").is_none());
+
+    confirm_open.set(true);
+    tick().await;
+    guard.click("[data-target=\"del-confirm-confirm\"]");
+    tick().await;
+    assert_eq!(confirmed.get_untracked(), 1);
+    assert!(guard.query("[data-target=\"del-confirm\"]").is_none());
+}
+
+#[wasm_bindgen_test]
+async fn decimal_input_evaluates_expression_and_reports_invalid() {
+    let guard = ContainerGuard::new();
+    let value = RwSignal::new(String::new());
+    let committed = RwSignal::new(Option::<String>::None);
+    let _handle = leptos::mount::mount_to(guard.el().clone(), move || {
+        view! {
+            <DecimalInput
+                value=value
+                target="price"
+                on_commit=Callback::new(move |dec: Option<rust_decimal::Decimal>| {
+                    committed.set(dec.map(|d| d.to_string()));
+                })
+            />
+        }
+    });
+    tick().await;
+
+    guard.set_input("[data-target=\"price-field\"]", "200 + 10%");
+    guard.press_key("[data-target=\"price-field\"]", "Enter");
+    tick().await;
+    assert_eq!(value.get_untracked(), "220");
+    assert_eq!(committed.get_untracked().as_deref(), Some("220"));
+
+    guard.set_input("[data-target=\"price-field\"]", "+= 10%");
+    guard.dispatch("[data-target=\"price-field\"]", "blur");
+    tick().await;
+    assert_eq!(value.get_untracked(), "242");
+
+    guard.set_input("[data-target=\"price-field\"]", "10 / 0");
+    guard.dispatch("[data-target=\"price-field\"]", "blur");
+    tick().await;
+    assert!(guard.query("[data-target=\"price-error\"]").is_some());
+}
+
+#[wasm_bindgen_test]
+async fn search_picker_searches_and_selects_option() {
+    #[derive(Clone)]
+    struct Item {
+        name: String,
+        code: String,
+    }
+
+    let guard = ContainerGuard::new();
+    let selected = RwSignal::new(Option::<Item>::None);
+    let search = Callback::new(
+        |(query, reply): (String, Callback<Result<Vec<Item>, String>>)| {
+            let items = vec![
+                Item {
+                    name: "Acme HVAC".to_string(),
+                    code: "C-001".to_string(),
+                },
+                Item {
+                    name: "Beta Cooling".to_string(),
+                    code: "C-002".to_string(),
+                },
+            ]
+            .into_iter()
+            .filter(|it| it.name.to_lowercase().contains(&query.to_lowercase()))
+            .collect();
+            reply.run(Ok(items));
+        },
+    );
+
+    let _handle = leptos::mount::mount_to(guard.el().clone(), move || {
+        view! {
+            <SearchPicker
+                search=search
+                selected=selected
+                display=Callback::new(|it: Item| it.name)
+                subtitle=Callback::new(|it: Item| Some(it.code))
+                target="customer-picker"
+            />
+        }
+    });
+    tick().await;
+
+    guard.set_input("[data-target=\"customer-picker-input\"]", "acme");
+    tick().await;
+    assert!(guard
+        .query("[data-target=\"customer-picker-menu\"]")
+        .is_some());
+    guard.click("[data-target=\"customer-picker-option-0\"]");
+    tick().await;
+
+    assert_eq!(
+        selected.get_untracked().map(|i| i.code).as_deref(),
+        Some("C-001")
+    );
+    guard.click("[data-target=\"customer-picker-clear\"]");
+    tick().await;
+    assert!(selected.get_untracked().is_none());
+}
+
+#[wasm_bindgen_test]
+async fn entity_table_searches_sorts_filters_and_paginates() {
+    #[derive(Clone)]
+    struct Row {
+        name: &'static str,
+        qty: i32,
+    }
+
+    let guard = ContainerGuard::new();
+    let query = RwSignal::new(TableQuery::new(2));
+    let rows = RwSignal::new(vec![
+        Row {
+            name: "Pump",
+            qty: 3,
+        },
+        Row {
+            name: "Valve",
+            qty: 7,
+        },
+    ]);
+    let cols = vec![
+        TableColumn::new("name", "Name", |r: Row| view! { {r.name} }.into_any()).sortable("name"),
+        TableColumn::new("qty", "Qty", |r: Row| view! { {r.qty} }.into_any())
+            .sortable("qty")
+            .align_right(),
+    ];
+    let _handle = leptos::mount::mount_to(guard.el().clone(), move || {
+        view! {
+            <EntityTable
+                columns=cols
+                rows=rows
+                query=query
+                total=Signal::derive(|| 5usize)
+                filters=vec![FilterChip::new("active", "Active only")]
+                target="demo-table"
+            />
+        }
+    });
+    tick().await;
+
+    assert_eq!(
+        guard.text("[data-target=\"demo-table-range\"]"),
+        "1\u{2013}2 of 5"
+    );
+    guard.set_input("[data-target=\"demo-table-search\"]", "pump");
+    tick().await;
+    assert_eq!(query.get_untracked().search, "pump");
+
+    guard.click("[data-target=\"demo-table-filter-active\"]");
+    tick().await;
+    assert_eq!(
+        query.get_untracked().active_filters,
+        vec!["active".to_string()]
+    );
+
+    guard.click("[data-target=\"demo-table-sort-name\"]");
+    tick().await;
+    assert_eq!(query.get_untracked().sort_param().as_deref(), Some("name"));
+
+    guard.click("[data-target=\"demo-table-next\"]");
+    tick().await;
+    assert_eq!(query.get_untracked().offset, 2);
 }
