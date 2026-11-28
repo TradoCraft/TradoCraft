@@ -14,17 +14,16 @@ pub mod users;
 pub mod vat;
 pub mod zones;
 
-use std::future::Future;
-
 use leptos::prelude::*;
-use leptos::task::spawn_local;
 use leptos_router::components::A;
 use leptos_router::hooks::use_params_map;
-use tradocraft_api_client::{ApiError, Client};
 
-use crate::api::{resolve_base_url, ConnectionMode};
-use crate::pages::set_alive;
-use crate::state::{ActiveSession, AppContext};
+pub(crate) use crate::components::async_ops::{bump, is_current, refresh_me, spawn_api};
+pub use crate::components::feedback::{Feedback, FeedbackView};
+pub(crate) use crate::components::files::{
+    begin_file_read, format_file_size as file_size, save_file, PickedFile,
+};
+use crate::state::AppContext;
 
 /// The sections of the administration, in the order Flutter shows them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -118,231 +117,6 @@ pub fn pick_section(requested: Option<&str>, allowed: &[AdminSection]) -> Option
         .or_else(|| allowed.first().copied())
 }
 
-pub(crate) fn live_client(connection: &ConnectionMode) -> Result<Client, ApiError> {
-    match connection {
-        ConnectionMode::Live(session) => {
-            let mut resolved = session.clone();
-            resolved.base_url = resolve_base_url(&session.base_url);
-            Ok(Client::from_session(resolved))
-        }
-        ConnectionMode::MockDemo => Err(ApiError::InvalidConfig(
-            "Administration needs a live API connection; switch to Dev User or Bearer mode on the sign-in screen."
-                .to_string(),
-        )),
-    }
-}
-
-/// Runs `f` against the live API and hands the result to `done`, unless the signed-in session is
-/// gone. `done` runs after the page may have been left: it must start with a [`set_alive`] check.
-pub(crate) fn spawn_api<T, F, Fut, D>(ctx: AppContext, f: F, done: D)
-where
-    T: 'static,
-    F: FnOnce(Client) -> Fut + 'static,
-    Fut: Future<Output = Result<T, ApiError>> + 'static,
-    D: FnOnce(Result<T, ApiError>) + 'static,
-{
-    let Some(session) = ctx.session.get_untracked() else {
-        return;
-    };
-    spawn_local(async move {
-        let res = match live_client(&session.connection) {
-            Ok(client) => f(client).await,
-            Err(err) => Err(err),
-        };
-        done(res);
-    });
-}
-
-/// Starts a new request generation on `v` and returns it. A response is applied only while its
-/// generation is still [`is_current`]: a newer request (or the page being left, which disposes
-/// `v`) makes it stale.
-pub(crate) fn bump(v: StoredValue<u64>) -> u64 {
-    v.try_update_value(|g| {
-        *g = g.wrapping_add(1);
-        *g
-    })
-    .unwrap_or(0)
-}
-
-/// Whether `gen` is still the newest generation of `v` (false once the page was left).
-pub(crate) fn is_current(v: StoredValue<u64>, gen: u64) -> bool {
-    v.try_get_value() == Some(gen)
-}
-
-/// The newest `refresh_me` request; older responses are dropped.
-static REFRESH_ME_GEN: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-
-/// Reloads `GET /api/v1/me` into the session: module switches and company settings change the
-/// permissions and the company the rest of the app sees. Only the most recently started request
-/// is applied, and only while the session that issued it is still signed in.
-pub(crate) fn refresh_me(ctx: AppContext) {
-    use std::sync::atomic::Ordering;
-    let Some(issued_by) = ctx
-        .session
-        .with_untracked(|s| s.as_ref().map(|a| a.connection.clone()))
-    else {
-        return;
-    };
-    let gen = REFRESH_ME_GEN.fetch_add(1, Ordering::Relaxed) + 1;
-    spawn_api(
-        ctx,
-        |c| async move { c.me().await },
-        move |res| {
-            if REFRESH_ME_GEN.load(Ordering::Relaxed) != gen {
-                return;
-            }
-            if let Ok(me) = res {
-                ctx.session.try_update(|s| {
-                    if let Some(ActiveSession {
-                        connection,
-                        me: current,
-                    }) = s.as_mut()
-                    {
-                        if *connection == issued_by {
-                            *current = me;
-                        }
-                    }
-                });
-            }
-        },
-    );
-}
-
-/// The success and error messages a section shows above its content.
-#[derive(Clone, Copy)]
-pub struct Feedback {
-    pub error: RwSignal<Option<String>>,
-    pub notice: RwSignal<Option<String>>,
-}
-
-impl Default for Feedback {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Feedback {
-    pub fn new() -> Self {
-        Self {
-            error: RwSignal::new(None),
-            notice: RwSignal::new(None),
-        }
-    }
-
-    /// Shows a success message. Returns false when the section was left meanwhile.
-    pub fn ok(self, msg: impl Into<String>) -> bool {
-        set_alive(self.error, None) && set_alive(self.notice, Some(msg.into()))
-    }
-
-    /// Shows an error. Returns false when the section was left meanwhile.
-    pub fn fail(self, msg: impl Into<String>) -> bool {
-        set_alive(self.notice, None) && set_alive(self.error, Some(msg.into()))
-    }
-}
-
-/// Renders a [`Feedback`] as an error alert and a status line, with `data-target`s
-/// `<prefix>-error` and `<prefix>-notice`.
-#[component]
-pub fn FeedbackView(fb: Feedback, prefix: &'static str) -> impl IntoView {
-    view! {
-        {move || fb.error.get().map(|msg| view! {
-            <div class="tc-alert-error" style="margin-bottom: var(--space-md);" role="alert" data-target=format!("{prefix}-error")>
-                {msg}
-            </div>
-        })}
-        {move || fb.notice.get().map(|msg| view! {
-            <div class="tc-alert-success" style="margin-bottom: var(--space-md);" role="status" data-target=format!("{prefix}-notice")>
-                {msg}
-            </div>
-        })}
-    }
-}
-
-/// A file chosen in a browser file input.
-pub(crate) struct PickedFile {
-    pub name: String,
-    pub bytes: Vec<u8>,
-}
-
-/// Reads the file chosen in the `change` event's file input and clears the input so the same
-/// file can be picked again. A file over `max_bytes` is refused with `too_big` before it is read.
-/// `done` gets an empty error when the dialog was cancelled.
-#[cfg(target_arch = "wasm32")]
-pub(crate) fn begin_file_read(
-    ev: leptos::ev::Event,
-    max_bytes: usize,
-    too_big: &'static str,
-    done: impl FnOnce(Result<PickedFile, String>) + 'static,
-) {
-    use wasm_bindgen::JsCast;
-    let Some(input) = ev
-        .target()
-        .and_then(|t| t.dyn_into::<web_sys::HtmlInputElement>().ok())
-    else {
-        done(Err(String::new()));
-        return;
-    };
-    let Some(file) = input.files().and_then(|list| list.get(0)) else {
-        done(Err(String::new()));
-        return;
-    };
-    input.set_value("");
-    if file.size() as usize > max_bytes {
-        done(Err(too_big.to_string()));
-        return;
-    }
-    let name = file.name();
-    spawn_local(async move {
-        let result = wasm_bindgen_futures::JsFuture::from(file.array_buffer())
-            .await
-            .map(|buffer| PickedFile {
-                name,
-                bytes: js_sys::Uint8Array::new(&buffer).to_vec(),
-            })
-            .map_err(|_| "The file could not be read.".to_string());
-        done(result);
-    });
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub(crate) fn begin_file_read(
-    _ev: leptos::ev::Event,
-    _max_bytes: usize,
-    _too_big: &'static str,
-    done: impl FnOnce(Result<PickedFile, String>) + 'static,
-) {
-    done(Err("Choosing files needs the browser build.".to_string()))
-}
-
-/// Offers `bytes` to the browser as a file download.
-#[cfg(target_arch = "wasm32")]
-pub(crate) fn save_file(filename: &str, content_type: &str, bytes: &[u8]) -> Result<(), String> {
-    use wasm_bindgen::JsCast;
-    let fail = |_| "The browser could not save the file.".to_string();
-    let parts = js_sys::Array::new();
-    parts.push(&js_sys::Uint8Array::from(bytes));
-    let options = web_sys::BlobPropertyBag::new();
-    options.set_type(content_type);
-    let blob =
-        web_sys::Blob::new_with_u8_array_sequence_and_options(&parts, &options).map_err(fail)?;
-    let url = web_sys::Url::create_object_url_with_blob(&blob).map_err(fail)?;
-    let anchor = web_sys::window()
-        .and_then(|w| w.document())
-        .and_then(|d| d.create_element("a").ok())
-        .and_then(|e| e.dyn_into::<web_sys::HtmlAnchorElement>().ok())
-        .ok_or_else(|| "The browser could not save the file.".to_string())?;
-    anchor.set_href(&url);
-    anchor.set_download(filename);
-    anchor.click();
-    let _ = web_sys::Url::revoke_object_url(&url);
-    Ok(())
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub(crate) fn save_file(_filename: &str, _content_type: &str, _bytes: &[u8]) -> Result<(), String> {
-    Err("Downloading files needs the browser build.".to_string())
-}
-
 /// Display name of a role code; unknown codes show as they are.
 pub(crate) fn role_name(code: &str) -> &str {
     match code {
@@ -390,17 +164,6 @@ pub(crate) fn module_names(codes: &[String]) -> String {
         .map(|c| module_name(c))
         .collect::<Vec<_>>()
         .join(", ")
-}
-
-/// `1.5 MB`, for the size of a file.
-pub(crate) fn file_size(bytes: i64) -> String {
-    if bytes < 1024 {
-        format!("{bytes} B")
-    } else if bytes < 1024 * 1024 {
-        format!("{:.1} KB", bytes as f64 / 1024.0)
-    } else {
-        format!("{:.1} MB", bytes as f64 / (1024.0 * 1024.0))
-    }
 }
 
 #[component]

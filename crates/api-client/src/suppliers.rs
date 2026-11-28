@@ -1,6 +1,6 @@
-//! Supplier DTOs and endpoints (`/api/v1/suppliers`).
+//! Supplier DTOs and endpoints (`/api/v1/suppliers`, `/api/v1/purchase-orders`).
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -241,6 +241,58 @@ impl ListSuppliersParams {
     }
 }
 
+/// Purchase order header with supplier name and totals returned by `GET /api/v1/purchase-orders`
+/// (OpenAPI schema `PurchaseOrderSummary`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PurchaseOrderSummary {
+    pub id: Uuid,
+    pub company_id: Uuid,
+    pub number: String,
+    pub supplier_id: Uuid,
+    pub supplier_name: String,
+    /// `draft | approved | sent | partially_received | received | cancelled`
+    pub status: String,
+    pub order_date: NaiveDate,
+    #[serde(default)]
+    pub expected_delivery_date: Option<NaiveDate>,
+    pub currency: String,
+    pub subtotal: Decimal,
+    pub tax_total: Decimal,
+    pub total: Decimal,
+    #[serde(default)]
+    pub notes: String,
+    pub created_by_user_id: Uuid,
+    #[serde(default)]
+    pub approved_by_user_id: Option<Uuid>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Query parameters for `GET /api/v1/purchase-orders`.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+pub struct ListPurchaseOrdersParams {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub supplier_id: Option<Uuid>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<String>,
+}
+
+impl ListPurchaseOrdersParams {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn supplier_id(mut self, supplier_id: Uuid) -> Self {
+        self.supplier_id = Some(supplier_id);
+        self
+    }
+
+    pub fn status(mut self, status: impl Into<String>) -> Self {
+        self.status = Some(status.into());
+        self
+    }
+}
+
 impl Client {
     /// Lists suppliers matching `params` (`GET /api/v1/suppliers`).
     pub async fn list_suppliers(
@@ -291,6 +343,14 @@ impl Client {
             req,
         )
         .await
+    }
+
+    /// Lists purchase orders matching `params` (`GET /api/v1/purchase-orders`).
+    pub async fn list_purchase_orders(
+        &self,
+        params: &ListPurchaseOrdersParams,
+    ) -> Result<Vec<PurchaseOrderSummary>, ApiError> {
+        self.get_json("/api/v1/purchase-orders", params).await
     }
 }
 
@@ -445,5 +505,35 @@ mod tests {
         assert_eq!(value["is_preferred"], true);
         assert_eq!(value["supplier_product_code"], "NC-ALU-200");
         assert!(value.get("supplier_product_name").is_none());
+    }
+
+    #[test]
+    fn deserialize_purchase_order_summary_list() {
+        let json = r#"[
+            {
+                "id": "01900000-0000-7000-8000-000000000800",
+                "company_id": "01900000-0000-7000-8000-000000000001",
+                "number": "PO-2026-0001",
+                "supplier_id": "01900000-0000-7000-8000-000000000500",
+                "supplier_name": "Nordic Components GmbH",
+                "status": "sent",
+                "order_date": "2026-11-20",
+                "expected_delivery_date": "2026-11-27",
+                "currency": "EUR",
+                "subtotal": "500.00",
+                "tax_total": "105.00",
+                "total": "605.00",
+                "notes": "",
+                "created_by_user_id": "01900000-0000-7000-8000-000000000101",
+                "approved_by_user_id": "01900000-0000-7000-8000-000000000101",
+                "created_at": "2026-11-20T09:00:00Z",
+                "updated_at": "2026-11-20T09:30:00Z"
+            }
+        ]"#;
+        let orders: Vec<PurchaseOrderSummary> = serde_json::from_str(json).unwrap();
+        assert_eq!(orders.len(), 1);
+        assert_eq!(orders[0].number, "PO-2026-0001");
+        assert_eq!(orders[0].supplier_name, "Nordic Components GmbH");
+        assert_eq!(orders[0].total, Decimal::from_str("605.00").unwrap());
     }
 }

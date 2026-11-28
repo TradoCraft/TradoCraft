@@ -9,10 +9,9 @@ use leptos_router::components::A;
 use tradocraft_api_client::helpdesk::{
     AnswerText, ListPreparedAnswersParams, PreparedAnswer, PreparedAnswerInput,
 };
-use tradocraft_api_client::{ApiError, Client};
 use uuid::Uuid;
 
-use crate::api::{resolve_base_url, ConnectionMode};
+use crate::components::async_ops::live_client;
 use crate::pages::{opt_trimmed, set_alive};
 use crate::state::AppContext;
 
@@ -182,20 +181,6 @@ fn matches_query(a: &PreparedAnswer, q: &str) -> bool {
             .as_deref()
             .is_some_and(|c| c.to_lowercase().contains(&q))
         || a.keywords.iter().any(|k| k.contains(&q))
-}
-
-fn live_client(connection: &ConnectionMode) -> Result<Client, ApiError> {
-    match connection {
-        ConnectionMode::Live(session) => {
-            let mut resolved = session.clone();
-            resolved.base_url = resolve_base_url(&session.base_url);
-            Ok(Client::from_session(resolved))
-        }
-        ConnectionMode::MockDemo => Err(ApiError::InvalidConfig(
-            "Standard answers require a live API connection; switch to Dev User or Bearer mode on the sign-in screen."
-                .to_string(),
-        )),
-    }
 }
 
 /// Which answer the editor is open for.

@@ -8,13 +8,14 @@ use tradocraft_api_client::sales::{
     QuotationLine, QuotationLineInput, QuotationPage, QuotationStatus, QuotationSummary,
     UpdateQuotationRequest,
 };
-use tradocraft_api_client::{ApiError, Client};
+use tradocraft_api_client::ApiError;
 use uuid::Uuid;
 
 use crate::api::{
-    resolve_base_url, ApiClient, ConnectionMode, Customer, ListCustomersParams, ListProductsParams,
-    Product, WebApiClient,
+    ApiClient, ConnectionMode, Customer, ListCustomersParams, ListProductsParams, Product,
+    WebApiClient,
 };
+use crate::components::async_ops::live_client;
 use crate::pages::{opt_trimmed, parse_decimal, parse_i32, parse_opt_decimal, parse_uuid};
 use crate::state::AppContext;
 
@@ -263,20 +264,6 @@ impl QuotationTab {
             lines,
             ..CreateQuotationRequest::default()
         })
-    }
-}
-
-fn live_client(connection: &ConnectionMode) -> Result<Client, ApiError> {
-    match connection {
-        ConnectionMode::Live(session) => {
-            let mut resolved = session.clone();
-            resolved.base_url = resolve_base_url(&session.base_url);
-            Ok(Client::from_session(resolved))
-        }
-        ConnectionMode::MockDemo => Err(ApiError::InvalidConfig(
-            "Sales endpoints require a live API connection; switch to Dev User or Bearer mode on the sign-in screen."
-                .to_string(),
-        )),
     }
 }
 
@@ -965,10 +952,13 @@ pub fn QuotationsPage() -> impl IntoView {
                                 <div class="tc-page-header" style="margin-bottom: 0;">
                                     <div>
                                         <h2 class="tc-page-title" style="font-size: 16px;">
-                                            {move || {
-                                                read_quotation_tab(&open_tabs, &tab_id_header, |t| t.title.clone())
-                                                    .unwrap_or_else(|| "Quotation".to_string())
-                                            }}
+                                            {
+                                                let tab_id_title = tab_id_header.clone();
+                                                move || {
+                                                    read_quotation_tab(&open_tabs, &tab_id_title, |t| t.title.clone())
+                                                        .unwrap_or_else(|| "Quotation".to_string())
+                                                }
+                                            }
                                         </h2>
                                         <p class="tc-page-subtitle tc-mono">
                                             {move || {
@@ -984,9 +974,46 @@ pub fn QuotationsPage() -> impl IntoView {
                                             }}
                                         </p>
                                     </div>
-                                    {move || read_quotation_tab(&open_tabs, &tab_id_status, |t| t.status).map(|st| {
-                                        view! { <span class=quotation_status_badge_class(st)>{st.as_str()}</span> }
-                                    })}
+                                    <div class="tc-header-actions">
+                                        {
+                                            let tab_id_open = tab_id_header.clone();
+                                            move || {
+                                                read_quotation_tab(&open_tabs, &tab_id_open, |t| {
+                                                    t.quotation_id.map(|qid| {
+                                                        (
+                                                            qid,
+                                                            t.title.clone(),
+                                                            t.detail
+                                                                .as_ref()
+                                                                .map(|d| d.customer_name.clone())
+                                                                .unwrap_or_default(),
+                                                        )
+                                                    })
+                                                })
+                                                .flatten()
+                                                .map(|(qid, title, subtitle)| view! {
+                                                    <button
+                                                        type="button"
+                                                        class="tc-btn tc-btn-sm"
+                                                        data-target="open-workspace-tab"
+                                                        on:click=move |_| {
+                                                            ctx.open_tab(crate::state::WorkspaceTab {
+                                                                id: crate::pages::record_detail::DetailKind::Quotation.tab_id(qid),
+                                                                title: title.clone(),
+                                                                route: crate::pages::record_detail::DetailKind::Quotation.route(qid),
+                                                                subtitle: subtitle.clone(),
+                                                            });
+                                                        }
+                                                    >
+                                                        "Open tab"
+                                                    </button>
+                                                })
+                                            }
+                                        }
+                                        {move || read_quotation_tab(&open_tabs, &tab_id_status, |t| t.status).map(|st| {
+                                            view! { <span class=quotation_status_badge_class(st)>{st.as_str()}</span> }
+                                        })}
+                                    </div>
                                 </div>
 
                                 {move || {

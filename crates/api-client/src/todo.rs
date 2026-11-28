@@ -57,6 +57,8 @@ pub struct TodoCreate {
     /// Makes the item a sub-item of that root item.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub parent_id: Option<Uuid>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub position: Option<i32>,
     pub title: String,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub notes: String,
@@ -64,6 +66,14 @@ pub struct TodoCreate {
     pub due_date: Option<NaiveDate>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub assignee_id: Option<Uuid>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub link_kind: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub link_id: Option<Uuid>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub link_label: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub link_location: Option<String>,
 }
 
 /// Request payload for `PATCH /api/v1/todo/items/{id}` (OpenAPI schema `TodoPatch`).
@@ -77,6 +87,26 @@ pub struct TodoPatch {
     pub due_date: Option<NaiveDate>,
     #[serde(default, skip_serializing_if = "is_false")]
     pub clear_due_date: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub assignee_id: Option<Uuid>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub clear_assignee: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub link_kind: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub link_id: Option<Uuid>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub link_label: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub link_location: Option<String>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub clear_link: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub make_root: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parent_id: Option<Uuid>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub position: Option<i32>,
 }
 
 fn is_false(value: &bool) -> bool {
@@ -104,6 +134,12 @@ pub struct ListTodosParams {
     /// `Some(true)`: finished items only, `Some(false)`: open items only, `None`: both.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub done: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub link_kind: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub link_id: Option<Uuid>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub due_before: Option<NaiveDate>,
 }
 
 /// Counters for the badge (`GET /api/v1/todo/items/counts`).
@@ -196,10 +232,22 @@ mod tests {
         let query = ListTodosParams {
             scope: Some(TodoScope::AllMine),
             done: Some(false),
+            ..ListTodosParams::default()
         };
         assert_eq!(
             serde_json::to_string(&query).unwrap(),
             r#"{"scope":"all-mine","done":false}"#
         );
+
+        let create = TodoCreate {
+            title: "Follow up".into(),
+            link_kind: Some("customer".into()),
+            link_id: Some(Uuid::nil()),
+            link_label: Some("Acme".into()),
+            link_location: Some(format!("/customers/{}", Uuid::nil())),
+            ..TodoCreate::default()
+        };
+        let encoded = serde_json::to_string(&create).unwrap();
+        assert!(encoded.contains(r#""link_kind":"customer""#));
     }
 }

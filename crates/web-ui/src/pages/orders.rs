@@ -4,10 +4,11 @@ use leptos_router::components::A;
 use tradocraft_api_client::sales::{
     ConfirmOrderRequest, ListOrdersParams, Order, OrderPage, OrderSummary,
 };
-use tradocraft_api_client::{ApiError, Client};
+use tradocraft_api_client::ApiError;
 use uuid::Uuid;
 
-use crate::api::{resolve_base_url, ConnectionMode};
+use crate::api::ConnectionMode;
+use crate::components::async_ops::live_client;
 use crate::state::AppContext;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -62,20 +63,6 @@ impl OrderTab {
             .as_ref()
             .map(|d| d.revision_status.as_str())
             .unwrap_or_else(|| self.summary.status.as_str())
-    }
-}
-
-fn live_client(connection: &ConnectionMode) -> Result<Client, ApiError> {
-    match connection {
-        ConnectionMode::Live(session) => {
-            let mut resolved = session.clone();
-            resolved.base_url = resolve_base_url(&session.base_url);
-            Ok(Client::from_session(resolved))
-        }
-        ConnectionMode::MockDemo => Err(ApiError::InvalidConfig(
-            "Sales order endpoints require a live API connection; switch to Dev User or Bearer mode on the sign-in screen."
-                .to_string(),
-        )),
     }
 }
 
@@ -573,10 +560,13 @@ pub fn OrdersPage() -> impl IntoView {
                                 <div class="tc-page-header" style="margin-bottom: 0;">
                                     <div>
                                         <h2 class="tc-page-title" style="font-size: 16px;">
-                                            {move || {
-                                                read_order_tab(&open_tabs, &tab_id_header, |t| t.title.clone())
-                                                    .unwrap_or_else(|| "Order".to_string())
-                                            }}
+                                            {
+                                                let tab_id_title = tab_id_header.clone();
+                                                move || {
+                                                    read_order_tab(&open_tabs, &tab_id_title, |t| t.title.clone())
+                                                        .unwrap_or_else(|| "Order".to_string())
+                                                }
+                                            }
                                         </h2>
                                         <p class="tc-page-subtitle tc-mono">
                                             {move || {
@@ -593,10 +583,37 @@ pub fn OrdersPage() -> impl IntoView {
                                             }}
                                         </p>
                                     </div>
-                                    {move || read_order_tab(&open_tabs, &tab_id_badge, |t| t.summary.status.clone()).map(|st| {
-                                        let cls = order_status_badge_class(&st);
-                                        view! { <span class=cls>{st}</span> }
-                                    })}
+                                    <div class="tc-header-actions">
+                                        {
+                                            let tab_id_open = tab_id_header.clone();
+                                            move || {
+                                                read_order_tab(&open_tabs, &tab_id_open, |t| {
+                                                    (t.order_id, t.title.clone(), t.summary.customer_name.clone())
+                                                })
+                                                .map(|(oid, title, subtitle)| view! {
+                                                    <button
+                                                        type="button"
+                                                        class="tc-btn tc-btn-sm"
+                                                        data-target="open-workspace-tab"
+                                                        on:click=move |_| {
+                                                            ctx.open_tab(crate::state::WorkspaceTab {
+                                                                id: crate::pages::record_detail::DetailKind::Order.tab_id(oid),
+                                                                title: title.clone(),
+                                                                route: crate::pages::record_detail::DetailKind::Order.route(oid),
+                                                                subtitle: subtitle.clone(),
+                                                            });
+                                                        }
+                                                    >
+                                                        "Open tab"
+                                                    </button>
+                                                })
+                                            }
+                                        }
+                                        {move || read_order_tab(&open_tabs, &tab_id_badge, |t| t.summary.status.clone()).map(|st| {
+                                            let cls = order_status_badge_class(&st);
+                                            view! { <span class=cls>{st}</span> }
+                                        })}
+                                    </div>
                                 </div>
 
                                 {move || {

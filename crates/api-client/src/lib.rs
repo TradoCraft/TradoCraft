@@ -7,6 +7,7 @@ pub mod admin;
 pub mod attributes;
 pub mod audit;
 pub mod auth;
+pub mod chatter;
 pub mod client;
 pub mod customers;
 pub mod error;
@@ -18,6 +19,7 @@ pub mod portal;
 pub mod price_zones;
 pub mod products;
 pub mod sales;
+pub mod setup;
 pub mod suppliers;
 pub mod todo;
 pub mod translations;
@@ -25,7 +27,8 @@ pub mod vat;
 
 pub use admin::{
     AdminUser, AdminUserCreate, AdminUserUpdate, CompanyLanguagesInput, CompanyLogoInfo,
-    CompanySettingsInput, LanguageInfo, ModuleInfo, ModulesInput, OidcSubjectInput, RoleInfo,
+    CompanySettingsInput, LanguageInfo, ModuleInfo, ModulesInput, OidcSubjectInput, Outage,
+    RoleInfo, WorkerState, WorkerStatus,
 };
 pub use attributes::{
     AttributeDefinition, AttributeDefinitionInput, BaselineItemType, DefinitionKind, SelectOption,
@@ -34,6 +37,11 @@ pub use audit::{AuditEvent, AuditFacets, AuditPage, ListAuditEventsParams};
 pub use auth::{
     Auth, Company, EnvKind, EnvironmentInfo, Me, MeModule, Membership, PublicProvider, Session,
     ShortcutBinding, UserPreferences,
+};
+pub use chatter::{
+    Activity, ActivityDoneInput, ActivityInput, ActivityKind, ActivityPatch, ChatterNoteEdit,
+    ChatterNoteInput, Follower, FollowerInput, Followers, Inbox, InboxActivity, InboxRecord,
+    ListThreadParams, RecordKind, ThreadItem, ThreadPage,
 };
 pub use client::Client;
 pub use customers::{
@@ -73,9 +81,11 @@ pub use sales::{
     QuotationInput, QuotationLine, QuotationLineInput, QuotationPage, QuotationStatus,
     QuotationSummary, SalesSuggestion, SalesWarning, UpdateQuotationRequest, VatGroup,
 };
+pub use setup::{AdminSummary, BootstrapRequest, BootstrapResult, ProvisionSpec, SetupStatus};
 pub use suppliers::{
-    CreateSupplierRequest, ListSuppliersParams, SetSupplierProductInput, Supplier, SupplierInput,
-    SupplierProduct, SupplierProductInput, UpdateSupplierInput, UpdateSupplierRequest,
+    CreateSupplierRequest, ListPurchaseOrdersParams, ListSuppliersParams, PurchaseOrderSummary,
+    SetSupplierProductInput, Supplier, SupplierInput, SupplierProduct, SupplierProductInput,
+    UpdateSupplierInput, UpdateSupplierRequest,
 };
 pub use todo::{ListTodosParams, TodoCounts, TodoCreate, TodoItem, TodoPatch, TodoScope};
 pub use vat::{CountryVatRate, CountryVatRateInput};

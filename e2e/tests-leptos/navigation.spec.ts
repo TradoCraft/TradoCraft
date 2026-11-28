@@ -2,8 +2,8 @@ import { expect, Page, test } from '@playwright/test';
 import { attachErrorCollector, openModule, signInAsAdmin } from './support';
 
 // A page that is left while its list request is still running must not crash the app: the late response
-// arrives after the page's reactive state is gone. (Sign-in lands on Products, so every other spec leaves it
-// at once; on a cold server that request is the slowest.)
+// arrives after the page's reactive state is gone. (Sign-in lands on Home, so leaving Home and Products
+// while their initial requests are in flight are covered alongside the other modules.)
 //
 // The tests do not guess how long the server needs: the request is held at the browser until the page has
 // been left, then released, and the test waits for the response to be delivered and for the app to have run
@@ -66,10 +66,21 @@ for (const slow of slowPages) {
   });
 }
 
+test('leaving Home while its overview requests are slow', async ({ page }) => {
+  const errors = attachErrorCollector(page);
+  const held = await holdRequests(page, '**/api/v1/quotations*');
+  await signInAsAdmin(page);
+  await expect.poll(held.count).toBeGreaterThan(0);
+  await openModule(page, 'nav-todo', /\/app\/todo$/);
+  await held.settle();
+  errors.assertClean();
+});
+
 test('leaving Products while its first request is slow', async ({ page }) => {
   const errors = attachErrorCollector(page);
-  const held = await holdRequests(page, '**/api/v1/products*');
   await signInAsAdmin(page);
+  const held = await holdRequests(page, '**/api/v1/products*');
+  await openModule(page, 'nav-products', /\/app\/products$/);
   await expect.poll(held.count).toBeGreaterThan(0);
   await openModule(page, 'nav-todo', /\/app\/todo$/);
   await held.settle();

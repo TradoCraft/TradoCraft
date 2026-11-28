@@ -9,11 +9,15 @@ use leptos::prelude::*;
 use leptos_router::components::{Redirect, Route, Router, Routes};
 use leptos_router::path;
 
+use crate::components::banners::{setup_worker_probe, spawn_environment_probe};
+use crate::components::chatter::setup_inbox_probe;
 use crate::components::shell::AppShell;
+use crate::components::todo_widgets::setup_todo_counts_probe;
 use crate::pages::admin::AdminPage;
 use crate::pages::answers::AnswersPage;
 use crate::pages::customers::CustomersPage;
 use crate::pages::helpdesk::HelpdeskPage;
+use crate::pages::home::HomePage;
 use crate::pages::kb::KbPage;
 use crate::pages::login::LoginPage;
 use crate::pages::orders::OrdersPage;
@@ -21,6 +25,8 @@ use crate::pages::placeholder::PlaceholderPage;
 use crate::pages::portal::PortalPage;
 use crate::pages::products::ProductsPage;
 use crate::pages::quotations::QuotationsPage;
+use crate::pages::record_detail::{DetailKind, RecordDetailPage};
+use crate::pages::setup::SetupPage;
 use crate::pages::suppliers::SuppliersPage;
 use crate::pages::todo::TodoPage;
 use crate::state::{apply_theme_to_dom, AppContext};
@@ -38,6 +44,11 @@ pub fn App() -> impl IntoView {
         }
     });
 
+    spawn_environment_probe(ctx);
+    setup_worker_probe(ctx);
+    setup_inbox_probe(ctx);
+    setup_todo_counts_probe(ctx);
+
     Effect::new(move |_| {
         apply_theme_to_dom(ctx.theme.get());
     });
@@ -49,8 +60,17 @@ pub fn App() -> impl IntoView {
                     <PlaceholderPage title="Not found" route="404" />
                 </AppShell>
             }>
-                <Route path=path!("") view=|| view! { <Redirect path="/products" /> } />
+                <Route path=path!("") view=|| view! { <Redirect path="/home" /> } />
                 <Route path=path!("/login") view=LoginPage />
+                <Route path=path!("/setup") view=SetupPage />
+                <Route
+                    path=path!("/home")
+                    view=|| view! {
+                        <AppShell>
+                            <HomePage />
+                        </AppShell>
+                    }
+                />
                 <Route
                     path=path!("/products")
                     view=|| view! {
@@ -60,10 +80,26 @@ pub fn App() -> impl IntoView {
                     }
                 />
                 <Route
+                    path=path!("/products/:id")
+                    view=|| view! {
+                        <AppShell>
+                            <RecordDetailPage kind=DetailKind::Product />
+                        </AppShell>
+                    }
+                />
+                <Route
                     path=path!("/customers")
                     view=|| view! {
                         <AppShell>
                             <CustomersPage />
+                        </AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/customers/:id")
+                    view=|| view! {
+                        <AppShell>
+                            <RecordDetailPage kind=DetailKind::Customer />
                         </AppShell>
                     }
                 />
@@ -92,10 +128,50 @@ pub fn App() -> impl IntoView {
                     }
                 />
                 <Route
+                    path=path!("/quotations/:id")
+                    view=|| view! {
+                        <AppShell>
+                            <RecordDetailPage kind=DetailKind::Quotation />
+                        </AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/configurator")
+                    view=|| view! {
+                        <AppShell>
+                            <PlaceholderPage title="Configurator" route="/configurator" />
+                        </AppShell>
+                    }
+                />
+                <Route
                     path=path!("/orders")
                     view=|| view! {
                         <AppShell>
                             <OrdersPage />
+                        </AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/orders/:id")
+                    view=|| view! {
+                        <AppShell>
+                            <RecordDetailPage kind=DetailKind::Order />
+                        </AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/delivery")
+                    view=|| view! {
+                        <AppShell>
+                            <PlaceholderPage title="Delivery" route="/delivery" />
+                        </AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/shipping")
+                    view=|| view! {
+                        <AppShell>
+                            <PlaceholderPage title="Shipping" route="/shipping" />
                         </AppShell>
                     }
                 />
@@ -108,18 +184,18 @@ pub fn App() -> impl IntoView {
                     }
                 />
                 <Route
-                    path=path!("/portal")
+                    path=path!("/kb/:id")
                     view=|| view! {
                         <AppShell>
-                            <PortalPage />
+                            <RecordDetailPage kind=DetailKind::KbEntry />
                         </AppShell>
                     }
                 />
                 <Route
-                    path=path!("/delivery")
+                    path=path!("/portal")
                     view=|| view! {
                         <AppShell>
-                            <PlaceholderPage title="Delivery" route="/delivery" />
+                            <PortalPage />
                         </AppShell>
                     }
                 />
@@ -140,6 +216,14 @@ pub fn App() -> impl IntoView {
                     }
                 />
                 <Route
+                    path=path!("/helpdesk/:id")
+                    view=|| view! {
+                        <AppShell>
+                            <RecordDetailPage kind=DetailKind::Ticket />
+                        </AppShell>
+                    }
+                />
+                <Route
                     path=path!("/todo")
                     view=|| view! {
                         <AppShell>
@@ -156,10 +240,50 @@ pub fn App() -> impl IntoView {
                     }
                 />
                 <Route
+                    path=path!("/packages")
+                    view=|| view! {
+                        <AppShell>
+                            <PlaceholderPage title="Packages" route="/packages" />
+                        </AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/intake")
+                    view=|| view! {
+                        <AppShell>
+                            <PlaceholderPage title="Repair intake" route="/intake" />
+                        </AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/jobs")
+                    view=|| view! {
+                        <AppShell>
+                            <PlaceholderPage title="Field jobs" route="/jobs" />
+                        </AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/planning")
+                    view=|| view! {
+                        <AppShell>
+                            <PlaceholderPage title="Planning" route="/planning" />
+                        </AppShell>
+                    }
+                />
+                <Route
                     path=path!("/production")
                     view=|| view! {
                         <AppShell>
                             <PlaceholderPage title="Production" route="/production" />
+                        </AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/mrp")
+                    view=|| view! {
+                        <AppShell>
+                            <PlaceholderPage title="MRP" route="/mrp" />
                         </AppShell>
                     }
                 />
@@ -180,10 +304,26 @@ pub fn App() -> impl IntoView {
                     }
                 />
                 <Route
+                    path=path!("/suppliers/:id")
+                    view=|| view! {
+                        <AppShell>
+                            <RecordDetailPage kind=DetailKind::Supplier />
+                        </AppShell>
+                    }
+                />
+                <Route
                     path=path!("/finance")
                     view=|| view! {
                         <AppShell>
                             <PlaceholderPage title="Finance" route="/finance" />
+                        </AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/reports")
+                    view=|| view! {
+                        <AppShell>
+                            <PlaceholderPage title="Reports" route="/reports" />
                         </AppShell>
                     }
                 />

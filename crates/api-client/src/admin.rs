@@ -113,6 +113,44 @@ pub struct LanguageInfo {
     pub name: String,
 }
 
+/// Whether the background worker is running, as far as its heartbeat tells (OpenAPI schema `WorkerState`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WorkerState {
+    Running,
+    Down,
+    NeverSeen,
+}
+
+/// A period without any worker heartbeat (OpenAPI schema `Outage`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Outage {
+    pub down_from: DateTime<Utc>,
+    pub down_until: DateTime<Utc>,
+}
+
+/// The worker's heartbeat as administrators see it (OpenAPI schema `WorkerStatus`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WorkerStatus {
+    pub state: WorkerState,
+    #[serde(default)]
+    pub last_beat_at: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub age_seconds: Option<i64>,
+    #[serde(default)]
+    pub started_at: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub interval_seconds: Option<i32>,
+    #[serde(default)]
+    pub late_after_seconds: Option<i64>,
+    #[serde(default)]
+    pub version: Option<String>,
+    #[serde(default)]
+    pub host: Option<String>,
+    #[serde(default)]
+    pub last_outage: Option<Outage>,
+}
+
 impl Client {
     /// Lists every member of the active company (`GET /api/v1/admin/users`).
     pub async fn list_admin_users(&self) -> Result<Vec<AdminUser>, ApiError> {
@@ -201,6 +239,11 @@ impl Client {
     ) -> Result<Company, ApiError> {
         self.put_json("/api/v1/admin/company/languages", req).await
     }
+
+    /// Fetches the background worker heartbeat status (`GET /api/v1/admin/worker`).
+    pub async fn get_worker(&self) -> Result<WorkerStatus, ApiError> {
+        self.get_json("/api/v1/admin/worker", &()).await
+    }
 }
 
 #[cfg(test)]
@@ -228,5 +271,46 @@ mod tests {
             serde_json::to_string(&settings).unwrap(),
             r#"{"quotation_single_line_items":true,"autosave_minutes":5}"#
         );
+    }
+
+    #[test]
+    fn decodes_worker_status_variants() {
+        let running: WorkerStatus = serde_json::from_str(
+            r#"{
+                "state": "running",
+                "last_beat_at": "2026-11-28T06:00:00Z",
+                "age_seconds": 10,
+                "started_at": "2026-11-28T05:00:00Z",
+                "interval_seconds": 30,
+                "late_after_seconds": 150,
+                "version": "0.4.0",
+                "host": "worker-1",
+                "last_outage": null
+            }"#,
+        )
+        .unwrap();
+        assert_eq!(running.state, WorkerState::Running);
+        assert_eq!(running.host.as_deref(), Some("worker-1"));
+        assert!(running.last_outage.is_none());
+
+        let down: WorkerStatus = serde_json::from_str(
+            r#"{
+                "state": "down",
+                "last_beat_at": "2026-11-28T05:50:00Z",
+                "age_seconds": 600,
+                "last_outage": {
+                    "down_from": "2026-11-28T04:00:00Z",
+                    "down_until": "2026-11-28T04:10:00Z"
+                }
+            }"#,
+        )
+        .unwrap();
+        assert_eq!(down.state, WorkerState::Down);
+        assert!(down.last_beat_at.is_some());
+        assert!(down.last_outage.is_some());
+
+        let never_seen: WorkerStatus = serde_json::from_str(r#"{"state":"never_seen"}"#).unwrap();
+        assert_eq!(never_seen.state, WorkerState::NeverSeen);
+        assert!(never_seen.last_beat_at.is_none());
     }
 }

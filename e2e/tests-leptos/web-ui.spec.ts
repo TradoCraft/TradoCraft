@@ -39,7 +39,7 @@ async function signInAsAdmin(page: Page): Promise<void> {
   await page.locator('[data-target="login-dev-user"]').fill('admin@example.com');
   await page.locator('[data-target="login-submit"]').click();
 
-  await expect(page).toHaveURL(/\/app\/products$/);
+  await expect(page).toHaveURL(/\/app\/home$/);
   await expect(page.locator('[data-target="active-user"]')).toBeVisible();
 }
 
@@ -47,13 +47,18 @@ test.describe('Leptos Web UI (/app)', () => {
   test('sign in, inspect master data & workflows, and exercise tutorial overlay', async ({ page }) => {
     const errors = attachErrorCollector(page);
 
-    await test.step('Sign in as admin@example.com redirects to /app/products', async () => {
+    await test.step('Sign in as admin@example.com redirects to /app/home', async () => {
       await signInAsAdmin(page);
-      await expect(page.locator('[data-target="products-page"]')).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'Products', exact: true })).toBeVisible();
+      await expect(page.locator('[data-target="home-page"]')).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible();
     });
 
     await test.step('Products: verify BELT-M loads, open detail drawer, open + New Product', async () => {
+      await page.locator('[data-target="module-nav"] [data-target="nav-products"]').click();
+      await expect(page).toHaveURL(/\/app\/products$/);
+      await expect(page.locator('[data-target="products-page"]')).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Products', exact: true })).toBeVisible();
+
       const beltRow = page.locator('[data-target="product-row-BELT-M"]');
       await expect(beltRow).toBeVisible();
       await beltRow.click();

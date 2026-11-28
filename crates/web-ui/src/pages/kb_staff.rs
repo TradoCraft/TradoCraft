@@ -15,7 +15,7 @@ use tradocraft_api_client::kb::{
 use tradocraft_api_client::{ApiError, Client};
 use uuid::Uuid;
 
-use crate::api::{resolve_base_url, ConnectionMode};
+use crate::components::async_ops::live_client;
 use crate::pages::kb::snippet_segments;
 use crate::pages::{opt_trimmed, set_alive};
 use crate::state::AppContext;
@@ -170,20 +170,6 @@ fn list_params(filters: &Filters) -> ListKbEntriesParams {
         status: opt_trimmed(&filters.status),
         limit: Some(i64::from(filters.effective_limit())),
         offset: Some(0),
-    }
-}
-
-fn live_client(connection: &ConnectionMode) -> Result<Client, ApiError> {
-    match connection {
-        ConnectionMode::Live(session) => {
-            let mut resolved = session.clone();
-            resolved.base_url = resolve_base_url(&session.base_url);
-            Ok(Client::from_session(resolved))
-        }
-        ConnectionMode::MockDemo => Err(ApiError::InvalidConfig(
-            "Knowledge Base staff endpoints require a live API connection; switch to Dev User or Bearer mode on the sign-in screen."
-                .to_string(),
-        )),
     }
 }
 

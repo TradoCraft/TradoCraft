@@ -1,4 +1,7 @@
 use leptos::prelude::*;
+use tradocraft_api_client::chatter::Inbox;
+use tradocraft_api_client::todo::TodoCounts;
+use tradocraft_api_client::{EnvironmentInfo, WorkerStatus};
 
 use crate::api::{ConnectionMode, Me};
 
@@ -46,6 +49,12 @@ pub struct AppContext {
     pub theme: RwSignal<ThemeMode>,
     pub tabs: RwSignal<Vec<WorkspaceTab>>,
     pub active_tab: RwSignal<Option<String>>,
+    pub environment: RwSignal<Option<EnvironmentInfo>>,
+    pub worker_status: RwSignal<Option<WorkerStatus>>,
+    pub inbox: RwSignal<Option<Inbox>>,
+    pub inbox_nonce: RwSignal<u64>,
+    pub todo_counts: RwSignal<Option<TodoCounts>>,
+    pub todo_counts_nonce: RwSignal<u64>,
 }
 
 impl AppContext {
@@ -56,23 +65,57 @@ impl AppContext {
             theme: RwSignal::new(ThemeMode::Dark),
             tabs: RwSignal::new(Vec::new()),
             active_tab: RwSignal::new(None),
+            environment: RwSignal::new(None),
+            worker_status: RwSignal::new(None),
+            inbox: RwSignal::new(None),
+            inbox_nonce: RwSignal::new(0),
+            todo_counts: RwSignal::new(None),
+            todo_counts_nonce: RwSignal::new(0),
         }
+    }
+
+    pub fn bump_inbox(&self) {
+        self.inbox_nonce.try_update(|n| *n = n.wrapping_add(1));
+    }
+
+    pub fn bump_todo_counts(&self) {
+        self.todo_counts_nonce
+            .try_update(|n| *n = n.wrapping_add(1));
+    }
+
+    /// Inserts or refreshes a tab in `tabs` without changing `active_tab`.
+    pub fn register_tab(&self, tab: WorkspaceTab) {
+        self.tabs.update(|list| {
+            if let Some(existing) = list.iter_mut().find(|t| t.id == tab.id) {
+                existing.title = tab.title;
+                existing.route = tab.route;
+                existing.subtitle = tab.subtitle;
+            } else {
+                list.push(tab);
+            }
+        });
     }
 
     pub fn open_tab(&self, tab: WorkspaceTab) {
         let id = tab.id.clone();
-        self.tabs.update(|list| {
-            if !list.iter().any(|t| t.id == id) {
-                list.push(tab);
-            }
-        });
+        self.register_tab(tab);
         self.active_tab.set(Some(id));
     }
 
     pub fn close_tab(&self, id: &str) {
-        self.tabs.update(|list| list.retain(|t| t.id != id));
+        let mut fallback: Option<String> = None;
+        self.tabs.update(|list| {
+            let removed_idx = list.iter().position(|t| t.id == id);
+            list.retain(|t| t.id != id);
+            if let Some(idx) = removed_idx {
+                if !list.is_empty() {
+                    let pick = idx.min(list.len() - 1);
+                    fallback = Some(list[pick].id.clone());
+                }
+            }
+        });
         if self.active_tab.get_untracked().as_deref() == Some(id) {
-            self.active_tab.set(None);
+            self.active_tab.set(fallback);
         }
     }
 
@@ -80,6 +123,9 @@ impl AppContext {
         self.session.set(None);
         self.tabs.set(Vec::new());
         self.active_tab.set(None);
+        self.worker_status.set(None);
+        self.inbox.set(None);
+        self.todo_counts.set(None);
     }
 }
 

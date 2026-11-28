@@ -12,7 +12,7 @@ use tradocraft_api_client::todo::{ListTodosParams, TodoCreate, TodoItem, TodoPat
 use tradocraft_api_client::{ApiError, Client};
 use uuid::Uuid;
 
-use crate::api::{resolve_base_url, ConnectionMode};
+use crate::components::async_ops::live_client;
 use crate::pages::{opt_trimmed, set_alive};
 use crate::state::AppContext;
 
@@ -136,20 +136,6 @@ fn is_overdue(item: &TodoItem, today: Option<NaiveDate>) -> bool {
     }
 }
 
-fn live_client(connection: &ConnectionMode) -> Result<Client, ApiError> {
-    match connection {
-        ConnectionMode::Live(session) => {
-            let mut resolved = session.clone();
-            resolved.base_url = resolve_base_url(&session.base_url);
-            Ok(Client::from_session(resolved))
-        }
-        ConnectionMode::MockDemo => Err(ApiError::InvalidConfig(
-            "To-do endpoints require a live API connection; switch to Dev User or Bearer mode on the sign-in screen."
-                .to_string(),
-        )),
-    }
-}
-
 fn error_code(err: &ApiError) -> Option<&str> {
     match err {
         ApiError::Http { body, .. } => body.as_ref().and_then(|b| b.code.as_deref()),
@@ -207,10 +193,13 @@ impl TodoUi {
                     }
                     alive
                 }
-                Err(err) => set_alive(self.error, Some(err.user_message())),
+                Err(ref err) => set_alive(self.error, Some(err.user_message())),
             };
             if alive {
                 self.reload.try_update(|n| *n += 1);
+                if res.is_ok() {
+                    self.ctx.bump_todo_counts();
+                }
             }
         });
     }
@@ -272,13 +261,16 @@ impl TodoUi {
             };
             let alive = match res {
                 Ok(_) => set_alive(self.error, None),
-                Err(err) if error_code(&err) == Some("open_sub_items") => {
+                Err(ref err) if error_code(err) == Some("open_sub_items") => {
                     set_alive(self.confirm, Some(Confirm::CompleteAll(id)))
                 }
-                Err(err) => set_alive(self.error, Some(err.user_message())),
+                Err(ref err) => set_alive(self.error, Some(err.user_message())),
             };
             if alive {
                 self.reload.try_update(|n| *n += 1);
+                if res.is_ok() {
+                    self.ctx.bump_todo_counts();
+                }
             }
         });
     }
@@ -308,6 +300,7 @@ impl TodoUi {
             notes: Some(self.edit_notes.get_untracked().trim().to_string()),
             due_date: due,
             clear_due_date: due.is_none(),
+            ..TodoPatch::default()
         };
         let editing = self.editing;
         self.run_then(
@@ -376,6 +369,7 @@ pub fn TodoPage() -> impl IntoView {
             let params = ListTodosParams {
                 scope: None,
                 done: current.done_param(),
+                ..ListTodosParams::default()
             };
             let res = match live_client(&session.connection) {
                 Ok(client) => client.list_todos(&params).await,
@@ -575,6 +569,14 @@ fn ItemRow(
     let notes = item.notes.clone();
     let due_label = item.due_date.map(|d| d.to_string());
     let assignee = item.assignee_name.clone();
+    let link_info = item.link_location.clone().map(|loc| {
+        let lbl = item
+            .link_label
+            .clone()
+            .filter(|s| !s.trim().is_empty())
+            .unwrap_or_else(|| "Linked record".to_string());
+        (crate::components::shell::app_href(&loc), lbl)
+    });
     let toggle_item = item.clone();
     let edit_item = item.clone();
 
@@ -644,6 +646,11 @@ fn ItemRow(
                     </span>
                 })}
                 {assignee.map(|name| view! { <span class="tc-badge">{name}</span> })}
+                {link_info.map(|(href, lbl)| view! {
+                    <A href=href attr:class="tc-badge tc-badge-primary" attr:data-target=format!("todo-link-{id}")>
+                        {lbl}
+                    </A>
+                })}
                 {(!is_root && !child).then(|| view! { <span class="tc-badge">"Sub-item"</span> })}
                 <button
                     type="button"
