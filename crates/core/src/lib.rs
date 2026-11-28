@@ -19,6 +19,7 @@ pub mod http_trace;
 pub mod identity;
 pub mod identity_admin;
 pub mod import;
+pub mod language;
 pub mod live_events;
 pub mod logo;
 pub mod mail;

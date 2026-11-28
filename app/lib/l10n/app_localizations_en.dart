@@ -9323,6 +9323,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get impAllMapped => 'Every field has a column.';
 
   @override
+  String get impFixedValues => 'Fixed values';
+
+  @override
+  String get impFixedHelp =>
+      'A fixed value fills a field in every row, read like a cell of the file (a date as 2027-01-01).';
+
+  @override
+  String get impAddFixed => 'Add fixed value';
+
+  @override
+  String get impFixedValue => 'Value';
+
+  @override
+  String impRemoveFixed(String field) {
+    return 'Remove the fixed value of $field';
+  }
+
+  @override
   String get impMappingsMenu => 'Saved mappings';
 
   @override
@@ -10042,6 +10060,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get plShowLogo => 'Print the company logo';
+
+  @override
+  String get plImportSettings => 'Import';
+
+  @override
+  String get plImportSettingsHelp =>
+      'How an import of price list items reads positions and group titles.';
+
+  @override
+  String get plImportLevels => 'Group levels in a position';
+
+  @override
+  String get plImportTitles => 'When rows give a group different titles';
+
+  @override
+  String get plImportTitlesLowest => 'The row with the lowest position wins';
+
+  @override
+  String get plImportTitlesFirst => 'The first row of the file wins';
+
+  @override
+  String get plImportTitlesError => 'Report an error';
+
+  @override
+  String get plImportShort => 'A position with fewer group levels';
+
+  @override
+  String get plImportShortShallower => 'Put the item in the group it names';
+
+  @override
+  String get plImportShortError => 'Report an error';
 
   @override
   String plProductCount(int count) {

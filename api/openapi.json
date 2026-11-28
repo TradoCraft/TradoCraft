@@ -12545,6 +12545,93 @@
         }
       }
     },
+    "/api/v1/imports/entities/{key}/export": {
+      "get": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "An export of the entity in the columns of its import (`format` csv, xlsx or ods): what an\nimport of the same file leaves unchanged. Needs the read permission of the entity.",
+        "operationId": "export_import_entity",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "description": "`csv` (default), `xlsx` or `ods`.",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "description": "The formats an export can be asked for.",
+                  "enum": [
+                    "csv",
+                    "xlsx",
+                    "ods"
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary",
+                  "description": "The raw bytes of a file."
+                }
+              },
+              "application/vnd.oasis.opendocument.spreadsheet": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary",
+                  "description": "The raw bytes of a file."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/imports/files": {
       "post": {
         "tags": [
@@ -39114,19 +39201,28 @@
       },
       "ColumnPair": {
         "type": "object",
-        "description": "One `file column -> field` pair. File columns are compared trimmed and case-insensitively.",
+        "description": "One field of a mapping, fed by a file column (`column`) or by a fixed value that every row\ngets (`value`, read like a text cell of the file): exactly one of the two. File columns are\ncompared trimmed and case-insensitively. The old shape `{column, field}` is a pair with a\ncolumn.",
         "required": [
-          "column",
           "field"
         ],
         "properties": {
           "column": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "The column as the file names it."
           },
           "field": {
             "type": "string",
             "description": "The entity's field it feeds."
+          },
+          "value": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A fixed value for the field in every row, e.g. a date or the code of a list."
           }
         }
       },
@@ -44082,14 +44178,20 @@
         "required": [
           "name",
           "kind",
-          "required"
+          "required",
+          "per_language"
         ],
         "properties": {
           "kind": {
             "$ref": "#/components/schemas/ColumnKind"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "The column name; for a per-language family the prefix (`name` for `name_nl`, `name_fr`)."
+          },
+          "per_language": {
+            "type": "boolean",
+            "description": "A family of columns `<name>_<language>`, one per ISO 639-1 language code (`name_nl`,\n`name_fr`); a file has any number of them."
           },
           "required": {
             "type": "boolean",
@@ -44126,6 +44228,7 @@
           "key",
           "audit_entity",
           "key_column",
+          "key_columns",
           "file_stem",
           "columns"
         ],
@@ -44150,7 +44253,14 @@
           },
           "key_column": {
             "type": "string",
-            "description": "The column that identifies a record; upserts match on it."
+            "description": "The first (for most entities the only) column of the key; upserts match on the key."
+          },
+          "key_columns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The columns that together identify a record, e.g. `product_code`, `zone`, `valid_from`."
           }
         }
       },
@@ -44476,6 +44586,23 @@
             "minimum": 0
           }
         }
+      },
+      "ImportShortPosition": {
+        "type": "string",
+        "description": "What an import does with a position that names fewer groups than the list's group levels.",
+        "enum": [
+          "shallower_group",
+          "error"
+        ]
+      },
+      "ImportTitleConflict": {
+        "type": "string",
+        "description": "How an import picks a group's title in one language when its rows hold different ones.",
+        "enum": [
+          "lowest_position",
+          "first_row",
+          "error"
+        ]
       },
       "ImportWarning": {
         "type": "object",
@@ -51169,6 +51296,32 @@
             "type": "string",
             "description": "Printed in the page footer after the company name.",
             "default": ""
+          },
+          "import_group_levels": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Import of the items (ADR 0100): how many leading segments of a `position` name the group\npath (each the `sort_order` of a group among its siblings); the rest is the item's sort\nkey. 1 to 4, default 2.",
+            "default": 2,
+            "maximum": 4,
+            "minimum": 1
+          },
+          "import_short_position": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImportShortPosition",
+                "description": "Import of the items: what a position with fewer segments than `import_group_levels` means."
+              }
+            ],
+            "default": "shallower_group"
+          },
+          "import_title_conflict": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImportTitleConflict",
+                "description": "Import of the items: which title a group gets when its rows disagree."
+              }
+            ],
+            "default": "lowest_position"
           },
           "show_logo": {
             "type": "boolean",

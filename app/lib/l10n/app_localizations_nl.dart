@@ -9365,6 +9365,24 @@ class AppLocalizationsNl extends AppLocalizations {
   String get impAllMapped => 'Elk veld heeft een kolom.';
 
   @override
+  String get impFixedValues => 'Vaste waarden';
+
+  @override
+  String get impFixedHelp =>
+      'Een vaste waarde vult een veld in elke rij, gelezen als een cel van het bestand (een datum als 2027-01-01).';
+
+  @override
+  String get impAddFixed => 'Vaste waarde toevoegen';
+
+  @override
+  String get impFixedValue => 'Waarde';
+
+  @override
+  String impRemoveFixed(String field) {
+    return 'Vaste waarde van $field verwijderen';
+  }
+
+  @override
   String get impMappingsMenu => 'Opgeslagen koppelingen';
 
   @override
@@ -10091,6 +10109,38 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get plShowLogo => 'Bedrijfslogo afdrukken';
+
+  @override
+  String get plImportSettings => 'Import';
+
+  @override
+  String get plImportSettingsHelp =>
+      'Hoe een import van prijslijstartikelen posities en groepstitels leest.';
+
+  @override
+  String get plImportLevels => 'Groepsniveaus in een positie';
+
+  @override
+  String get plImportTitles => 'Als rijen een groep verschillende titels geven';
+
+  @override
+  String get plImportTitlesLowest => 'De rij met de laagste positie wint';
+
+  @override
+  String get plImportTitlesFirst => 'De eerste rij van het bestand wint';
+
+  @override
+  String get plImportTitlesError => 'Een fout melden';
+
+  @override
+  String get plImportShort => 'Een positie met minder groepsniveaus';
+
+  @override
+  String get plImportShortShallower =>
+      'Het artikel in de genoemde groep plaatsen';
+
+  @override
+  String get plImportShortError => 'Een fout melden';
 
   @override
   String plProductCount(int count) {

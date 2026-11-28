@@ -2,10 +2,14 @@
 //! upsert-by-`code` import in CSV, XLSX or ODS. Everything shared lives in
 //! `tradocraft_core::import`; this file holds only what is the products'.
 //!
-//! Not part of the file: the standard cost (permissioned, set in the product form) and the zone
-//! prices (dated history, see the price endpoints).
+//! The name and description of a product per language (`name_<code>`, `description_<code>` for
+//! any ISO 639-1 code) are part of the file (ADR 0100): they read and write
+//! `products.product_translations`.
+//!
+//! Not part of the file: the standard cost (permissioned, set in the product form). The zone
+//! prices are an entity of their own (`zone_prices`, ADR 0100).
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use axum::body::Bytes;
 use axum::extract::{DefaultBodyLimit, Query, State};
@@ -16,8 +20,8 @@ use sqlx::{PgConnection, PgPool};
 use tradocraft_core::csv_io::{self, ImportParams, ImportReport};
 use tradocraft_core::error::ErrorBody;
 use tradocraft_core::import::{
-    self, BinaryFile, Cell, CellValue, Cells, Column, ColumnKind, ExportParams, ImportEntity,
-    Importable, Row, Table,
+    self, BinaryFile, Cell, CellValue, Cells, Column, ColumnKind, ExportParams, ExportTable,
+    ImportEntity, Importable, Row, Table,
 };
 use tradocraft_core::{AppError, AppResult, AppState, CurrentUser, Permission};
 use utoipa_axum::router::OpenApiRouter;
@@ -31,7 +35,7 @@ use crate::{
 
 /// The columns, in export order. `code` is the key; the others are optional in an import file.
 /// `required` means a new product needs a value.
-const COLUMNS: [Column; 25] = [
+const COLUMNS: [Column; 27] = [
     Column::new("code", ColumnKind::Code, true),
     Column::new("name", ColumnKind::Text, true),
     Column::new("description", ColumnKind::Text, false),
@@ -57,14 +61,138 @@ const COLUMNS: [Column; 25] = [
     Column::new("vat_category", ColumnKind::Code, false),
     Column::new("vat_rate_override", ColumnKind::Decimal, false),
     Column::new("included_in_turnover", ColumnKind::Boolean, false),
+    Column::per_language(NAME, ColumnKind::Text),
+    Column::per_language(DESCRIPTION, ColumnKind::Text),
 ];
 
+/// The prefixes of the translation columns `name_<code>` and `description_<code>`.
+const NAME: &str = "name";
+const DESCRIPTION: &str = "description";
+
+/// The languages of the translation columns among the bound `columns`, sorted.
+fn file_languages(columns: &[String]) -> Vec<String> {
+    let mut languages = import::family_languages(columns, NAME);
+    languages.extend(import::family_languages(columns, DESCRIPTION));
+    languages.sort();
+    languages.dedup();
+    languages
+}
+
+/// The name and description of a product in one language.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Translation {
+    pub name: String,
+    pub description: String,
+}
+
+/// A stored product with its translations in the languages of the file.
+pub struct StoredProduct {
+    product: Product,
+    translations: BTreeMap<String, Translation>,
+}
+
+/// What one row writes: the product, and the translations of the languages the row sets (the
+/// other languages are left as they are).
+pub struct ProductChange {
+    input: ProductInput,
+    translations: BTreeMap<String, Translation>,
+}
+
+/// The translation a row asks for in one language, or None when the row leaves it as it is.
+///
+/// * A name (not blank) sets the name; the description is the description cell, or the stored
+///   one when the column is not in the file (empty for a new translation).
+/// * No name but a description: the stored translation gets the description; without a stored
+///   translation the product's own name becomes the translation's name, since a translation
+///   needs one.
+/// * Neither (blank or absent cells): unchanged. An import never deletes a translation.
+fn translation_target(
+    name: Cell<String>,
+    description: Cell<String>,
+    stored: Option<&Translation>,
+    base_name: &str,
+) -> Option<Translation> {
+    let name = match name {
+        Cell::Value(v) if !v.trim().is_empty() => Some(v.trim().to_string()),
+        _ => None,
+    };
+    let description = match description {
+        Cell::Absent => None,
+        Cell::Blank => Some(String::new()),
+        Cell::Value(v) => Some(v.trim().to_string()),
+    };
+    match (name, description) {
+        (Some(name), description) => Some(Translation {
+            name,
+            description: description
+                .or_else(|| stored.map(|t| t.description.clone()))
+                .unwrap_or_default(),
+        }),
+        (None, Some(description)) if !description.is_empty() => Some(Translation {
+            name: stored.map_or_else(|| base_name.to_string(), |t| t.name.clone()),
+            description,
+        }),
+        (None, _) => None,
+    }
+}
+
+/// The translations of `ids`, per product.
+async fn load_translations(
+    conn: &mut PgConnection,
+    ids: &[Uuid],
+) -> AppResult<HashMap<Uuid, BTreeMap<String, Translation>>> {
+    let rows: Vec<(Uuid, String, String, String)> = sqlx::query_as(
+        "SELECT product_id, language::text, name, description FROM products.product_translations
+         WHERE product_id = ANY($1)",
+    )
+    .bind(ids)
+    .fetch_all(conn)
+    .await?;
+    let mut out: HashMap<Uuid, BTreeMap<String, Translation>> = HashMap::new();
+    for (id, language, name, description) in rows {
+        out.entry(id)
+            .or_default()
+            .insert(language, Translation { name, description });
+    }
+    Ok(out)
+}
+
+/// Writes the translations of a change that differ from what is stored.
+async fn write_translations(
+    conn: &mut PgConnection,
+    id: Uuid,
+    translations: &BTreeMap<String, Translation>,
+) -> AppResult<()> {
+    for (language, t) in translations {
+        sqlx::query(
+            "INSERT INTO products.product_translations (product_id, language, name, description)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (product_id, language) DO UPDATE
+                SET name = EXCLUDED.name, description = EXCLUDED.description, updated_at = now()
+                WHERE product_translations.name <> EXCLUDED.name
+                   OR product_translations.description <> EXCLUDED.description",
+        )
+        .bind(id)
+        .bind(language)
+        .bind(&t.name)
+        .bind(&t.description)
+        .execute(&mut *conn)
+        .await?;
+    }
+    Ok(())
+}
+
 /// One product as the cells of an export row, in [`COLUMNS`] order.
-fn export_row(p: &Product) -> Vec<CellValue> {
+/// The translation cells follow for each of `languages`.
+fn export_row(
+    p: &Product,
+    translations: Option<&BTreeMap<String, Translation>>,
+    languages: &[String],
+) -> Vec<CellValue> {
     let opt = |v: &Option<String>| CellValue::text(v.clone().unwrap_or_default());
     let dec = |v: Option<Decimal>| v.map_or(CellValue::Empty, |d| CellValue::Number(d.normalize()));
     let int = |v: Option<i32>| v.map_or(CellValue::Empty, |v| CellValue::int(v.into()));
-    vec![
+    let mut row = vec![
         CellValue::text(&p.code),
         CellValue::text(&p.name),
         CellValue::text(&p.description),
@@ -91,7 +219,17 @@ fn export_row(p: &Product) -> Vec<CellValue> {
         dec(p.vat_rate_override),
         p.included_in_turnover
             .map_or(CellValue::Empty, CellValue::Bool),
-    ]
+    ];
+    for language in languages {
+        match translations.and_then(|t| t.get(language)) {
+            Some(t) => {
+                row.push(CellValue::text(&t.name));
+                row.push(CellValue::text(&t.description));
+            }
+            None => row.extend([CellValue::Empty, CellValue::Empty]),
+        }
+    }
+    row
 }
 
 /// Whether the stored product already equals what the row would write (so nothing is written).
@@ -181,14 +319,16 @@ pub struct ProductContext {
     seen_barcodes: HashMap<String, usize>,
     company_country: String,
     vat_rules: Vec<tradocraft_core::vat_rates::CountryVatRate>,
+    /// The languages with a name or description column in the file.
+    languages: Vec<String>,
 }
 
 /// The products as an importable entity.
 pub struct Products;
 
 impl Importable for Products {
-    type Stored = Product;
-    type Change = ProductInput;
+    type Stored = StoredProduct;
+    type Change = ProductChange;
     type Context = ProductContext;
 
     const KEY: &'static str = "products";
@@ -231,6 +371,7 @@ impl Importable for Products {
             seen_barcodes: HashMap::new(),
             company_country: company.country_code,
             vat_rules,
+            languages: file_languages(&table.columns),
         })
     }
 
@@ -238,7 +379,7 @@ impl Importable for Products {
         conn: &mut PgConnection,
         user: &CurrentUser,
         keys: &[String],
-    ) -> AppResult<Vec<(String, Product)>> {
+    ) -> AppResult<Vec<(String, StoredProduct)>> {
         // Read and lock the rows we are going to change (as a manual edit does) in one statement,
         // so a concurrent edit cannot slip in between the read and the lock.
         let company = tradocraft_core::company::get_company(&mut *conn, user.company_id).await?;
@@ -249,7 +390,7 @@ impl Importable for Products {
             "{SELECT_PRODUCT_LOCKABLE} WHERE p.code = ANY($1) ORDER BY p.id FOR UPDATE OF p"
         )))
         .bind(keys)
-        .fetch_all(conn)
+        .fetch_all(&mut *conn)
         .await?;
         crate::apply_resolved_vat(
             &mut products,
@@ -257,11 +398,25 @@ impl Importable for Products {
             &vat_rules,
             tradocraft_core::today(),
         );
-        Ok(products.into_iter().map(|p| (p.code.clone(), p)).collect())
+        let ids: Vec<Uuid> = products.iter().map(|p| p.id).collect();
+        let mut translations = load_translations(conn, &ids).await?;
+        Ok(products
+            .into_iter()
+            .map(|p| {
+                let t = translations.remove(&p.id).unwrap_or_default();
+                (
+                    p.code.clone(),
+                    StoredProduct {
+                        product: p,
+                        translations: t,
+                    },
+                )
+            })
+            .collect())
     }
 
-    fn stored_id(stored: &Product) -> Uuid {
-        stored.id
+    fn stored_id(stored: &StoredProduct) -> Uuid {
+        stored.product.id
     }
 
     async fn plan_row(
@@ -269,10 +424,12 @@ impl Importable for Products {
         _user: &CurrentUser,
         context: &mut ProductContext,
         key: &str,
-        current: Option<&Product>,
+        current: Option<&StoredProduct>,
         row: &Row,
         cells: &mut Cells<'_>,
-    ) -> AppResult<ProductInput> {
+    ) -> AppResult<ProductChange> {
+        let stored_translations = current.map(|c| &c.translations);
+        let current = current.map(|c| &c.product);
         let ProductContext {
             families,
             categories,
@@ -280,6 +437,7 @@ impl Importable for Products {
             seen_barcodes,
             company_country,
             vat_rules,
+            languages,
         } = context;
         let before = cells.error_count();
         // Start from the stored values (or the API defaults) and overlay the columns of the file.
@@ -459,7 +617,7 @@ impl Importable for Products {
                 .problems()
                 .into_iter()
                 .filter(|m| !(name_missing && m.starts_with("code and name"))),
-            &import::column_names::<Self>(),
+            &Self::COLUMNS.iter().map(|c| c.name).collect::<Vec<_>>(),
         );
         if let Some(b) = barcode(&input) {
             if let Some(first) = seen_barcodes.insert(b.to_string(), row.line) {
@@ -500,32 +658,50 @@ impl Importable for Products {
                 Err(e) => return Err(e),
             }
         }
-        Ok(input)
+        let mut translations = BTreeMap::new();
+        for language in languages.iter() {
+            let stored = stored_translations.and_then(|t| t.get(language));
+            let name = cells.text(&format!("{NAME}_{language}"));
+            let description = cells.text(&format!("{DESCRIPTION}_{language}"));
+            if let Some(t) = translation_target(name, description, stored, &input.name) {
+                translations.insert(language.clone(), t);
+            }
+        }
+        Ok(ProductChange {
+            input,
+            translations,
+        })
     }
 
-    fn unchanged(stored: &Product, change: &ProductInput) -> bool {
-        same(stored, change)
+    fn unchanged(stored: &StoredProduct, change: &ProductChange) -> bool {
+        same(&stored.product, &change.input)
+            && change
+                .translations
+                .iter()
+                .all(|(language, t)| stored.translations.get(language) == Some(t))
     }
 
     async fn create(
         conn: &mut PgConnection,
         user: &CurrentUser,
         id: Uuid,
-        change: &ProductInput,
+        change: &ProductChange,
     ) -> AppResult<()> {
-        insert_product(conn, id, user.company_id, change, false).await
+        insert_product(conn, id, user.company_id, &change.input, false).await?;
+        write_translations(conn, id, &change.translations).await
     }
 
     async fn update(
         conn: &mut PgConnection,
         user: &CurrentUser,
         id: Uuid,
-        change: &ProductInput,
+        change: &ProductChange,
     ) -> AppResult<()> {
-        update_product_row(conn, id, user.company_id, change, false).await
+        update_product_row(conn, id, user.company_id, &change.input, false).await?;
+        write_translations(conn, id, &change.translations).await
     }
 
-    async fn export(pool: &PgPool, user: &CurrentUser) -> AppResult<Vec<Vec<CellValue>>> {
+    async fn export(pool: &PgPool, user: &CurrentUser) -> AppResult<ExportTable> {
         let mut products: Vec<Product> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "{SELECT_PRODUCT} ORDER BY code"
         )))
@@ -538,7 +714,33 @@ impl Importable for Products {
             &mut products,
         )
         .await?;
-        Ok(products.iter().map(export_row).collect())
+        let ids: Vec<Uuid> = products.iter().map(|p| p.id).collect();
+        let mut conn = pool.acquire().await?;
+        let translations = load_translations(&mut conn, &ids).await?;
+        // One name and one description column per language that occurs, sorted by code. Only
+        // ISO 639-1 codes, the ones an import accepts: a translation stored under another code
+        // is left out of the export (and an import never touches it).
+        let mut languages: Vec<String> = translations
+            .values()
+            .flat_map(|t| t.keys().cloned())
+            .filter(|l| tradocraft_core::language::is_iso_639_1(l))
+            .collect();
+        languages.sort();
+        languages.dedup();
+        let mut header: Vec<String> = COLUMNS
+            .iter()
+            .filter(|c| !c.per_language)
+            .map(|c| c.name.to_string())
+            .collect();
+        for language in &languages {
+            header.push(format!("{NAME}_{language}"));
+            header.push(format!("{DESCRIPTION}_{language}"));
+        }
+        let rows = products
+            .iter()
+            .map(|p| export_row(p, translations.get(&p.id), &languages))
+            .collect();
+        Ok(ExportTable { header, rows })
     }
 }
 
@@ -589,4 +791,84 @@ pub fn router() -> OpenApiRouter<AppState> {
             .routes(routes!(import_products))
             .layer(DefaultBodyLimit::max(csv_io::MAX_BODY_BYTES)),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn t(name: &str, description: &str) -> Translation {
+        Translation {
+            name: name.into(),
+            description: description.into(),
+        }
+    }
+
+    fn v(s: &str) -> Cell<String> {
+        Cell::Value(s.into())
+    }
+
+    #[test]
+    fn a_translation_is_only_set_by_a_name_or_a_description() {
+        let stored = t("Pompe", "Ancienne");
+        // Nothing given, or only empty cells: unchanged, never deleted.
+        assert_eq!(
+            translation_target(Cell::Absent, Cell::Absent, Some(&stored), "Pump"),
+            None
+        );
+        assert_eq!(
+            translation_target(Cell::Blank, Cell::Blank, Some(&stored), "Pump"),
+            None
+        );
+        assert_eq!(
+            translation_target(v("  "), Cell::Absent, None, "Pump"),
+            None
+        );
+        // A name sets the name; an absent description keeps the stored one, a blank clears it.
+        assert_eq!(
+            translation_target(v(" Pompe 2 "), Cell::Absent, Some(&stored), "Pump"),
+            Some(t("Pompe 2", "Ancienne"))
+        );
+        assert_eq!(
+            translation_target(v("Pompe"), Cell::Blank, Some(&stored), "Pump"),
+            Some(t("Pompe", ""))
+        );
+        assert_eq!(
+            translation_target(v("Pompe"), Cell::Absent, None, "Pump"),
+            Some(t("Pompe", ""))
+        );
+        // A description alone keeps the stored name, or takes the product's name.
+        assert_eq!(
+            translation_target(Cell::Blank, v("Nouvelle"), Some(&stored), "Pump"),
+            Some(t("Pompe", "Nouvelle"))
+        );
+        assert_eq!(
+            translation_target(Cell::Absent, v("Nouvelle "), None, "Pump"),
+            Some(t("Pump", "Nouvelle"))
+        );
+    }
+
+    #[test]
+    fn translation_columns_are_families_of_any_iso_language() {
+        let columns = |c: &[&str]| c.iter().map(|c| c.to_string()).collect::<Vec<_>>();
+        assert_eq!(
+            file_languages(&columns(&[
+                "code",
+                "name",
+                "description",
+                "name_it",
+                "description_nl",
+                "name_nl",
+                "name_xx",
+            ])),
+            ["it", "nl"]
+        );
+        let known = import::column_names::<Products>();
+        let known: Vec<&str> = known.iter().map(String::as_str).collect();
+        assert!(import::is_known_field(&known, "name_pl"));
+        assert!(import::is_known_field(&known, "description_ja"));
+        assert!(!import::is_known_field(&known, "name_xx"));
+        assert!(import::is_known_field(&known, "name"));
+        assert!(!import::is_known_field(&known, "name_"));
+    }
 }
