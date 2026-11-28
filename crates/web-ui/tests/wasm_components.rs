@@ -1,13 +1,17 @@
 #![cfg(target_arch = "wasm32")]
 
+use chrono::{NaiveDate, TimeZone, Utc};
 use leptos::prelude::*;
 use leptos::task::tick;
 use leptos_router::components::Router;
 use leptos_router::components::Routes;
+use tradocraft_api_client::chatter::{Inbox, InboxActivity, InboxRecord};
+use tradocraft_api_client::todo::TodoCounts;
 use tradocraft_api_client::{EnvKind, EnvironmentInfo, WorkerState, WorkerStatus};
 use tradocraft_web_ui::api::{Company, ConnectionMode, Me};
 use tradocraft_web_ui::components::banners::{EnvironmentBanner, WorkerBanner};
 use tradocraft_web_ui::components::feedback::{Feedback, FeedbackView};
+use tradocraft_web_ui::components::global_search::GlobalSearchModal;
 use tradocraft_web_ui::components::inputs::{DecimalInput, SearchPicker};
 use tradocraft_web_ui::components::modal::{ConfirmDialog, Modal};
 use tradocraft_web_ui::components::shell::AppShell;
@@ -19,7 +23,7 @@ use tradocraft_web_ui::pages::home::HomePage;
 use tradocraft_web_ui::pages::login::LoginPage;
 use tradocraft_web_ui::pages::products::ProductsPage;
 use tradocraft_web_ui::pages::setup::SetupPage;
-use tradocraft_web_ui::state::{ActiveSession, AppContext};
+use tradocraft_web_ui::state::{ActiveSession, AppContext, WorkspaceTab};
 use tradocraft_web_ui::tutorial::TutorialState;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
@@ -720,4 +724,164 @@ async fn entity_table_searches_sorts_filters_and_paginates() {
     guard.click("[data-target=\"demo-table-next\"]");
     tick().await;
     assert_eq!(query.get_untracked().offset, 2);
+}
+
+#[wasm_bindgen_test]
+async fn global_search_modal_filters_nav_destinations_and_navigates() {
+    let guard = ContainerGuard::new();
+    let ctx = AppContext::new();
+    ctx.session.set(Some(ActiveSession {
+        connection: ConnectionMode::MockDemo,
+        me: me_with(&["customers.read"]),
+    }));
+    let open = RwSignal::new(true);
+    let _handle = leptos::mount::mount_to(guard.el().clone(), move || {
+        provide_context(ctx);
+        view! {
+            <Router>
+                <GlobalSearchModal open=open />
+            </Router>
+        }
+    });
+    tick().await;
+
+    guard.set_input("[data-target=\"global-search-input\"]", "cust");
+    tick().await;
+    assert!(guard
+        .query("[data-target=\"global-search-group-navigation\"]")
+        .is_some());
+    assert!(guard
+        .query("[data-target=\"global-search-hit-0\"]")
+        .is_some());
+}
+
+#[wasm_bindgen_test]
+async fn todo_nav_badge_renders_open_and_overdue_counts() {
+    let guard = ContainerGuard::new();
+    let ctx = AppContext::new();
+    ctx.session.set(Some(ActiveSession {
+        connection: ConnectionMode::MockDemo,
+        me: me_with(&["todo.use"]),
+    }));
+    let _handle = leptos::mount::mount_to(guard.el().clone(), move || {
+        provide_context(ctx);
+        view! {
+            <Router>
+                <AppShell>
+                    <div>"body"</div>
+                </AppShell>
+            </Router>
+        }
+    });
+    tick().await;
+    assert!(guard.query("[data-target=\"todo-nav-badge\"]").is_none());
+
+    ctx.todo_counts.set(Some(TodoCounts {
+        open: 4,
+        overdue: 1,
+        due_today: 0,
+    }));
+    tick().await;
+    assert_eq!(guard.text("[data-target=\"todo-nav-badge\"]"), "4");
+    assert!(guard
+        .query("[data-target=\"todo-nav-badge\"].tc-badge-error")
+        .is_some());
+
+    ctx.todo_counts.set(Some(TodoCounts {
+        open: 0,
+        overdue: 0,
+        due_today: 0,
+    }));
+    tick().await;
+    assert!(guard.query("[data-target=\"todo-nav-badge\"]").is_none());
+}
+
+#[wasm_bindgen_test]
+async fn inbox_drawer_renders_due_activities_and_unread_threads() {
+    let guard = ContainerGuard::new();
+    let ctx = AppContext::new();
+    ctx.session.set(Some(ActiveSession {
+        connection: ConnectionMode::MockDemo,
+        me: me_with(&["customers.read"]),
+    }));
+    let _handle = leptos::mount::mount_to(guard.el().clone(), move || {
+        provide_context(ctx);
+        view! {
+            <Router>
+                <AppShell>
+                    <div>"body"</div>
+                </AppShell>
+            </Router>
+        }
+    });
+    tick().await;
+    assert!(guard.query("[data-target=\"inbox-badge\"]").is_none());
+
+    ctx.inbox.set(Some(Inbox {
+        unread: vec![InboxRecord {
+            record_kind: "customer".into(),
+            record_id: uuid::Uuid::nil(),
+            label: Some("Acme NV".into()),
+            unread: 2,
+            last_at: Utc.with_ymd_and_hms(2026, 11, 28, 9, 5, 0).unwrap(),
+        }],
+        activities: vec![InboxActivity {
+            id: uuid::Uuid::nil(),
+            record_kind: "quotation".into(),
+            record_id: uuid::Uuid::nil(),
+            label: Some("Q-2026-001".into()),
+            kind: "call".into(),
+            summary: "Follow up".into(),
+            due_date: NaiveDate::from_ymd_opt(2026, 11, 20).unwrap(),
+            overdue: true,
+        }],
+    }));
+    tick().await;
+    assert_eq!(guard.text("[data-target=\"inbox-badge\"]"), "2");
+
+    guard.click("[data-target=\"inbox-toggle\"]");
+    tick().await;
+    assert!(guard.query("[data-target=\"inbox-drawer\"]").is_some());
+    assert!(guard.query("[data-target=\"inbox-activities\"]").is_some());
+    assert!(guard.query("[data-target=\"inbox-unread\"]").is_some());
+}
+
+#[wasm_bindgen_test]
+async fn workspace_tab_mounts_real_record_detail_view() {
+    let guard = ContainerGuard::new();
+    let ctx = AppContext::new();
+    ctx.session.set(Some(ActiveSession {
+        connection: ConnectionMode::MockDemo,
+        me: me_with(&["customers.read"]),
+    }));
+    let _handle = leptos::mount::mount_to(guard.el().clone(), move || {
+        provide_context(ctx);
+        view! {
+            <Router>
+                <AppShell>
+                    <div>"overview"</div>
+                </AppShell>
+            </Router>
+        }
+    });
+    tick().await;
+
+    let cid = uuid::Uuid::from_u128(1);
+    ctx.open_tab(WorkspaceTab {
+        id: format!("customer:{cid}"),
+        title: "Customer".into(),
+        route: format!("/customers/{cid}"),
+        subtitle: "C001".into(),
+    });
+    tick().await;
+
+    assert!(guard
+        .query("[data-target=\"workspace-tab-placeholder\"]")
+        .is_none());
+    assert!(guard
+        .query("[data-target=\"workspace-tab-view\"]")
+        .is_some());
+    assert!(guard
+        .query("[data-target=\"record-detail-customer\"]")
+        .is_some());
 }
