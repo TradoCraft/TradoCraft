@@ -487,6 +487,10 @@ where
         loading.set(true);
         error.set(None);
         open.set(true);
+        // The old results belong to the old query: drop them, so Enter or a click cannot pick one
+        // while the reply for the new query is still pending.
+        results.set(Vec::new());
+        highlighted.set(0);
         let reply = Callback::new(move |res: Result<Vec<T>, String>| {
             if !guard.is_current(gen) {
                 return;
@@ -522,6 +526,20 @@ where
         if let Some(cb) = on_select {
             cb.run(Some(item));
         }
+    };
+
+    // Leaves the picker without choosing: the box shows the committed selection again (or nothing),
+    // never the half-typed search text of an abandoned search.
+    let dismiss = move || {
+        guard.bump();
+        editing.set(false);
+        loading.set(false);
+        open.set(false);
+        let text = match selected.get_untracked() {
+            Some(item) if !clear_on_select => display.run(item),
+            _ => String::new(),
+        };
+        query.set(text);
     };
 
     let clear_selection = move || {
@@ -573,10 +591,7 @@ where
                         query.set(next.clone());
                         trigger_search(next);
                     }
-                    on:blur=move |_| {
-                        editing.set(false);
-                        open.set(false);
-                    }
+                    on:blur=move |_| dismiss()
                     on:keydown=move |ev: leptos::ev::KeyboardEvent| {
                         match ev.key().as_str() {
                             "ArrowDown" => {
@@ -610,8 +625,7 @@ where
                             }
                             "Escape" if open.get_untracked() => {
                                 ev.stop_propagation();
-                                editing.set(false);
-                                open.set(false);
+                                dismiss();
                             }
                             _ => {}
                         }

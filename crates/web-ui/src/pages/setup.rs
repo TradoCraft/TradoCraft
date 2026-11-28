@@ -213,6 +213,9 @@ pub fn SetupPage() -> impl IntoView {
     let probing = RwSignal::new(true);
     let status = RwSignal::new(Option::<SetupStatus>::None);
     let status_error = RwSignal::new(Option::<String>::None);
+    // The resolved API URL that `status` (and so the setup token the person typed) belongs to.
+    // Nothing is submitted to any other URL.
+    let checked_url = RwSignal::new(String::new());
     let reload = RwSignal::new(0_u64);
     let probe_gen = StoredValue::new(0_u64);
 
@@ -249,6 +252,7 @@ pub fn SetupPage() -> impl IntoView {
         }
         probing.set(true);
         status_error.set(None);
+        let probed = resolved.clone();
         spawn_local(async move {
             let res = Client::new(resolved).setup_status().await;
             if probe_gen.try_get_value() != Some(req_gen) {
@@ -261,6 +265,7 @@ pub fn SetupPage() -> impl IntoView {
                 Ok(info) => {
                     step_idx.set(0);
                     submit_error.set(None);
+                    checked_url.set(probed);
                     status.set(Some(info));
                 }
                 Err(err) => {
@@ -314,6 +319,12 @@ pub fn SetupPage() -> impl IntoView {
             }
             let raw_base = base_url.get_untracked();
             let resolved = resolve_base_url(&raw_base);
+            if resolved != checked_url.get_untracked() {
+                submit_error.set(Some(
+                    "The API URL changed since it was checked. Check the server again.".to_string(),
+                ));
+                return;
+            }
             let req = build_bootstrap_request(&d, info.token_required);
             busy.set(true);
             submit_error.set(None);
@@ -385,7 +396,23 @@ pub fn SetupPage() -> impl IntoView {
                             type="text"
                             placeholder="http://127.0.0.1:8080 or leave empty"
                             prop:value=move || base_url.get()
-                            on:input=move |ev| base_url.set(event_target_value(&ev))
+                            on:input=move |ev| {
+                                let next = event_target_value(&ev);
+                                // A different server needs its own check and its own token: drop the
+                                // status of the old one, and the token typed for it.
+                                if resolve_base_url(&next) != checked_url.get_untracked() {
+                                    probe_gen.update_value(|g| *g = g.wrapping_add(1));
+                                    probing.set(false);
+                                    status.set(None);
+                                    step_idx.set(0);
+                                    draft.update(|d| d.token.clear());
+                                    submit_error.set(None);
+                                    status_error.set(Some(
+                                        "The API URL changed. Press Check to check this server.".to_string(),
+                                    ));
+                                }
+                                base_url.set(next);
+                            }
                         />
                         <button
                             type="button"

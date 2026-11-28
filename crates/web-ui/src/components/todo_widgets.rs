@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::components::async_ops::{set_alive, spawn_api, RequestGuard};
 use crate::components::feedback::{Feedback, FeedbackView};
-use crate::components::modal::Modal;
+use crate::components::modal::{ConfirmDialog, Modal};
 use crate::state::{ActiveSession, AppContext};
 
 /// Computes the nav badge count `(open, has_overdue)` or `None` when nothing is open.
@@ -155,25 +155,26 @@ pub fn ObjectTodosButton(
         );
     };
 
-    let complete_item = move |todo_id: Uuid| {
+    // The item whose open sub-items the person has to confirm completing (the server refuses
+    // with `open_sub_items` first; the sub-items are never completed without asking).
+    let confirm_all = RwSignal::new(Option::<Uuid>::None);
+
+    let complete_item = move |todo_id: Uuid, complete_children: bool| {
         spawn_api(
             ctx,
-            move |client| async move {
-                match client.complete_todo(todo_id, false).await {
-                    Ok(done) => Ok(done),
-                    Err(err) if todo_error_code(&err) == Some("open_sub_items") => {
-                        client.complete_todo(todo_id, true).await
-                    }
-                    Err(err) => Err(err),
-                }
-            },
+            move |client| async move { client.complete_todo(todo_id, complete_children).await },
             move |res| match res {
                 Ok(_) => {
+                    let _ = set_alive(confirm_all, None);
                     let _ = reload.try_update(|n| *n = n.wrapping_add(1));
                     ctx.bump_todo_counts();
                     fb.clear();
                 }
+                Err(err) if todo_error_code(&err) == Some("open_sub_items") => {
+                    let _ = set_alive(confirm_all, Some(todo_id));
+                }
                 Err(err) => {
+                    let _ = set_alive(confirm_all, None);
                     fb.fail(err.user_message());
                 }
             },
@@ -256,7 +257,7 @@ pub fn ObjectTodosButton(
                                                 type="button"
                                                 class="tc-btn tc-btn-sm"
                                                 data-target=format!("object-todo-done-{tid}")
-                                                on:click=move |_| complete_item(tid)
+                                                on:click=move |_| complete_item(tid, false)
                                             >
                                                 "Done"
                                             </button>
@@ -269,6 +270,20 @@ pub fn ObjectTodosButton(
                     .into_any()
                 }}
             </Modal>
+
+            <ConfirmDialog
+                open=Signal::derive(move || confirm_all.get().is_some())
+                title="Complete open sub-items?"
+                message="This task still has open sub-items. Complete them all?"
+                confirm_label="Complete all"
+                target="object-todos-complete-all"
+                on_confirm=Callback::new(move |()| {
+                    if let Some(id) = confirm_all.get_untracked() {
+                        complete_item(id, true);
+                    }
+                })
+                on_cancel=Callback::new(move |()| confirm_all.set(None))
+            />
         </Show>
     }
 }

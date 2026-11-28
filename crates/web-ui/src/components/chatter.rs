@@ -135,7 +135,11 @@ pub fn ChatterPanel(kind: &'static str, record_id: Uuid) -> impl IntoView {
     let edit_note_body = RwSignal::new(String::new());
 
     let fb = Feedback::new();
+    // `guard` owns the head refresh (and `loading`); `older_guard` owns the "Load older" request
+    // (and `loading_older`). Paging never invalidates a pending refresh. A refresh does invalidate
+    // a pending older page, because that page was asked for with the cursor of the old head.
     let guard = RequestGuard::new();
+    let older_guard = RequestGuard::new();
     let reload = RwSignal::new(0_u64);
 
     Effect::new(move |_| {
@@ -146,10 +150,14 @@ pub fn ChatterPanel(kind: &'static str, record_id: Uuid) -> impl IntoView {
         });
         if !is_live {
             let _ = guard.bump();
+            let _ = older_guard.bump();
             loading.set(false);
+            loading_older.set(false);
             return;
         }
         let gen = guard.bump();
+        let _ = older_guard.bump();
+        loading_older.set(false);
         loading.set(true);
 
         spawn_api(
@@ -160,10 +168,14 @@ pub fn ChatterPanel(kind: &'static str, record_id: Uuid) -> impl IntoView {
                     .await;
                 let acts = client.chatter_activities(kind, record_id).await;
                 let fol = client.chatter_followers(kind, record_id).await;
-                let _ = client.chatter_mark_read(kind, record_id).await;
+                // Acknowledge only what the person could actually read.
+                if thread.is_ok() {
+                    let _ = client.chatter_mark_read(kind, record_id).await;
+                }
                 Ok((thread, acts, fol))
             },
             move |res| {
+                // A superseded refresh leaves `loading` alone: the newer one set it and clears it.
                 if !guard.is_current(gen) {
                     return;
                 }
@@ -347,10 +359,11 @@ pub fn ChatterPanel(kind: &'static str, record_id: Uuid) -> impl IntoView {
         let Some(cursor) = next_before_id.get_untracked() else {
             return;
         };
-        if loading_older.get_untracked() {
+        // Wait for a pending refresh: its page replaces the feed and the cursor.
+        if loading_older.get_untracked() || loading.get_untracked() {
             return;
         }
-        let gen = guard.bump();
+        let gen = older_guard.bump();
         loading_older.set(true);
         let params = ListThreadParams {
             before_id: Some(cursor),
@@ -360,7 +373,8 @@ pub fn ChatterPanel(kind: &'static str, record_id: Uuid) -> impl IntoView {
             ctx,
             move |client| async move { client.chatter_thread(kind, record_id, &params).await },
             move |res| {
-                if !guard.is_current(gen) {
+                // Superseded by a refresh (which already cleared the flag) or a newer request.
+                if !older_guard.is_current(gen) {
                     return;
                 }
                 let _ = set_alive(loading_older, false);

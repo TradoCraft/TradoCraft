@@ -334,6 +334,9 @@ pub fn GlobalSearchModal(open: RwSignal<bool>) -> impl IntoView {
     let query = RwSignal::new(String::new());
     let loading = RwSignal::new(false);
     let entity_groups = RwSignal::new(Vec::<SearchGroup>::new());
+    // The trimmed query the live groups answer: they are shown and selectable only while it is
+    // still the text in the box, so a pending reply never leaves hits of an older query to pick.
+    let entity_query = RwSignal::new(String::new());
     let highlighted = RwSignal::new(0_usize);
     let guard = RequestGuard::new();
     let input_ref = NodeRef::<leptos::html::Input>::new();
@@ -377,6 +380,7 @@ pub fn GlobalSearchModal(open: RwSignal<bool>) -> impl IntoView {
 
         let gen = guard.bump();
         loading.set(true);
+        let answered = trimmed.clone();
         spawn_api(
             ctx,
             move |client| async move {
@@ -390,6 +394,7 @@ pub fn GlobalSearchModal(open: RwSignal<bool>) -> impl IntoView {
                 }
                 let _ = set_alive(loading, false);
                 if let Ok(groups) = res {
+                    let _ = set_alive(entity_query, answered);
                     let _ = set_alive(entity_groups, groups);
                 }
             },
@@ -408,7 +413,9 @@ pub fn GlobalSearchModal(open: RwSignal<bool>) -> impl IntoView {
                 failed: false,
             });
         }
-        out.extend(entity_groups.get());
+        if entity_query.with(|answered| answered == q.trim()) {
+            out.extend(entity_groups.get());
+        }
         out
     });
 
