@@ -21,7 +21,7 @@ test('opportunity stage changes and baseline item types persist', async ({ page,
   await expect(page.getByRole('heading', { name: new RegExp(title) })).toBeVisible();
   await page.getByRole('button', { name: 'Change stage' }).click();
   const stage = page.getByRole('dialog', { name: 'Change stage' });
-  await stage.getByLabel('Stage', { exact: true }).selectOption('qualified');
+  await stage.getByRole('combobox', { name: 'Stage', exact: true }).selectOption('qualified');
   await stage.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByText(/Qualified · 25%/)).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Site baseline' })).toBeVisible();

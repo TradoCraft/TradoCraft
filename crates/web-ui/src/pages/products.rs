@@ -576,7 +576,20 @@ pub fn ProductsPage() -> impl IntoView {
                                                         }
                                                         data-target=row_target
                                                         title="Open product detail & edit form"
-                                                        on:click=move |_| open_product_row(open_product.clone())
+                                                        on:click=move |_event: leptos::ev::MouseEvent| {
+                                                            #[cfg(target_arch = "wasm32")]
+                                                            {
+                                                                use wasm_bindgen::JsCast;
+                                                                let link_clicked = _event.target()
+                                                                    .and_then(|target| target.dyn_into::<web_sys::Element>().ok())
+                                                                    .and_then(|element| element.closest("a").ok().flatten())
+                                                                    .is_some();
+                                                                if link_clicked {
+                                                                    return;
+                                                                }
+                                                            }
+                                                            open_product_row(open_product.clone());
+                                                        }
                                                     >
                                                         <td class="tc-mono">
                                                             <button
@@ -593,7 +606,7 @@ pub fn ProductsPage() -> impl IntoView {
                                                             </button>
                                                         </td>
                                                         <td>
-                                                            <A href=details_href on:click=|ev: leptos::ev::MouseEvent| ev.stop_propagation()>
+                                                            <A href=details_href>
                                                                 {product.name}
                                                             </A>
                                                         </td>
