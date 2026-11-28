@@ -11,6 +11,7 @@ pub mod placeholder;
 pub mod portal;
 pub mod products;
 pub mod quotations;
+pub mod record_detail;
 pub mod setup;
 pub mod suppliers;
 pub mod todo;

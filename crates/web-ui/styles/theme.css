@@ -1118,3 +1118,105 @@ select {
   align-items: center;
   gap: var(--space-xs);
 }
+
+/* Deep-link Record Detail & Chatter Layout */
+.tc-record-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: var(--space-lg);
+  align-items: start;
+}
+
+.tc-record-layout-single {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (max-width: 1100px) {
+  .tc-record-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.tc-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-md);
+}
+
+.tc-detail-kv {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tc-chatter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.tc-chatter-head,
+.tc-chatter-section-head,
+.tc-chatter-item-head,
+.tc-chatter-composer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.tc-chatter-section,
+.tc-chatter-composer,
+.tc-chatter-activity-form,
+.tc-chatter-feed,
+.tc-inbox-drawer,
+.tc-global-search,
+.tc-global-search-results,
+.tc-global-search-group,
+.tc-global-search-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.tc-chatter-item {
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--outline-variant);
+  background: var(--surface-container);
+  font-size: 13px;
+}
+
+.tc-global-search-hit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: 6px var(--space-sm);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--outline-variant);
+  background: var(--surface-container);
+  color: var(--on-surface);
+  text-align: left;
+  cursor: pointer;
+}
+
+.tc-global-search-hit:hover,
+.tc-global-search-hit-active {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+  border-color: var(--primary);
+}
+
+.tc-kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid var(--outline-variant);
+  background: var(--surface-container);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--on-surface-variant);
+}

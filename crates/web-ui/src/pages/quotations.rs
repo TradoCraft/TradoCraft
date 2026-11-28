@@ -952,10 +952,13 @@ pub fn QuotationsPage() -> impl IntoView {
                                 <div class="tc-page-header" style="margin-bottom: 0;">
                                     <div>
                                         <h2 class="tc-page-title" style="font-size: 16px;">
-                                            {move || {
-                                                read_quotation_tab(&open_tabs, &tab_id_header, |t| t.title.clone())
-                                                    .unwrap_or_else(|| "Quotation".to_string())
-                                            }}
+                                            {
+                                                let tab_id_title = tab_id_header.clone();
+                                                move || {
+                                                    read_quotation_tab(&open_tabs, &tab_id_title, |t| t.title.clone())
+                                                        .unwrap_or_else(|| "Quotation".to_string())
+                                                }
+                                            }
                                         </h2>
                                         <p class="tc-page-subtitle tc-mono">
                                             {move || {
@@ -971,9 +974,46 @@ pub fn QuotationsPage() -> impl IntoView {
                                             }}
                                         </p>
                                     </div>
-                                    {move || read_quotation_tab(&open_tabs, &tab_id_status, |t| t.status).map(|st| {
-                                        view! { <span class=quotation_status_badge_class(st)>{st.as_str()}</span> }
-                                    })}
+                                    <div class="tc-header-actions">
+                                        {
+                                            let tab_id_open = tab_id_header.clone();
+                                            move || {
+                                                read_quotation_tab(&open_tabs, &tab_id_open, |t| {
+                                                    t.quotation_id.map(|qid| {
+                                                        (
+                                                            qid,
+                                                            t.title.clone(),
+                                                            t.detail
+                                                                .as_ref()
+                                                                .map(|d| d.customer_name.clone())
+                                                                .unwrap_or_default(),
+                                                        )
+                                                    })
+                                                })
+                                                .flatten()
+                                                .map(|(qid, title, subtitle)| view! {
+                                                    <button
+                                                        type="button"
+                                                        class="tc-btn tc-btn-sm"
+                                                        data-target="open-workspace-tab"
+                                                        on:click=move |_| {
+                                                            ctx.open_tab(crate::state::WorkspaceTab {
+                                                                id: crate::pages::record_detail::DetailKind::Quotation.tab_id(qid),
+                                                                title: title.clone(),
+                                                                route: crate::pages::record_detail::DetailKind::Quotation.route(qid),
+                                                                subtitle: subtitle.clone(),
+                                                            });
+                                                        }
+                                                    >
+                                                        "Open tab"
+                                                    </button>
+                                                })
+                                            }
+                                        }
+                                        {move || read_quotation_tab(&open_tabs, &tab_id_status, |t| t.status).map(|st| {
+                                            view! { <span class=quotation_status_badge_class(st)>{st.as_str()}</span> }
+                                        })}
+                                    </div>
                                 </div>
 
                                 {move || {

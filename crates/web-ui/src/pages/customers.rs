@@ -731,10 +731,13 @@ pub fn CustomersPage() -> impl IntoView {
                                 <div class="tc-page-header" style="margin-bottom: 0;">
                                     <div>
                                         <h2 class="tc-page-title" style="font-size: 16px;">
-                                            {move || {
-                                                read_customer_tab(&open_tabs, &tab_id_for_header, |t| t.title.clone())
-                                                    .unwrap_or_else(|| "Customer".to_string())
-                                            }}
+                                            {
+                                                let tab_id_title = tab_id_for_header.clone();
+                                                move || {
+                                                    read_customer_tab(&open_tabs, &tab_id_title, |t| t.title.clone())
+                                                        .unwrap_or_else(|| "Customer".to_string())
+                                                }
+                                            }
                                         </h2>
                                         <p class="tc-page-subtitle tc-mono">
                                             {move || {
@@ -750,6 +753,32 @@ pub fn CustomersPage() -> impl IntoView {
                                             }}
                                         </p>
                                     </div>
+                                    {
+                                        let tab_id_open = tab_id_for_header.clone();
+                                        move || {
+                                            read_customer_tab(&open_tabs, &tab_id_open, |t| {
+                                                t.customer_id.map(|cid| (cid, t.title.clone(), t.code.clone()))
+                                            })
+                                            .flatten()
+                                            .map(|(cid, title, subtitle)| view! {
+                                                <button
+                                                    type="button"
+                                                    class="tc-btn tc-btn-sm"
+                                                    data-target="open-workspace-tab"
+                                                    on:click=move |_| {
+                                                        ctx.open_tab(crate::state::WorkspaceTab {
+                                                            id: crate::pages::record_detail::DetailKind::Customer.tab_id(cid),
+                                                            title: title.clone(),
+                                                            route: crate::pages::record_detail::DetailKind::Customer.route(cid),
+                                                            subtitle: subtitle.clone(),
+                                                        });
+                                                    }
+                                                >
+                                                    "Open tab"
+                                                </button>
+                                            })
+                                        }
+                                    }
                                 </div>
 
                                 {move || {

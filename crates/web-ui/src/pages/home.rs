@@ -12,8 +12,9 @@ use tradocraft_api_client::Client;
 use crate::api::{resolve_base_url, ConnectionMode};
 use crate::components::shell::app_href;
 use crate::i18n::tr;
+use crate::pages::record_detail::DetailKind;
 use crate::pages::set_alive;
-use crate::state::{ActiveSession, AppContext};
+use crate::state::{ActiveSession, AppContext, WorkspaceTab};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct CardState<T> {
@@ -139,6 +140,7 @@ pub fn HomePage() -> impl IntoView {
                     .list_todos(&ListTodosParams {
                         scope: None,
                         done: Some(false),
+                        ..ListTodosParams::default()
                     })
                     .await;
                 if fetch_gen.try_get_value() != Some(req_gen) {
@@ -408,10 +410,27 @@ pub fn HomePage() -> impl IntoView {
                                             <ul class="tc-home-list">
                                                 {st.items.into_iter().map(|t| {
                                                     let label = format!("{} · {}", t.number, t.subject);
+                                                    let tid = t.id;
+                                                    let title = t.number.clone();
+                                                    let sub = t.subject.clone();
                                                     view! {
-                                                        <li class="tc-home-list-item">
-                                                            <span>{label}</span>
-                                                            <span class="tc-badge">{t.priority}</span>
+                                                        <li>
+                                                            <button
+                                                                type="button"
+                                                                class="tc-home-list-item tc-home-list-btn"
+                                                                data-target=format!("home-ticket-{tid}")
+                                                                on:click=move |_| {
+                                                                    ctx.open_tab(WorkspaceTab {
+                                                                        id: DetailKind::Ticket.tab_id(tid),
+                                                                        title: title.clone(),
+                                                                        route: DetailKind::Ticket.route(tid),
+                                                                        subtitle: sub.clone(),
+                                                                    });
+                                                                }
+                                                            >
+                                                                <span>{label}</span>
+                                                                <span class="tc-badge">{t.priority}</span>
+                                                            </button>
                                                         </li>
                                                     }
                                                 }).collect_view()}
@@ -444,10 +463,27 @@ pub fn HomePage() -> impl IntoView {
                                                 {st.items.into_iter().map(|q| {
                                                     let label = format!("{} · {}", q.number, q.customer_name);
                                                     let amount = format!("{} {}", q.currency, q.total);
+                                                    let qid = q.id;
+                                                    let title = q.number.clone();
+                                                    let sub = q.customer_name.clone();
                                                     view! {
-                                                        <li class="tc-home-list-item">
-                                                            <span>{label}</span>
-                                                            <span class="tc-badge tc-mono">{amount}</span>
+                                                        <li>
+                                                            <button
+                                                                type="button"
+                                                                class="tc-home-list-item tc-home-list-btn"
+                                                                data-target=format!("home-quotation-{qid}")
+                                                                on:click=move |_| {
+                                                                    ctx.open_tab(WorkspaceTab {
+                                                                        id: DetailKind::Quotation.tab_id(qid),
+                                                                        title: title.clone(),
+                                                                        route: DetailKind::Quotation.route(qid),
+                                                                        subtitle: sub.clone(),
+                                                                    });
+                                                                }
+                                                            >
+                                                                <span>{label}</span>
+                                                                <span class="tc-badge tc-mono">{amount}</span>
+                                                            </button>
                                                         </li>
                                                     }
                                                 }).collect_view()}

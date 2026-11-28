@@ -10,7 +10,9 @@ use leptos_router::components::{Redirect, Route, Router, Routes};
 use leptos_router::path;
 
 use crate::components::banners::{setup_worker_probe, spawn_environment_probe};
+use crate::components::chatter::setup_inbox_probe;
 use crate::components::shell::AppShell;
+use crate::components::todo_widgets::setup_todo_counts_probe;
 use crate::pages::admin::AdminPage;
 use crate::pages::answers::AnswersPage;
 use crate::pages::customers::CustomersPage;
@@ -23,6 +25,7 @@ use crate::pages::placeholder::PlaceholderPage;
 use crate::pages::portal::PortalPage;
 use crate::pages::products::ProductsPage;
 use crate::pages::quotations::QuotationsPage;
+use crate::pages::record_detail::{DetailKind, RecordDetailPage};
 use crate::pages::setup::SetupPage;
 use crate::pages::suppliers::SuppliersPage;
 use crate::pages::todo::TodoPage;
@@ -43,6 +46,8 @@ pub fn App() -> impl IntoView {
 
     spawn_environment_probe(ctx);
     setup_worker_probe(ctx);
+    setup_inbox_probe(ctx);
+    setup_todo_counts_probe(ctx);
 
     Effect::new(move |_| {
         apply_theme_to_dom(ctx.theme.get());
@@ -75,10 +80,26 @@ pub fn App() -> impl IntoView {
                     }
                 />
                 <Route
+                    path=path!("/products/:id")
+                    view=|| view! {
+                        <AppShell>
+                            <RecordDetailPage kind=DetailKind::Product />
+                        </AppShell>
+                    }
+                />
+                <Route
                     path=path!("/customers")
                     view=|| view! {
                         <AppShell>
                             <CustomersPage />
+                        </AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/customers/:id")
+                    view=|| view! {
+                        <AppShell>
+                            <RecordDetailPage kind=DetailKind::Customer />
                         </AppShell>
                     }
                 />
@@ -107,6 +128,14 @@ pub fn App() -> impl IntoView {
                     }
                 />
                 <Route
+                    path=path!("/quotations/:id")
+                    view=|| view! {
+                        <AppShell>
+                            <RecordDetailPage kind=DetailKind::Quotation />
+                        </AppShell>
+                    }
+                />
+                <Route
                     path=path!("/configurator")
                     view=|| view! {
                         <AppShell>
@@ -119,6 +148,14 @@ pub fn App() -> impl IntoView {
                     view=|| view! {
                         <AppShell>
                             <OrdersPage />
+                        </AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/orders/:id")
+                    view=|| view! {
+                        <AppShell>
+                            <RecordDetailPage kind=DetailKind::Order />
                         </AppShell>
                     }
                 />
@@ -147,6 +184,14 @@ pub fn App() -> impl IntoView {
                     }
                 />
                 <Route
+                    path=path!("/kb/:id")
+                    view=|| view! {
+                        <AppShell>
+                            <RecordDetailPage kind=DetailKind::KbEntry />
+                        </AppShell>
+                    }
+                />
+                <Route
                     path=path!("/portal")
                     view=|| view! {
                         <AppShell>
@@ -167,6 +212,14 @@ pub fn App() -> impl IntoView {
                     view=|| view! {
                         <AppShell>
                             <AnswersPage />
+                        </AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/helpdesk/:id")
+                    view=|| view! {
+                        <AppShell>
+                            <RecordDetailPage kind=DetailKind::Ticket />
                         </AppShell>
                     }
                 />
@@ -247,6 +300,14 @@ pub fn App() -> impl IntoView {
                     view=|| view! {
                         <AppShell>
                             <SuppliersPage />
+                        </AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/suppliers/:id")
+                    view=|| view! {
+                        <AppShell>
+                            <RecordDetailPage kind=DetailKind::Supplier />
                         </AppShell>
                     }
                 />

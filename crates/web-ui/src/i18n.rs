@@ -18,6 +18,8 @@ pub const SOURCE: &[(&str, &str)] = &[
     ("shell.dark_mode", "Dark mode"),
     ("shell.sign_out", "Sign out"),
     ("shell.interface_language", "Interface language"),
+    ("shell.search", "Search"),
+    ("shell.inbox", "Inbox"),
     (
         "banner.worker_never_seen",
         "No background worker heartbeat has been recorded yet — outbound and inbound e-mail are paused.",
