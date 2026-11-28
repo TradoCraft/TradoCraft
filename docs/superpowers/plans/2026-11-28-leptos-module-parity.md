@@ -76,15 +76,15 @@
 ## 4. Phased Implementation Plan
 
 ### Phase 0 — Platform & Shared UI Foundation
-- [ ] **PR 0.1 — Shell Parity, `/home`, `/setup`, Environment & Worker Health Banners**
+- [x] **PR 0.1 — Shell Parity, `/home`, `/setup`, Environment & Worker Health Banners**
   - Permission- and module-gated navigation in `crates/web-ui/src/components/shell.rs`.
   - Environment banner (`GET /api/v1/meta/environment`) and admin-only Worker health banner (`GET /api/v1/admin/worker`).
   - `/home` (`HomePage` role-aware overview cards) and `/setup` (`SetupPage` first-company bootstrap wizard).
   - Placeholder routes for remaining Flutter destinations (`Configurator`, `Packages`, `Intake`, `Jobs`, `MRP`, `Shipping`, `Planning`, `Reports`).
-- [ ] **PR 0.2 — Shared Leptos UI Primitives**
+- [x] **PR 0.2 — Shared Leptos UI Primitives**
   - Promote `spawn_api`, generation guards, `FeedbackView`, file upload, and Blob/PDF download to `crates/web-ui/src/components/`.
   - Add reusable `EntityTable`, `SearchPicker`, `DecimalInput`, `Modal`/`ConfirmDialog`, and `SegmentedTabs`.
-- [ ] **PR 0.3 — Real Workspace Tabs, Deep Links, Chatter & Global Search**
+- [x] **PR 0.3 — Real Workspace Tabs, Deep Links, Chatter & Global Search**
   - Replace `WorkspaceTabPlaceholder` with mounted detail screens for `/<entity>/:id` routes.
   - Add `crates/api-client/src/chatter.rs` (18 endpoints), reusable `ChatterPanel`, and Inbox drawer.
   - Add `GlobalSearch` modal (`Ctrl+K`) and To-do `ObjectTodosButton` + sidebar badge.
