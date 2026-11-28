@@ -7,9 +7,8 @@ use std::collections::{BTreeMap, HashMap};
 
 use leptos::prelude::*;
 
+use crate::components::async_ops::{set_alive, spawn_api};
 use crate::components::shell::nav_source_texts;
-use crate::pages::admin::spawn_api;
-use crate::pages::set_alive;
 use crate::state::AppContext;
 
 /// Texts used through [`tr`] outside the navigation: `(key, English)`.

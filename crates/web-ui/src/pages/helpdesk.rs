@@ -8,12 +8,12 @@ use tradocraft_api_client::helpdesk::{
     TicketPage, TicketStatusInput, TicketSummary, TicketTimeEntries, TimeEntryInput,
     UpdateTicketInput,
 };
-use tradocraft_api_client::{ApiError, Client, FileInfo};
+use tradocraft_api_client::{ApiError, FileInfo};
 use uuid::Uuid;
 
-use crate::api::{
-    resolve_base_url, ApiClient, ConnectionMode, Customer, ListCustomersParams, WebApiClient,
-};
+use crate::api::{ApiClient, ConnectionMode, Customer, ListCustomersParams, WebApiClient};
+use crate::components::async_ops::live_client;
+use crate::components::files::{begin_file_read_validated, format_file_size, save_file};
 use crate::pages::{opt_trimmed, parse_i32, parse_uuid};
 use crate::state::AppContext;
 
@@ -223,20 +223,6 @@ impl TicketTab {
     }
 }
 
-fn live_client(connection: &ConnectionMode) -> Result<Client, ApiError> {
-    match connection {
-        ConnectionMode::Live(session) => {
-            let mut resolved = session.clone();
-            resolved.base_url = resolve_base_url(&session.base_url);
-            Ok(Client::from_session(resolved))
-        }
-        ConnectionMode::MockDemo => Err(ApiError::InvalidConfig(
-            "Helpdesk endpoints require a live API connection; switch to Dev User or Bearer mode on the sign-in screen."
-                .to_string(),
-        )),
-    }
-}
-
 fn parse_opt_uuid(label: &str, raw: &str) -> Result<Option<Uuid>, String> {
     let trimmed = raw.trim();
     if trimmed.is_empty() {
@@ -420,19 +406,6 @@ fn rendered_notice(code: &str, target: AnswerTarget, language: &str, fallback: b
     }
 }
 
-/// Human readable size such as `12 B`, `3.4 KB` or `1.2 MB`.
-fn format_file_size(bytes: i64) -> String {
-    const KB: f64 = 1024.0;
-    let b = bytes.max(0) as f64;
-    if b < KB {
-        format!("{} B", bytes.max(0))
-    } else if b < KB * KB {
-        format!("{:.1} KB", b / KB)
-    } else {
-        format!("{:.1} MB", b / (KB * KB))
-    }
-}
-
 /// Client-side checks before uploading a file to a draft reply.
 fn validate_attachment(name: &str, len: usize, already_attached: usize) -> Result<(), String> {
     if name.trim().is_empty() {
@@ -475,85 +448,6 @@ fn owner_options(teams: &[Team], team_id: Option<Uuid>) -> Vec<(Uuid, String)> {
     }
     out.sort_by_key(|(_, name)| name.to_lowercase());
     out
-}
-
-/// A file the agent chose in a browser file input.
-struct PickedFile {
-    name: String,
-    bytes: Vec<u8>,
-}
-
-/// Reads the file chosen in the `change` event's file input and clears the input so the same
-/// file can be picked again. Calls `done` once the bytes are available.
-#[cfg(target_arch = "wasm32")]
-fn begin_file_read(ev: leptos::ev::Event, done: impl FnOnce(Result<PickedFile, String>) + 'static) {
-    use wasm_bindgen::JsCast;
-    let Some(input) = ev
-        .target()
-        .and_then(|t| t.dyn_into::<web_sys::HtmlInputElement>().ok())
-    else {
-        done(Err(String::new()));
-        return;
-    };
-    let Some(file) = input.files().and_then(|list| list.get(0)) else {
-        // The dialog was cancelled: nothing to read, nothing to report.
-        done(Err(String::new()));
-        return;
-    };
-    input.set_value("");
-    let name = file.name();
-    // Reject an oversized file before its bytes are read into memory.
-    if let Err(msg) = validate_attachment(&name, file.size() as usize, 0) {
-        done(Err(msg));
-        return;
-    }
-    spawn_local(async move {
-        let result = wasm_bindgen_futures::JsFuture::from(file.array_buffer())
-            .await
-            .map(|buffer| PickedFile {
-                name,
-                bytes: js_sys::Uint8Array::new(&buffer).to_vec(),
-            })
-            .map_err(|_| "Could not read the selected file.".to_string());
-        done(result);
-    });
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-fn begin_file_read(
-    _ev: leptos::ev::Event,
-    done: impl FnOnce(Result<PickedFile, String>) + 'static,
-) {
-    done(Err("Attaching files needs the browser build.".to_string()));
-}
-
-/// Offers `bytes` to the browser as a file download.
-#[cfg(target_arch = "wasm32")]
-fn save_file(filename: &str, content_type: &str, bytes: &[u8]) -> Result<(), String> {
-    use wasm_bindgen::JsCast;
-    let fail = |_| "The browser could not save the file.".to_string();
-    let parts = js_sys::Array::new();
-    parts.push(&js_sys::Uint8Array::from(bytes));
-    let options = web_sys::BlobPropertyBag::new();
-    options.set_type(content_type);
-    let blob =
-        web_sys::Blob::new_with_u8_array_sequence_and_options(&parts, &options).map_err(fail)?;
-    let url = web_sys::Url::create_object_url_with_blob(&blob).map_err(fail)?;
-    let anchor = web_sys::window()
-        .and_then(|w| w.document())
-        .and_then(|d| d.create_element("a").ok())
-        .and_then(|e| e.dyn_into::<web_sys::HtmlAnchorElement>().ok())
-        .ok_or_else(|| "The browser could not save the file.".to_string())?;
-    anchor.set_href(&url);
-    anchor.set_download(filename);
-    anchor.click();
-    let _ = web_sys::Url::revoke_object_url(&url);
-    Ok(())
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-fn save_file(_filename: &str, _content_type: &str, _bytes: &[u8]) -> Result<(), String> {
-    Err("Downloading files needs the browser build.".to_string())
 }
 
 #[component]
@@ -1576,7 +1470,10 @@ pub fn HelpdeskPage() -> impl IntoView {
                                 // Reserve the slot now: the file is read asynchronously.
                                 update_ticket_tab_instance(&open_tabs, &tid, instance, |tab| tab.uploading = true);
                                 let connection = session.connection;
-                                begin_file_read(ev, move |picked| {
+                                begin_file_read_validated(
+                                    ev,
+                                    |name, size| validate_attachment(name, size, 0),
+                                    move |picked| {
                                     let release = |msg: Option<String>| {
                                         update_ticket_tab_instance(&open_tabs, &tid, instance, |tab| {
                                             tab.uploading = false;

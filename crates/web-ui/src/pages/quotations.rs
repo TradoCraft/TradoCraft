@@ -8,13 +8,14 @@ use tradocraft_api_client::sales::{
     QuotationLine, QuotationLineInput, QuotationPage, QuotationStatus, QuotationSummary,
     UpdateQuotationRequest,
 };
-use tradocraft_api_client::{ApiError, Client};
+use tradocraft_api_client::ApiError;
 use uuid::Uuid;
 
 use crate::api::{
-    resolve_base_url, ApiClient, ConnectionMode, Customer, ListCustomersParams, ListProductsParams,
-    Product, WebApiClient,
+    ApiClient, ConnectionMode, Customer, ListCustomersParams, ListProductsParams, Product,
+    WebApiClient,
 };
+use crate::components::async_ops::live_client;
 use crate::pages::{opt_trimmed, parse_decimal, parse_i32, parse_opt_decimal, parse_uuid};
 use crate::state::AppContext;
 
@@ -263,20 +264,6 @@ impl QuotationTab {
             lines,
             ..CreateQuotationRequest::default()
         })
-    }
-}
-
-fn live_client(connection: &ConnectionMode) -> Result<Client, ApiError> {
-    match connection {
-        ConnectionMode::Live(session) => {
-            let mut resolved = session.clone();
-            resolved.base_url = resolve_base_url(&session.base_url);
-            Ok(Client::from_session(resolved))
-        }
-        ConnectionMode::MockDemo => Err(ApiError::InvalidConfig(
-            "Sales endpoints require a live API connection; switch to Dev User or Bearer mode on the sign-in screen."
-                .to_string(),
-        )),
     }
 }
 

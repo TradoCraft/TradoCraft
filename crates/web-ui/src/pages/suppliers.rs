@@ -7,12 +7,10 @@ use tradocraft_api_client::suppliers::{
     ListSuppliersParams, Supplier, SupplierInput, SupplierProduct, SupplierProductInput,
     UpdateSupplierInput,
 };
-use tradocraft_api_client::{ApiError, Client};
 use uuid::Uuid;
 
-use crate::api::{
-    resolve_base_url, ApiClient, ConnectionMode, ListProductsParams, Product, WebApiClient,
-};
+use crate::api::{ApiClient, ConnectionMode, ListProductsParams, Product, WebApiClient};
+use crate::components::async_ops::live_client;
 use crate::pages::{
     opt_trimmed, parse_decimal, parse_i32, parse_opt_decimal, parse_opt_i32, parse_uuid,
 };
@@ -337,20 +335,6 @@ impl SupplierTab {
                 is_preferred: Some(self.price_is_preferred),
             },
         ))
-    }
-}
-
-fn live_client(connection: &ConnectionMode) -> Result<Client, ApiError> {
-    match connection {
-        ConnectionMode::Live(session) => {
-            let mut resolved = session.clone();
-            resolved.base_url = resolve_base_url(&session.base_url);
-            Ok(Client::from_session(resolved))
-        }
-        ConnectionMode::MockDemo => Err(ApiError::InvalidConfig(
-            "Supplier endpoints require a live API connection; switch to Dev User or Bearer mode on the sign-in screen."
-                .to_string(),
-        )),
     }
 }
 
