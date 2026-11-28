@@ -13,7 +13,8 @@ use tradocraft_core::audit;
 use tradocraft_core::csv_io::{self, RowError};
 use tradocraft_core::files::clean_filename;
 use tradocraft_core::import::{
-    read_raw, sheet_names, BinaryFile, Format, ImportDescription, Limits,
+    download, read_raw, sheet_names, write, BinaryFile, ExportParams, Format, ImportDescription,
+    Limits,
 };
 use tradocraft_core::{new_id, AppError, AppResult, AppState, CurrentUser, Permission};
 use utoipa::{IntoParams, ToSchema};
@@ -292,6 +293,36 @@ async fn list_entities(user: CurrentUser) -> AppResult<Json<Vec<ImportDescriptio
             .map(|e| e.describe().clone())
             .collect(),
     ))
+}
+
+/// An export of the entity in the columns of its import (`format` csv, xlsx or ods): what an
+/// import of the same file leaves unchanged. Needs the read permission of the entity.
+#[utoipa::path(get, path = "/imports/entities/{key}/export", tag = "imports", operation_id = "export_import_entity",
+    params(("key" = String, Path), ExportParams),
+    responses((status = 200, content(
+            (String = "text/csv"),
+            (inline(BinaryFile) = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+            (inline(BinaryFile) = "application/vnd.oasis.opendocument.spreadsheet"))),
+        (status = 403, body = ErrorBody), (status = 404, body = ErrorBody)))]
+async fn export_entity(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(key): Path<String>,
+    Query(p): Query<ExportParams>,
+) -> AppResult<(HeaderMap, Vec<u8>)> {
+    admin(&user)?;
+    let entity = registry::entity(key.trim()).ok_or(AppError::NotFound("importable entity"))?;
+    let format = Format::from(p.format.unwrap_or_default());
+    let export = entity.export(&state.db, &user).await?;
+    let stem = entity.describe().file_stem.clone();
+    let sheet = stem.clone();
+    let body = tokio::task::spawn_blocking(move || {
+        let header: Vec<&str> = export.header.iter().map(String::as_str).collect();
+        write(format, &sheet, &header, export.rows)
+    })
+    .await
+    .map_err(blocking_failed)??;
+    Ok(download(format, &stem, body))
 }
 
 /// Uploads a file (CSV, XLSX or ODS, at most 50 MiB): the request body is the file itself. A file
@@ -707,6 +738,7 @@ async fn cancel_job(
 pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(list_entities))
+        .routes(routes!(export_entity))
         .routes(routes!(preview_file))
         .routes(routes!(list_mappings, save_mapping))
         .routes(routes!(delete_mapping))

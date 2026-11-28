@@ -15,6 +15,9 @@ ImportDescription _$ImportDescriptionFromJson(Map<String, dynamic> json) =>
       fileStem: json['file_stem'] as String,
       key: json['key'] as String,
       keyColumn: json['key_column'] as String,
+      keyColumns: (json['key_columns'] as List<dynamic>)
+          .map((e) => e as String)
+          .toList(),
     );
 
 Map<String, dynamic> _$ImportDescriptionToJson(ImportDescription instance) =>
@@ -24,4 +27,5 @@ Map<String, dynamic> _$ImportDescriptionToJson(ImportDescription instance) =>
       'file_stem': instance.fileStem,
       'key': instance.key,
       'key_column': instance.keyColumn,
+      'key_columns': instance.keyColumns,
     };

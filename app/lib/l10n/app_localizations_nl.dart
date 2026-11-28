@@ -9365,6 +9365,24 @@ class AppLocalizationsNl extends AppLocalizations {
   String get impAllMapped => 'Elk veld heeft een kolom.';
 
   @override
+  String get impFixedValues => 'Vaste waarden';
+
+  @override
+  String get impFixedHelp =>
+      'Een vaste waarde vult een veld in elke rij, gelezen als een cel van het bestand (een datum als 2027-01-01).';
+
+  @override
+  String get impAddFixed => 'Vaste waarde toevoegen';
+
+  @override
+  String get impFixedValue => 'Waarde';
+
+  @override
+  String impRemoveFixed(String field) {
+    return 'Vaste waarde van $field verwijderen';
+  }
+
+  @override
   String get impMappingsMenu => 'Opgeslagen koppelingen';
 
   @override
@@ -10091,6 +10109,38 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get plShowLogo => 'Bedrijfslogo afdrukken';
+
+  @override
+  String get plImportSettings => 'Import';
+
+  @override
+  String get plImportSettingsHelp =>
+      'Hoe een import van prijslijstartikelen posities en groepstitels leest.';
+
+  @override
+  String get plImportLevels => 'Groepsniveaus in een positie';
+
+  @override
+  String get plImportTitles => 'Als rijen een groep verschillende titels geven';
+
+  @override
+  String get plImportTitlesLowest => 'De rij met de laagste positie wint';
+
+  @override
+  String get plImportTitlesFirst => 'De eerste rij van het bestand wint';
+
+  @override
+  String get plImportTitlesError => 'Een fout melden';
+
+  @override
+  String get plImportShort => 'Een positie met minder groepsniveaus';
+
+  @override
+  String get plImportShortShallower =>
+      'Het artikel in de genoemde groep plaatsen';
+
+  @override
+  String get plImportShortError => 'Een fout melden';
 
   @override
   String plProductCount(int count) {
@@ -12040,4 +12090,96 @@ class AppLocalizationsNl extends AppLocalizations {
   String listGroupCollapsed(String label, int count) {
     return '$label, $count rijen, ingeklapt';
   }
+
+  @override
+  String get adminLanguagesTitle => 'Inhoudstalen';
+
+  @override
+  String get adminLanguagesHelp =>
+      'De talen waarin uw bedrijf schrijft en afdrukt: productteksten, prijslijsten, kennisbank, antwoorden, mails en documenten. Taalkeuzes tonen deze talen in deze volgorde.';
+
+  @override
+  String get adminLanguagesDefault => 'Standaard';
+
+  @override
+  String get adminLanguagesMakeDefault => 'Als standaard';
+
+  @override
+  String get adminLanguagesRemove => 'Taal verwijderen';
+
+  @override
+  String get adminLanguagesAdd => 'Taal toevoegen';
+
+  @override
+  String get adminLanguagesSearch => 'Zoeken op naam of code';
+
+  @override
+  String get adminLanguagesSaved => 'Talen opgeslagen';
+
+  @override
+  String get adminTranslations => 'Vertalingen';
+
+  @override
+  String get translationsTitle => 'Vertalingen';
+
+  @override
+  String get translationsHelp =>
+      'Voeg een interfacetaal toe of verbeter teksten zonder nieuwe release: exporteer het Engelse sjabloon, vertaal het en importeer het bestand. Ontbrekende teksten verschijnen in het Engels.';
+
+  @override
+  String get translationsDomainApp => 'Interface';
+
+  @override
+  String get translationsDomainDocuments => 'Documenten';
+
+  @override
+  String get translationsDomainMail => 'Systeemmails';
+
+  @override
+  String get translationsExportTemplate => 'Engels sjabloon exporteren';
+
+  @override
+  String get translationsImport => 'Bestand importeren';
+
+  @override
+  String get translationsExport => 'Exporteren';
+
+  @override
+  String get translationsDelete => 'Bedrijfsteksten verwijderen';
+
+  @override
+  String get translationsShipped => 'Meegeleverd';
+
+  @override
+  String translationsCompanyTexts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bedrijfsteksten',
+      one: '1 bedrijfstekst',
+      zero: 'geen bedrijfsteksten',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get translationsSaved => 'Vertalingen opgeslagen';
+
+  @override
+  String get translationsDeleted => 'Bedrijfsteksten verwijderd';
+
+  @override
+  String get translationsExported => 'Bestand geëxporteerd';
+
+  @override
+  String get translationsBadFile =>
+      'Het bestand is geen ARB- of JSON-bestand met teksten.';
+
+  @override
+  String translationsBadKeys(String keys) {
+    return 'Onbekende sleutels of ongeldige berichten: $keys';
+  }
+
+  @override
+  String get translationsMissingOnly => 'Alleen ontbrekende';
 }

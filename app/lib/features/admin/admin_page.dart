@@ -14,6 +14,7 @@ import 'identity_providers_page.dart';
 import 'imports/imports_page.dart';
 import 'modules_page.dart';
 import 'price_zones_page.dart';
+import 'translations_page.dart';
 import 'users_page.dart';
 import 'vat_rates_page.dart';
 
@@ -38,6 +39,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
       if (isAdmin) 'users',
       if (isAdmin) 'modules',
       if (isAdmin) 'company',
+      if (isAdmin) 'translations',
       if (isAdmin) 'vat',
       if (can(ref, 'prices.write')) 'zones',
       if (can(ref, 'products.write')) 'attributes',
@@ -69,6 +71,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
                             'users' => l.adminUsers,
                             'modules' => l.adminModules,
                             'company' => l.adminCompany,
+                            'translations' => l.adminTranslations,
                             'vat' => l.adminVatRates,
                             'attributes' => l.adminAttributes,
                             'baseline' => l.adminBaselineTypes,
@@ -98,6 +101,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
           child: switch (tab) {
             'modules' => const ModulesPage(),
             'company' => const CompanyLogoPage(),
+            'translations' => const TranslationsPage(),
             'vat' => const VatRatesPage(),
             'zones' => const PriceZonesPage(),
             'attributes' => const AttributeDefinitionsPage(),

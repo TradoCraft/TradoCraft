@@ -2,33 +2,13 @@
 // All amounts are pre-formatted by the API; this template never calculates.
 #let d = json("data.json")
 
-#let labels = (
-  nl: (net: "netto", title: "Orderbevestiging", reference: "Uw referentie", quotation: "Offerte", number: "Nummer", revision: "Revisie", date: "Datum", vat: "BTW", code: "Code", description: "Omschrijving", qty: "Aantal", price: "Eenheidsprijs",
-       discount: "Korting", total: "Totaal", subtotal: "Totaal excl. BTW", vat_on: "BTW op",
-       grand: "Totaal incl. BTW", notes: "Opmerkingen", draft: "CONCEPT", page: "Pagina",
-       reverse: "BTW verlegd (intracommunautaire levering)", domestic_reverse: "BTW verlegd (werken in onroerende staat, art. 20 KB nr. 1)", export: "Uitvoer buiten de EU, geen BTW"),
-  fr: (net: "net", title: "Confirmation de commande", reference: "Votre référence", quotation: "Offre", number: "Numéro", revision: "Révision", date: "Date",vat: "TVA", code: "Code", description: "Description", qty: "Quantité", price: "Prix unitaire",
-       discount: "Remise", total: "Total", subtotal: "Total HTVA", vat_on: "TVA sur",
-       grand: "Total TVAC", notes: "Remarques", draft: "BROUILLON", page: "Page",
-       reverse: "TVA en autoliquidation (livraison intracommunautaire)", domestic_reverse: "Autoliquidation (travaux immobiliers, art. 20 AR n° 1)", export: "Exportation hors UE, sans TVA"),
-  en: (net: "net", title: "Order confirmation", reference: "Your reference", quotation: "Quotation", number: "Number", revision: "Revision", date: "Date",vat: "VAT", code: "Code", description: "Description", qty: "Qty", price: "Unit price",
-       discount: "Discount", total: "Total", subtotal: "Total excl. VAT", vat_on: "VAT on",
-       grand: "Total incl. VAT", notes: "Notes", draft: "DRAFT", page: "Page",
-       reverse: "VAT reverse charged (intra-community supply)", domestic_reverse: "VAT reverse charge (work on immovable property)", export: "Export outside the EU, no VAT"),
-  de: (net: "netto", title: "Auftragsbestätigung", reference: "Ihre Referenz", quotation: "Angebot", number: "Nummer", revision: "Revision", date: "Datum", vat: "MwSt.", code: "Artikel", description: "Beschreibung", qty: "Menge", price: "Einzelpreis",
-       discount: "Rabatt", total: "Gesamt", subtotal: "Summe netto", vat_on: "MwSt. auf",
-       grand: "Gesamtbetrag brutto", notes: "Bemerkungen", draft: "ENTWURF", page: "Seite",
-       reverse: "Steuerschuldnerschaft des Leistungsempfängers (innergemeinschaftliche Lieferung)", domestic_reverse: "Steuerschuldnerschaft des Leistungsempfängers (Bauleistungen)", export: "Ausfuhr außerhalb der EU, ohne MwSt."),
-  es: (net: "neto", title: "Confirmación de pedido", reference: "Su referencia", quotation: "Presupuesto", number: "Número", revision: "Revisión", date: "Fecha",vat: "IVA", code: "Código", description: "Descripción", qty: "Cantidad", price: "Precio unitario",
-       discount: "Descuento", total: "Total", subtotal: "Base imponible", vat_on: "IVA sobre",
-       grand: "Total IVA incl.", notes: "Observaciones", draft: "BORRADOR", page: "Página",
-       reverse: "Inversión del sujeto pasivo (entrega intracomunitaria)", domestic_reverse: "Inversión del sujeto pasivo (ejecuciones de obra inmobiliaria)", export: "Exportación fuera de la UE, sin IVA"),
-)
-#let l = labels.at(d.language, default: labels.en)
+// Labels in the document language with English for missing ones (ADR 0101): written by the
+// renderer from the translation catalogue (crates/core/i18n/documents, company overrides).
+#let l = json("labels.json")
 #let cur = if d.currency == "EUR" { "€" } else { d.currency }
 
 #set document(title: l.title + " " + d.number)
-#set text(size: 9.5pt, lang: if d.language in ("nl", "fr", "de", "es") { d.language } else { "en" })
+#set text(size: 9.5pt, lang: d.language)
 #set page(
   paper: "a4",
   margin: (x: 18mm, top: 18mm, bottom: 22mm),

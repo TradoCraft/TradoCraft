@@ -38,7 +38,7 @@ fn language_param(p: Option<&str>, default: &str) -> AppResult<String> {
     match p.map(str::trim).filter(|l| !l.is_empty()) {
         Some(l) if is_language(l) => Ok(l.to_string()),
         Some(_) => Err(AppError::Validation(
-            "language must be one of nl, fr, en, de, es".into(),
+            "language must be an ISO 639-1 language code".into(),
         )),
         None => Ok(default.to_string()),
     }

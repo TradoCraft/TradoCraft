@@ -201,7 +201,7 @@ abstract class FieldClient {
 
   /// The service report of a job as PDF (a watermark marks it as draft until the job is completed).
   ///
-  /// [language] - nl, fr, en, de or es. Default: the language of the contact, else of the customer.
+  /// [language] - ISO 639-1 code. Default: the language of the contact, else of the customer.
   @GET('/api/v1/field/jobs/{id}/report')
   Future<List<int>> getJobReport({
     @Path('id') required String id,

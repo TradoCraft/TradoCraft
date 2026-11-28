@@ -10,13 +10,18 @@ import '../models/admin_user_create.dart';
 import '../models/admin_user_update.dart';
 import '../models/bootstrap_request.dart';
 import '../models/bootstrap_result.dart';
+import '../models/catalogue_detail.dart';
+import '../models/catalogue_info.dart';
+import '../models/catalogue_input.dart';
 import '../models/company.dart';
+import '../models/company_languages_input.dart';
 import '../models/company_logo_info.dart';
 import '../models/company_settings_input.dart';
 import '../models/company_user.dart';
 import '../models/country_vat_rate.dart';
 import '../models/country_vat_rate_input.dart';
 import '../models/environment_info.dart';
+import '../models/language_info.dart';
 import '../models/me.dart';
 import '../models/module_info.dart';
 import '../models/modules_input.dart';
@@ -31,6 +36,12 @@ part 'core_client.g.dart';
 @RestApi()
 abstract class CoreClient {
   factory CoreClient(Dio dio, {String? baseUrl}) = _CoreClient;
+
+  /// Replaces the company's content languages and default language (administrators).
+  @PUT('/api/v1/admin/company/languages')
+  Future<Company> putCompanyLanguages({
+    @Body() required CompanyLanguagesInput body,
+  });
 
   /// The company logo image. 404 when none was uploaded.
   @GET('/api/v1/admin/company/logo')
@@ -62,6 +73,29 @@ abstract class CoreClient {
   @PUT('/api/v1/admin/modules')
   Future<List<ModuleInfo>> setModules({
     @Body() required ModulesInput body,
+  });
+
+  /// Replaces the company's texts of one domain and language (administrators).
+  ///
+  /// [domain] - documents | mail | app | web.
+  ///
+  /// [language] - ISO 639-1 code.
+  @PUT('/api/v1/admin/translations/{domain}/{language}')
+  Future<CatalogueDetail> putCatalogue({
+    @Path('domain') required String domain,
+    @Path('language') required String language,
+    @Body() required CatalogueInput body,
+  });
+
+  /// Removes the company's texts of one domain and language (administrators); shipped texts stay.
+  ///
+  /// [domain] - documents | mail | app | web.
+  ///
+  /// [language] - ISO 639-1 code.
+  @DELETE('/api/v1/admin/translations/{domain}/{language}')
+  Future<void> deleteCatalogue({
+    @Path('domain') required String domain,
+    @Path('language') required String language,
   });
 
   /// All members of the active company, deactivated ones included.
@@ -126,6 +160,10 @@ abstract class CoreClient {
     @Query('record_id') required String recordId,
   });
 
+  /// Every ISO 639-1 language with its names: what an administrator chooses company languages from.
+  @GET('/api/v1/languages')
+  Future<List<LanguageInfo>> listLanguages();
+
   @GET('/api/v1/me')
   Future<Me> me();
 
@@ -156,6 +194,25 @@ abstract class CoreClient {
   /// `GET /setup/status`: no sign-in needed.
   @GET('/api/v1/setup/status')
   Future<SetupStatus> setupStatus();
+
+  /// The languages that have shipped or company texts in a domain.
+  ///
+  /// [domain] - documents | mail | app | web.
+  @GET('/api/v1/translations/{domain}')
+  Future<List<CatalogueInfo>> listCatalogues({
+    @Path('domain') required String domain,
+  });
+
+  /// The texts of one domain and language.
+  ///
+  /// [domain] - documents | mail | app | web.
+  ///
+  /// [language] - ISO 639-1 code.
+  @GET('/api/v1/translations/{domain}/{language}')
+  Future<CatalogueDetail> getCatalogue({
+    @Path('domain') required String domain,
+    @Path('language') required String language,
+  });
 
   @GET('/api/v1/users')
   Future<List<CompanyUser>> listUsers();

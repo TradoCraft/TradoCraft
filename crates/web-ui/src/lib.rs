@@ -1,5 +1,6 @@
 pub mod api;
 pub mod components;
+pub mod i18n;
 pub mod pages;
 pub mod state;
 pub mod tutorial;
@@ -28,6 +29,14 @@ use crate::state::{apply_theme_to_dom, AppContext};
 pub fn App() -> impl IntoView {
     let ctx = AppContext::new();
     provide_context(ctx);
+    // Interface texts at runtime (ADR 0101): load the chosen language's catalogue once signed in.
+    let i18n = crate::i18n::I18n::new();
+    provide_context(i18n);
+    Effect::new(move |_| {
+        if ctx.session.with(|s| s.is_some()) {
+            crate::i18n::load_catalogue(ctx, i18n);
+        }
+    });
 
     Effect::new(move |_| {
         apply_theme_to_dom(ctx.theme.get());

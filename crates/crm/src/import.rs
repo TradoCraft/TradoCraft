@@ -14,8 +14,8 @@ use sqlx::{PgConnection, PgPool};
 use tradocraft_core::csv_io::{self, ImportParams, ImportReport};
 use tradocraft_core::error::ErrorBody;
 use tradocraft_core::import::{
-    self, BinaryFile, Cell, CellValue, Cells, Column, ColumnKind, ExportParams, ImportEntity,
-    Importable, Row, Table,
+    self, BinaryFile, Cell, CellValue, Cells, Column, ColumnKind, ExportParams, ExportTable,
+    ImportEntity, Importable, Row, Table,
 };
 use tradocraft_core::{AppResult, AppState, CurrentUser, Permission};
 use utoipa_axum::router::OpenApiRouter;
@@ -303,7 +303,7 @@ impl Importable for Customers {
                 .problems()
                 .into_iter()
                 .filter(|m| !(name_missing && m.starts_with("code and name"))),
-            &import::column_names::<Self>(),
+            &Self::COLUMNS.iter().map(|c| c.name).collect::<Vec<_>>(),
         );
         // The VAT rule (ADR 0058) applies to a number the file adds or changes, so that an
         // untouched legacy number does not stop a re-import of an export.
@@ -346,14 +346,16 @@ impl Importable for Customers {
         Ok(())
     }
 
-    async fn export(pool: &PgPool, user: &CurrentUser) -> AppResult<Vec<Vec<CellValue>>> {
+    async fn export(pool: &PgPool, user: &CurrentUser) -> AppResult<ExportTable> {
         let customers: Vec<Customer> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "{SELECT_CUSTOMER} ORDER BY c.code"
         )))
         .bind(user.company_id)
         .fetch_all(pool)
         .await?;
-        Ok(customers.iter().map(export_row).collect())
+        Ok(ExportTable::fixed::<Self>(
+            customers.iter().map(export_row).collect(),
+        ))
     }
 }
 

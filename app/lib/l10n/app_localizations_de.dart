@@ -9388,6 +9388,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String get impAllMapped => 'Jedes Feld hat eine Spalte.';
 
   @override
+  String get impFixedValues => 'Feste Werte';
+
+  @override
+  String get impFixedHelp =>
+      'Ein fester Wert füllt ein Feld in jeder Zeile und wird wie eine Zelle der Datei gelesen (ein Datum als 2027-01-01).';
+
+  @override
+  String get impAddFixed => 'Festen Wert hinzufügen';
+
+  @override
+  String get impFixedValue => 'Wert';
+
+  @override
+  String impRemoveFixed(String field) {
+    return 'Festen Wert von $field entfernen';
+  }
+
+  @override
   String get impMappingsMenu => 'Gespeicherte Zuordnungen';
 
   @override
@@ -10117,6 +10135,40 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get plShowLogo => 'Firmenlogo drucken';
+
+  @override
+  String get plImportSettings => 'Import';
+
+  @override
+  String get plImportSettingsHelp =>
+      'Wie ein Import der Preislistenartikel Positionen und Gruppentitel liest.';
+
+  @override
+  String get plImportLevels => 'Gruppenebenen in einer Position';
+
+  @override
+  String get plImportTitles =>
+      'Wenn Zeilen einer Gruppe verschiedene Titel geben';
+
+  @override
+  String get plImportTitlesLowest =>
+      'Die Zeile mit der niedrigsten Position gilt';
+
+  @override
+  String get plImportTitlesFirst => 'Die erste Zeile der Datei gilt';
+
+  @override
+  String get plImportTitlesError => 'Einen Fehler melden';
+
+  @override
+  String get plImportShort => 'Eine Position mit weniger Gruppenebenen';
+
+  @override
+  String get plImportShortShallower =>
+      'Den Artikel in die genannte Gruppe stellen';
+
+  @override
+  String get plImportShortError => 'Einen Fehler melden';
 
   @override
   String plProductCount(int count) {
@@ -12069,4 +12121,96 @@ class AppLocalizationsDe extends AppLocalizations {
   String listGroupCollapsed(String label, int count) {
     return '$label, $count Zeilen, zugeklappt';
   }
+
+  @override
+  String get adminLanguagesTitle => 'Inhaltssprachen';
+
+  @override
+  String get adminLanguagesHelp =>
+      'Die Sprachen, in denen Ihr Unternehmen schreibt und druckt: Produkttexte, Preislisten, Wissensdatenbank, Antworten, E-Mails und Dokumente. Sprachauswahlen bieten diese Sprachen in dieser Reihenfolge an.';
+
+  @override
+  String get adminLanguagesDefault => 'Standard';
+
+  @override
+  String get adminLanguagesMakeDefault => 'Als Standard';
+
+  @override
+  String get adminLanguagesRemove => 'Sprache entfernen';
+
+  @override
+  String get adminLanguagesAdd => 'Sprache hinzufügen';
+
+  @override
+  String get adminLanguagesSearch => 'Nach Name oder Code suchen';
+
+  @override
+  String get adminLanguagesSaved => 'Sprachen gespeichert';
+
+  @override
+  String get adminTranslations => 'Übersetzungen';
+
+  @override
+  String get translationsTitle => 'Übersetzungen';
+
+  @override
+  String get translationsHelp =>
+      'Fügen Sie eine Oberflächensprache hinzu oder korrigieren Sie Texte ohne neue Version: Exportieren Sie die englische Vorlage, übersetzen Sie sie und importieren Sie die Datei. Fehlende Texte erscheinen auf Englisch.';
+
+  @override
+  String get translationsDomainApp => 'Oberfläche';
+
+  @override
+  String get translationsDomainDocuments => 'Dokumente';
+
+  @override
+  String get translationsDomainMail => 'System-E-Mails';
+
+  @override
+  String get translationsExportTemplate => 'Englische Vorlage exportieren';
+
+  @override
+  String get translationsImport => 'Datei importieren';
+
+  @override
+  String get translationsExport => 'Exportieren';
+
+  @override
+  String get translationsDelete => 'Firmentexte entfernen';
+
+  @override
+  String get translationsShipped => 'Mitgeliefert';
+
+  @override
+  String translationsCompanyTexts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Firmentexte',
+      one: '1 Firmentext',
+      zero: 'keine Firmentexte',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get translationsSaved => 'Übersetzungen gespeichert';
+
+  @override
+  String get translationsDeleted => 'Firmentexte entfernt';
+
+  @override
+  String get translationsExported => 'Datei exportiert';
+
+  @override
+  String get translationsBadFile =>
+      'Die Datei ist keine ARB- oder JSON-Datei mit Texten.';
+
+  @override
+  String translationsBadKeys(String keys) {
+    return 'Unbekannte Schlüssel oder ungültige Meldungen: $keys';
+  }
+
+  @override
+  String get translationsMissingOnly => 'Nur fehlende';
 }

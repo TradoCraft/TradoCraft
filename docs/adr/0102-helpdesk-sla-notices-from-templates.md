@@ -1,4 +1,4 @@
-# 0100 — Helpdesk SLA notices from templates (A6b)
+# 0102 — Helpdesk SLA notices from templates (A6b)
 
 **Status:** Proposed (extends [ADR 0064](0064-helpdesk-sla-customer-notices.md) and
 [ADR 0072](0072-helpdesk-reply-templates.md))

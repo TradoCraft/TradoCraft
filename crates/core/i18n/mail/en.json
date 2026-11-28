@@ -1,0 +1,13 @@
+{
+  "mail.order_confirmation.body": "Dear {customer},\n\nPlease find attached order confirmation {number}{rev}. Kindly review and confirm it. If you have any remarks, let us know.\n\nKind regards\n{company}\n",
+  "mail.order_confirmation.subject": "Order confirmation {number}{rev}",
+  "mail.outage.body": "The TradoCraft background worker did not run from {from} to {until} (about {min} minutes). It is running again.\n\nDuring that time no e-mail was sent or fetched, no SLA breaches were escalated and no maintenance visits were planned. What was waiting is being processed now; check whether anything urgent was among it.\n",
+  "mail.outage.subject": "The background worker was down",
+  "mail.portal_login.ignore": "If you did not request this, you can ignore this e-mail.",
+  "mail.portal_login.intro": "Use this link to sign in to our customer portal:",
+  "mail.portal_login.regards": "Kind regards",
+  "mail.portal_login.subject": "Sign in to the {company} customer portal",
+  "mail.portal_login.valid": "The link is valid for {minutes} minutes and can be used once.",
+  "mail.service_report.body": "Dear {customer},\n\nPlease find attached service report {number} for our visit. If you have any questions, let us know.\n\nKind regards\n{company}\n",
+  "mail.service_report.subject": "Service report {number}"
+}

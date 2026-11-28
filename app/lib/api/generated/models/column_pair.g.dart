@@ -7,9 +7,14 @@ part of 'column_pair.dart';
 // **************************************************************************
 
 ColumnPair _$ColumnPairFromJson(Map<String, dynamic> json) => ColumnPair(
-  column: json['column'] as String,
   field: json['field'] as String,
+  column: json['column'] as String?,
+  value: json['value'] as String?,
 );
 
 Map<String, dynamic> _$ColumnPairToJson(ColumnPair instance) =>
-    <String, dynamic>{'column': instance.column, 'field': instance.field};
+    <String, dynamic>{
+      'column': ?instance.column,
+      'field': instance.field,
+      'value': ?instance.value,
+    };

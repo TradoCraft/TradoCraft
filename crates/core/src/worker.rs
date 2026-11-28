@@ -18,6 +18,7 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use uuid::Uuid;
 
+use crate::translations::{mail_texts, Catalogue};
 use crate::{mail, new_id, AppResult, AppState, CurrentUser, Permission};
 
 type ErrorBody = crate::error::ErrorBody;
@@ -114,48 +115,30 @@ async fn notify_admins(conn: &mut PgConnection, outage: &Outage) -> Result<(), s
     .fetch_all(&mut *conn)
     .await?;
     for r in recipients {
-        let (subject, body) = outage_mail(&r.language, outage);
-        mail::enqueue(conn, r.company_id, &r.email, subject, &body).await?;
+        let texts = mail_texts(&mut *conn, r.company_id, &r.language).await?;
+        let (subject, body) = outage_mail(&texts, outage);
+        mail::enqueue(conn, r.company_id, &r.email, &subject, &body).await?;
     }
     Ok(())
 }
 
 /// Subject and body of the "worker was down" mail. Times are in UTC: the worker serves every
 /// company and has no time zone of its own.
-fn outage_mail(lang: &str, o: &Outage) -> (&'static str, String) {
+fn outage_mail(texts: &Catalogue, o: &Outage) -> (String, String) {
     let from = o.down_from.format("%Y-%m-%d %H:%M UTC").to_string();
     let until = o.down_until.format("%Y-%m-%d %H:%M UTC").to_string();
     let minutes = (o.down_until - o.down_from)
         .num_minutes()
         .max(1)
         .to_string();
-    let (subject, body) = match lang {
-        "nl" => (
-            "De achtergrondverwerking lag stil",
-            "De achtergrondverwerking van TradoCraft heeft van {from} tot {until} niet gedraaid (ongeveer {min} minuten). Ze draait weer.\n\nIn die periode werden geen e-mails verstuurd of opgehaald, geen SLA-escalaties gedaan en geen onderhoudsbezoeken gepland. Wat bleef liggen, wordt nu verwerkt; controleer of er tijdskritische zaken tussen zaten.\n",
-        ),
-        "fr" => (
-            "Le traitement en arrière-plan était arrêté",
-            "Le traitement en arrière-plan de TradoCraft ne fonctionnait pas du {from} au {until} (environ {min} minutes). Il fonctionne à nouveau.\n\nPendant cette période, aucun e-mail n'a été envoyé ni relevé, aucune escalade SLA n'a eu lieu et aucune visite de maintenance n'a été planifiée. Ce qui était en attente est traité maintenant ; vérifiez si des points urgents s'y trouvaient.\n",
-        ),
-        "de" => (
-            "Die Hintergrundverarbeitung war ausgefallen",
-            "Die Hintergrundverarbeitung von TradoCraft lief von {from} bis {until} nicht (etwa {min} Minuten). Sie läuft wieder.\n\nIn dieser Zeit wurden keine E-Mails gesendet oder abgerufen, keine SLA-Eskalationen ausgelöst und keine Wartungsbesuche geplant. Liegengebliebenes wird jetzt verarbeitet; prüfen Sie, ob Zeitkritisches dabei war.\n",
-        ),
-        "es" => (
-            "El procesamiento en segundo plano estuvo detenido",
-            "El procesamiento en segundo plano de TradoCraft no funcionó desde {from} hasta {until} (unos {min} minutos). Vuelve a funcionar.\n\nDurante ese tiempo no se enviaron ni recibieron correos, no se hicieron escalados de SLA y no se planificaron visitas de mantenimiento. Lo pendiente se procesa ahora; compruebe si había algo urgente.\n",
-        ),
-        _ => (
-            "The background worker was down",
-            "The TradoCraft background worker did not run from {from} to {until} (about {min} minutes). It is running again.\n\nDuring that time no e-mail was sent or fetched, no SLA breaches were escalated and no maintenance visits were planned. What was waiting is being processed now; check whether anything urgent was among it.\n",
-        ),
-    };
+    let args = [
+        ("from", from.as_str()),
+        ("until", until.as_str()),
+        ("min", minutes.as_str()),
+    ];
     (
-        subject,
-        body.replace("{from}", &from)
-            .replace("{until}", &until)
-            .replace("{min}", &minutes),
+        texts.format("mail.outage.subject", &args),
+        texts.format("mail.outage.body", &args),
     )
 }
 
@@ -265,6 +248,7 @@ pub fn router() -> OpenApiRouter<AppState> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::translations::Domain;
     use chrono::TimeZone;
 
     #[test]
@@ -282,8 +266,8 @@ mod tests {
             down_until: Utc.with_ymd_and_hms(2027, 1, 26, 9, 30, 0).unwrap(),
         };
         let mut subjects = std::collections::HashSet::new();
-        for lang in crate::LANGUAGES {
-            let (subject, body) = outage_mail(lang, &o);
+        for lang in ["nl", "fr", "en", "de", "es"] {
+            let (subject, body) = outage_mail(&Catalogue::shipped(Domain::Mail, lang), &o);
             assert!(subjects.insert(subject), "{lang} reuses a subject");
             assert!(body.contains("2027-01-26 08:00 UTC"), "{lang}: {body}");
             assert!(body.contains("2027-01-26 09:30 UTC"), "{lang}: {body}");
@@ -293,6 +277,7 @@ mod tests {
                 "{lang}: unfilled placeholder in {body}"
             );
         }
-        assert_eq!(outage_mail("xx", &o).0, outage_mail("en", &o).0);
+        let subject = |l: &str| outage_mail(&Catalogue::shipped(Domain::Mail, l), &o).0;
+        assert_eq!(subject("pt"), subject("en"));
     }
 }

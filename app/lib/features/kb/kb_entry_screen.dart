@@ -47,15 +47,17 @@ class KbEntryScreen extends ConsumerStatefulWidget {
 }
 
 class _KbEntryScreenState extends ConsumerState<KbEntryScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   Entry? _entry;
   List<EntryVersion> _versions = [];
   String? _error;
   bool _loading = true;
   bool _busy = false;
 
-  late final _tabs = TabController(length: languageCodes.length, vsync: this);
-  final _texts = {for (final c in languageCodes) c: _LangText()};
+  /// The company's languages, plus any the entry already has a text in (ADR 0101).
+  List<String> _langs = [...languageCodes];
+  late TabController _tabs = TabController(length: _langs.length, vsync: this);
+  late final _texts = {for (final c in _langs) c: _LangText()};
   final _tags = TextEditingController();
   String? _category;
   String _audience = 'internal';
@@ -80,11 +82,11 @@ class _KbEntryScreenState extends ConsumerState<KbEntryScreen>
   void _chooseTab() {
     final ui = Localizations.localeOf(context).languageCode;
     final filled = [
-      for (final c in languageCodes)
+      for (final c in _langs)
         if (!_texts[c]!.isEmpty) c,
     ];
     final pick = filled.isEmpty || filled.contains(ui) ? ui : filled.first;
-    final i = languageCodes.indexOf(pick);
+    final i = _langs.indexOf(pick);
     if (i >= 0) _tabs.index = i;
   }
 
@@ -113,7 +115,19 @@ class _KbEntryScreenState extends ConsumerState<KbEntryScreen>
     _audience = e.visibility;
     _tags.text = e.tags.join(', ');
     _related = [...e.related];
-    for (final c in languageCodes) {
+    final extra = [
+      for (final t in e.texts)
+        if (!_langs.contains(t.language)) t.language,
+    ];
+    if (extra.isNotEmpty) {
+      _langs = [..._langs, ...extra];
+      for (final c in extra) {
+        _texts[c] = _LangText();
+      }
+      _tabs.dispose();
+      _tabs = TabController(length: _langs.length, vsync: this);
+    }
+    for (final c in _langs) {
       final t = e.texts.where((x) => x.language == c).firstOrNull;
       _texts[c]!.title.text = t?.title ?? '';
       _texts[c]!.summary.text = t?.summary ?? '';
@@ -147,7 +161,7 @@ class _KbEntryScreenState extends ConsumerState<KbEntryScreen>
     categoryId: _category,
     visibility: _audience,
     texts: [
-      for (final c in languageCodes)
+      for (final c in _langs)
         if (!_texts[c]!.isEmpty)
           EntryText(
             language: c,
@@ -237,7 +251,7 @@ class _KbEntryScreenState extends ConsumerState<KbEntryScreen>
   }
 
   void _insertImage(FileInfo f) {
-    final body = _texts[languageCodes[_tabs.index]]!.body;
+    final body = _texts[_langs[_tabs.index]]!.body;
     final text = '![${f.filename}](image:${f.id})';
     final sel = body.selection;
     final start = sel.isValid ? sel.start : body.text.length;
@@ -409,7 +423,7 @@ class _KbEntryScreenState extends ConsumerState<KbEntryScreen>
           controller: _tabs,
           isScrollable: true,
           tabs: [
-            for (final c in languageCodes)
+            for (final c in _langs)
               Tab(text: '${languageName(c)}${_texts[c]!.isEmpty ? '' : ' ✓'}'),
           ],
         ),
@@ -418,7 +432,7 @@ class _KbEntryScreenState extends ConsumerState<KbEntryScreen>
           child: TabBarView(
             controller: _tabs,
             children: [
-              for (final c in languageCodes)
+              for (final c in _langs)
                 _languageTab(context, c, readOnly, e),
             ],
           ),

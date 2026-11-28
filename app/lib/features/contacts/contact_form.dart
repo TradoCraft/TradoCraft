@@ -188,7 +188,7 @@ class _ContactFormState extends ConsumerState<ContactForm> {
                               ),
                             ),
                           ),
-                          for (final code in languageCodes)
+                          for (final code in languageChoices(_language))
                             DropdownMenuItem<String?>(
                               value: code,
                               child: Text(languageName(code)),

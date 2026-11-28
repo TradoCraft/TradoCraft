@@ -59,7 +59,8 @@ refused with one error, everything else is read as CSV.
   sizes and the number of entries must stay within the limits below, otherwise the file is refused
   with one error (zip bombs). Row and cell limits are enforced while reading, and they count every
   row that is read: a row with a spreadsheet error cell counts like any other, and a file of exactly
-  the row and column limits is read.
+  the row and column limits is read (since ADR 0100 raised the cells per row, a file also stays
+  within the cells in the sheet).
 * *XLSX* is read cell by cell, so a sparse sheet never allocates its bounding box. The cells of a
   row must come in column order; a file that does not is refused with one error naming the row.
 * *ODS* cannot be streamed: `calamine` expands the whole of `content.xml` into dense ranges when the
@@ -99,7 +100,7 @@ everything `unchanged`.
 |---|---|---|
 | File size | 5 MiB | 50 MiB |
 | Data rows | 20 000 | 200 000 |
-| Cells per row | 100 | 100 |
+| Cells per row | 400 (100 before ADR 0100) | 400 (100 before ADR 0100) |
 | Cells in the sheet (data rows; the header is not counted) | 2 000 000 | 5 000 000 |
 | Declared unpacked size of the archive | 64 MiB | 512 MiB |
 | Archive entries | 1 000 | 1 000 |

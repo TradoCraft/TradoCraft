@@ -1242,6 +1242,8 @@ async fn render_confirmation(
     let mut conn = state.db.acquire().await?;
     let images =
         tradocraft_products::media::default_images(&mut conn, &state.blobs, &product_ids).await?;
+    let labels =
+        tradocraft_core::translations::document_labels(&mut *conn, company_id, language).await?;
     drop(conn);
     let doc = order_doc::document_with_images(&company, order, snapshot, language, &images);
     let files: Vec<(String, Vec<u8>)> = images.values().cloned().collect();
@@ -1249,6 +1251,7 @@ async fn render_confirmation(
         &state.documents,
         "order_confirmation",
         &doc,
+        &labels,
         &files,
     )
     .await
@@ -1274,6 +1277,7 @@ async fn render_confirmation(
                 &state.documents,
                 "order_confirmation",
                 &raster_doc,
+                &labels,
                 &raster_files,
             )
             .await
@@ -1286,6 +1290,7 @@ async fn render_confirmation(
                         &state.documents,
                         "order_confirmation",
                         &bare,
+                        &labels,
                     )
                     .await?)
                 }
@@ -1295,10 +1300,13 @@ async fn render_confirmation(
         Err(e) if !files.is_empty() => {
             tracing::warn!(error = ?e, "order confirmation with pictures failed; rendering without");
             let bare = order_doc::document(&company, order, snapshot, language);
-            Ok(
-                tradocraft_documents::render_pdf(&state.documents, "order_confirmation", &bare)
-                    .await?,
+            Ok(tradocraft_documents::render_pdf(
+                &state.documents,
+                "order_confirmation",
+                &bare,
+                &labels,
             )
+            .await?)
         }
         Err(e) => Err(e.into()),
     }
@@ -1351,8 +1359,10 @@ async fn send_order(
     let order = load_order_locked(&mut tx, user.company_id, id, None).await?;
     let pdf = render_confirmation(&state, user.company_id, &order, &snapshot, &to.language).await?;
     let company = get_company(&state.db, user.company_id).await?;
+    let texts =
+        tradocraft_core::translations::mail_texts(&mut *tx, user.company_id, &to.language).await?;
     let (subject, body) = order_doc::confirmation_mail(
-        &to.language,
+        &texts,
         &company.name,
         &order.order.customer_name,
         &order.order.number,

@@ -95,6 +95,24 @@ pub struct CompanySettingsInput {
     pub autosave_minutes: Option<i32>,
 }
 
+/// The company's content languages (OpenAPI schema `CompanyLanguagesInput`).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CompanyLanguagesInput {
+    /// ISO 639-1 codes in display order.
+    pub languages: Vec<String>,
+    /// One of `languages`.
+    pub default_language: String,
+}
+
+/// An ISO 639-1 language with its names (OpenAPI schema `LanguageInfo`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LanguageInfo {
+    pub code: String,
+    pub english_name: String,
+    /// The language's own name.
+    pub name: String,
+}
+
 impl Client {
     /// Lists every member of the active company (`GET /api/v1/admin/users`).
     pub async fn list_admin_users(&self) -> Result<Vec<AdminUser>, ApiError> {
@@ -169,6 +187,19 @@ impl Client {
         req: &CompanySettingsInput,
     ) -> Result<Company, ApiError> {
         self.put_json("/api/v1/admin/company/settings", req).await
+    }
+
+    /// Every ISO 639-1 language with its names (`GET /api/v1/languages`).
+    pub async fn list_languages(&self) -> Result<Vec<LanguageInfo>, ApiError> {
+        self.get_json("/api/v1/languages", &()).await
+    }
+
+    /// Replaces the company's content languages (`PUT /api/v1/admin/company/languages`).
+    pub async fn set_company_languages(
+        &self,
+        req: &CompanyLanguagesInput,
+    ) -> Result<Company, ApiError> {
+        self.put_json("/api/v1/admin/company/languages", req).await
     }
 }
 

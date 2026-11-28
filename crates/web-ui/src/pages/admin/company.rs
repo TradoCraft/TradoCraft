@@ -5,6 +5,8 @@
 use leptos::prelude::*;
 use tradocraft_api_client::admin::CompanySettingsInput;
 
+use super::languages::CompanyLanguages;
+use super::translations::InterfaceTranslations;
 use super::{
     begin_file_read, bump, file_size, is_current, refresh_me, spawn_api, Feedback, FeedbackView,
 };
@@ -414,6 +416,8 @@ pub fn CompanySection() -> impl IntoView {
                     }}
                 </select>
             </div>
+            <CompanyLanguages />
+            <InterfaceTranslations />
         </section>
     }
 }

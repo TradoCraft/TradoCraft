@@ -74,7 +74,7 @@ abstract class DeliveryClient {
 
   /// The delivery note as a PDF. A planned note is a preview; a shipped one is the final document.
   ///
-  /// [lang] - nl | fr | en | de | es; default: the language of the customer.
+  /// [lang] - ISO 639-1 code; default: the language of the customer.
   @GET('/api/v1/deliveries/{id}/pdf')
   Future<void> deliveryPdf({
     @Path('id') required String id,

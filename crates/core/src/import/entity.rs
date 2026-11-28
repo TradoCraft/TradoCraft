@@ -5,7 +5,7 @@
 //! let entity = tradocraft_crm::customers_import();
 //! entity.require_write(&user)?;
 //! let report = entity.run(&pool, &user, &table, &RunOptions::new(format)).await?;
-//! let (header, rows) = (entity.header(), entity.export(&pool, &user).await?);
+//! let export = entity.export(&pool, &user).await?; // header and rows
 //! ```
 
 use std::future::Future;
@@ -18,7 +18,7 @@ use crate::csv_io::ImportReport;
 use crate::error::AppResult;
 use crate::import::engine::{self, RunOptions};
 use crate::import::importable::{ImportDescription, Importable};
-use crate::import::{CellValue, Table};
+use crate::import::{ExportTable, Table};
 
 /// A boxed, sendable future.
 pub type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
@@ -30,8 +30,7 @@ type RunFn = for<'a> fn(
     &'a RunOptions<'a>,
 ) -> BoxFuture<'a, AppResult<ImportReport>>;
 
-type ExportFn =
-    for<'a> fn(&'a PgPool, &'a CurrentUser) -> BoxFuture<'a, AppResult<Vec<Vec<CellValue>>>>;
+type ExportFn = for<'a> fn(&'a PgPool, &'a CurrentUser) -> BoxFuture<'a, AppResult<ExportTable>>;
 
 fn run_erased<'a, E: Importable>(
     pool: &'a PgPool,
@@ -45,7 +44,7 @@ fn run_erased<'a, E: Importable>(
 fn export_erased<'a, E: Importable>(
     pool: &'a PgPool,
     user: &'a CurrentUser,
-) -> BoxFuture<'a, AppResult<Vec<Vec<CellValue>>>> {
+) -> BoxFuture<'a, AppResult<ExportTable>> {
     Box::pin(engine::export_rows::<E>(pool, user))
 }
 
@@ -77,9 +76,10 @@ impl ImportEntity {
         &self.description
     }
 
-    /// The column names, in export order.
-    pub fn header(&self) -> Vec<&str> {
-        self.description.columns.iter().map(|c| c.name).collect()
+    /// The fields a file is bound against, in export order: the column names, `<prefix>_*` for a
+    /// per-language family (see [`crate::import::is_known_field`]).
+    pub fn header(&self) -> Vec<String> {
+        self.description.columns.iter().map(|c| c.field()).collect()
     }
 
     /// Needed to export the entity.
@@ -104,13 +104,8 @@ impl ImportEntity {
         (self.run)(pool, user, table, options).await
     }
 
-    /// The rows of an export as typed cells in [`ImportEntity::header`] order. Checks the read
-    /// permission of `user`.
-    pub async fn export(
-        &self,
-        pool: &PgPool,
-        user: &CurrentUser,
-    ) -> AppResult<Vec<Vec<CellValue>>> {
+    /// The header and rows of an export as typed cells. Checks the read permission of `user`.
+    pub async fn export(&self, pool: &PgPool, user: &CurrentUser) -> AppResult<ExportTable> {
         (self.export)(pool, user).await
     }
 }
@@ -150,6 +145,7 @@ mod tests {
         const COLUMNS: &'static [Column] = &[
             Column::new("code", ColumnKind::Code, true),
             Column::new("price", ColumnKind::Decimal, false),
+            Column::per_language("label", ColumnKind::Text),
         ];
 
         async fn context(_: &mut PgConnection, _: &CurrentUser, _: &Table) -> AppResult<()> {
@@ -185,7 +181,7 @@ mod tests {
         async fn update(_: &mut PgConnection, _: &CurrentUser, _: Uuid, _: &()) -> AppResult<()> {
             unsupported()
         }
-        async fn export(_: &PgPool, _: &CurrentUser) -> AppResult<Vec<Vec<CellValue>>> {
+        async fn export(_: &PgPool, _: &CurrentUser) -> AppResult<ExportTable> {
             unsupported()
         }
     }
@@ -193,7 +189,7 @@ mod tests {
     #[test]
     fn the_handle_describes_the_entity() {
         let entity = ImportEntity::of::<Dummy>();
-        assert_eq!(entity.header(), ["code", "price"]);
+        assert_eq!(entity.header(), ["code", "price", "label_*"]);
         assert_eq!(entity.read_permission(), Permission::CustomersRead);
         assert_eq!(entity.write_permission(), Permission::CustomersWrite);
         assert_eq!(
@@ -202,10 +198,12 @@ mod tests {
                 "key": "dummies",
                 "audit_entity": "dummy",
                 "key_column": "code",
+                "key_columns": ["code"],
                 "file_stem": "dummies",
                 "columns": [
-                    {"name": "code", "kind": "code", "required": true},
-                    {"name": "price", "kind": "decimal", "required": false},
+                    {"name": "code", "kind": "code", "required": true, "per_language": false},
+                    {"name": "price", "kind": "decimal", "required": false, "per_language": false},
+                    {"name": "label", "kind": "text", "required": false, "per_language": true},
                 ],
             })
         );

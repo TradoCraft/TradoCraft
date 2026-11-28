@@ -5209,6 +5209,16 @@
     }
   },
   "impAllMapped": "Every field has a column.",
+  "impFixedValues": "Fixed values",
+  "impFixedHelp": "A fixed value fills a field in every row, read like a cell of the file (a date as 2027-01-01).",
+  "impAddFixed": "Add fixed value",
+  "impFixedValue": "Value",
+  "impRemoveFixed": "Remove the fixed value of {field}",
+  "@impRemoveFixed": {
+    "placeholders": {
+      "field": {"type": "String"}
+    }
+  },
   "impMappingsMenu": "Saved mappings",
   "impNoMappings": "No saved mappings for this entity yet.",
   "impSaveMapping": "Save mapping",
@@ -5706,6 +5716,16 @@
   },
   "plDeleted": "Price list deleted",
   "plShowLogo": "Print the company logo",
+  "plImportSettings": "Import",
+  "plImportSettingsHelp": "How an import of price list items reads positions and group titles.",
+  "plImportLevels": "Group levels in a position",
+  "plImportTitles": "When rows give a group different titles",
+  "plImportTitlesLowest": "The row with the lowest position wins",
+  "plImportTitlesFirst": "The first row of the file wins",
+  "plImportTitlesError": "Report an error",
+  "plImportShort": "A position with fewer group levels",
+  "plImportShortShallower": "Put the item in the group it names",
+  "plImportShortError": "Report an error",
   "plProductCount": "{count} products",
   "@plProductCount": {
     "placeholders": {
@@ -6703,5 +6723,33 @@
   "listGroupExpanded": "{label}, {count} rows, expanded",
   "@listGroupExpanded": {"placeholders": {"label": {"type": "String"}, "count": {"type": "int"}}},
   "listGroupCollapsed": "{label}, {count} rows, collapsed",
-  "@listGroupCollapsed": {"placeholders": {"label": {"type": "String"}, "count": {"type": "int"}}}
+  "@listGroupCollapsed": {"placeholders": {"label": {"type": "String"}, "count": {"type": "int"}}},
+  "adminLanguagesTitle": "Content languages",
+  "adminLanguagesHelp": "The languages your company writes and prints in: product texts, price lists, knowledge base, answers, mails and documents. Language pickers offer these languages in this order.",
+  "adminLanguagesDefault": "Default",
+  "adminLanguagesMakeDefault": "Make default",
+  "adminLanguagesRemove": "Remove language",
+  "adminLanguagesAdd": "Add language",
+  "adminLanguagesSearch": "Search by name or code",
+  "adminLanguagesSaved": "Languages saved",
+  "adminTranslations": "Translations",
+  "translationsTitle": "Translations",
+  "translationsHelp": "Add an interface language or correct texts without a new release: export the English template, translate it and import the file. Texts missing in a language are shown in English.",
+  "translationsDomainApp": "Interface",
+  "translationsDomainDocuments": "Documents",
+  "translationsDomainMail": "System mails",
+  "translationsExportTemplate": "Export English template",
+  "translationsImport": "Import file",
+  "translationsExport": "Export",
+  "translationsDelete": "Remove company texts",
+  "translationsShipped": "Included",
+  "translationsCompanyTexts": "{count, plural, =0{no company texts} =1{1 company text} other{{count} company texts}}",
+  "@translationsCompanyTexts": {"placeholders": {"count": {"type": "int"}}},
+  "translationsSaved": "Translations saved",
+  "translationsDeleted": "Company texts removed",
+  "translationsExported": "File exported",
+  "translationsBadFile": "The file is not an ARB or JSON file with texts.",
+  "translationsBadKeys": "Unknown keys or invalid messages: {keys}",
+  "@translationsBadKeys": {"placeholders": {"keys": {"type": "String"}}},
+  "translationsMissingOnly": "Missing only"
 }

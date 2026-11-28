@@ -158,6 +158,9 @@ pub struct Company {
     #[serde(default)]
     pub iban: Option<String>,
     pub default_language: String,
+    /// Content languages (ISO 639-1) in display order; includes the default (ADR 0101).
+    #[serde(default)]
+    pub languages: Vec<String>,
     pub is_primary: bool,
     pub quotation_single_line_items: bool,
     pub autosave_minutes: i32,

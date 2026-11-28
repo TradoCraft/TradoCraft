@@ -297,10 +297,13 @@ async fn build_file(
 ) -> AppResult<Built> {
     let company = get_company(&mut *conn, s.company_id).await?;
     let lang = company.default_language.as_str();
+    let labels =
+        tradocraft_core::translations::document_labels(&mut *conn, company.id, lang).await?;
+    let labels = &labels;
     let pdf_file = |name: &str| format!("{}-{today}.pdf", crate::routes::slug(name));
     let csv_file = |name: &str| format!("{}-{today}.csv", crate::routes::slug(name));
     let render = |data| async move {
-        tradocraft_documents::render_pdf(docs, "report", &data)
+        tradocraft_documents::render_pdf(docs, "report", &data, labels)
             .await
             .map_err(|e| AppError::Validation(format!("the PDF could not be made: {e}")))
     };

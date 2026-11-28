@@ -18,7 +18,9 @@ use uuid::Uuid;
 
 use crate::auth::{AuthConfig, CurrentUser};
 use crate::company::{get_company, Company};
-use crate::{audit, is_language, new_id, AppError, AppResult, AppState};
+use crate::language::is_iso_639_1;
+use crate::languages::{set_company_languages, validate_company_languages};
+use crate::{audit, new_id, AppError, AppResult, AppState};
 
 /// Advisory-lock key that serialises provisioning (`pg_advisory_xact_lock`).
 const PROVISION_LOCK: i64 = 0x7472_6164_6f63_7266;
@@ -105,8 +107,12 @@ pub struct ProvisionSpec {
     pub country_code: String,
     /// ISO 4217 currency code.
     pub currency: String,
-    /// One of nl, fr, en, de, es.
+    /// ISO 639-1 code of the company's default language.
     pub default_language: String,
+    /// The company's content languages in display order (ISO 639-1); the default language is
+    /// added in front when missing. Empty: only the default language (ADR 0101).
+    #[serde(default)]
+    pub languages: Vec<String>,
     /// E-mail of the first administrator (created when no such user exists).
     pub admin_email: String,
     /// Display name of the first administrator.
@@ -162,9 +168,19 @@ impl ProvisionSpec {
             return bad("currency must be three letters");
         }
         let default_language = self.default_language.trim().to_ascii_lowercase();
-        if !is_language(&default_language) {
-            return bad("default_language must be one of nl, fr, en, de, es");
+        if !is_iso_639_1(&default_language) {
+            return bad("default_language must be an ISO 639-1 language code");
         }
+        let mut languages: Vec<String> = self
+            .languages
+            .iter()
+            .map(|l| l.trim().to_ascii_lowercase())
+            .collect();
+        if !languages.contains(&default_language) {
+            languages.insert(0, default_language.clone());
+        }
+        let (languages, default_language) =
+            validate_company_languages(&languages, &default_language)?;
         let admin_email = self.admin_email.trim().to_ascii_lowercase();
         if !valid_email(&admin_email) {
             return bad("admin_email is not a valid e-mail address");
@@ -180,6 +196,7 @@ impl ProvisionSpec {
             country_code,
             currency,
             default_language,
+            languages,
             admin_email,
             admin_display_name,
         })
@@ -238,6 +255,13 @@ pub async fn provision(conn: &mut PgConnection, spec: &ProvisionSpec) -> AppResu
     .bind(&spec.currency)
     .bind(&spec.default_language)
     .execute(&mut *conn)
+    .await?;
+    set_company_languages(
+        &mut *conn,
+        company_id,
+        &spec.languages,
+        &spec.default_language,
+    )
     .await?;
 
     let existing: Option<(Uuid, String, String, bool)> = sqlx::query_as(
@@ -530,6 +554,7 @@ mod tests {
             country_code: "be".into(),
             currency: "eur".into(),
             default_language: "NL".into(),
+            languages: vec![],
             admin_email: " Admin@Example.COM ".into(),
             admin_display_name: " Ada ".into(),
         }
@@ -546,6 +571,10 @@ mod tests {
             ("BE", "EUR")
         );
         assert_eq!(s.default_language, "nl");
+        assert_eq!(s.languages, vec!["nl".to_string()]);
+        let mut with = spec();
+        with.languages = vec!["FR".into(), "nl".into(), "pt".into()];
+        assert_eq!(with.validate().unwrap().languages, ["fr", "nl", "pt"]);
         assert_eq!(s.admin_email, "admin@example.com");
         assert_eq!(s.admin_display_name, "Ada");
     }
@@ -559,6 +588,7 @@ mod tests {
             Box::new(|s| s.country_code = "B1".into()),
             Box::new(|s| s.currency = "EU".into()),
             Box::new(|s| s.default_language = "xx".into()),
+            Box::new(|s| s.languages = vec!["nl".into(), "zz".into()]),
             Box::new(|s| s.vat_number = Some("!!".into())),
             Box::new(|s| s.admin_email = "nobody".into()),
             Box::new(|s| s.admin_email = "a@b".into()),

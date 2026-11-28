@@ -43,7 +43,7 @@ class ContactInput {
   @JsonKey(includeIfNull: false,name: 'job_title')
   final String? jobTitle;
 
-  /// nl | fr | en | de | es; null = same as the customer.
+  /// ISO 639-1 code; null = same as the customer.
   @JsonKey(includeIfNull: false)
   final String? language;
   @JsonKey(name: 'last_name')

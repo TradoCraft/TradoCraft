@@ -4,6 +4,7 @@ use leptos_router::hooks::{use_location, use_navigate};
 use leptos_router::NavigateOptions;
 
 use crate::api::ConnectionMode;
+use crate::i18n::{tr, InterfaceLanguagePicker};
 use crate::state::{AppContext, ThemeMode, WorkspaceTab};
 
 const APP_BASE: &str = "/app";
@@ -161,6 +162,33 @@ const NAV_GROUPS: &[NavGroup] = &[
     },
 ];
 
+/// The translation key of a navigation item: `nav-products` is `nav.products` (ADR 0101).
+pub fn nav_key(id: &str) -> String {
+    format!("nav.{}", id.trim_start_matches("nav-").replace('-', "_"))
+}
+
+/// The translation key of a navigation group title: `Service & Operations` is
+/// `nav.group.service_operations`.
+pub fn nav_group_key(title: &str) -> String {
+    let lower = title.to_lowercase();
+    let words: Vec<&str> = lower
+        .split(|c: char| !c.is_ascii_alphanumeric())
+        .filter(|w| !w.is_empty())
+        .collect();
+    format!("nav.group.{}", words.join("_"))
+}
+
+/// The English navigation texts by translation key, for the source catalogue.
+pub fn nav_source_texts() -> Vec<(String, String)> {
+    NAV_GROUPS
+        .iter()
+        .flat_map(|g| {
+            std::iter::once((nav_group_key(g.title), g.title.to_string()))
+                .chain(g.items.iter().map(|i| (nav_key(i.id), i.label.to_string())))
+        })
+        .collect()
+}
+
 /// Whether the navigation item at `href` is the current one: its own page, or a page below it
 /// (such as `/app/admin/users`) that no other item names exactly.
 pub fn nav_item_active(pathname: &str, href: &str) -> bool {
@@ -245,7 +273,7 @@ pub fn AppShell(children: Children) -> impl IntoView {
                                 class="tc-btn tc-btn-ghost tc-btn-sm"
                                 on:click=move |_| tutorial_state.update(|t| t.active = !t.active)
                             >
-                                "Tutorial"
+                                {move || tr("shell.tutorial", "Tutorial")}
                             </button>
                             <button
                                 type="button"
@@ -254,8 +282,8 @@ pub fn AppShell(children: Children) -> impl IntoView {
                                 on:click=on_toggle_theme
                             >
                                 {move || match ctx.theme.get() {
-                                    ThemeMode::Dark => "Light mode",
-                                    ThemeMode::Light => "Dark mode",
+                                    ThemeMode::Dark => tr("shell.light_mode", "Light mode"),
+                                    ThemeMode::Light => tr("shell.dark_mode", "Dark mode"),
                                 }}
                             </button>
                             <button
@@ -264,8 +292,9 @@ pub fn AppShell(children: Children) -> impl IntoView {
                                 class="tc-btn tc-btn-sm"
                                 on:click=on_sign_out.clone()
                             >
-                                "Sign out"
+                                {move || tr("shell.sign_out", "Sign out")}
                             </button>
+                            <InterfaceLanguagePicker />
                         }.into_any(),
                         None => view! {
                             <button
@@ -274,7 +303,7 @@ pub fn AppShell(children: Children) -> impl IntoView {
                                 class="tc-btn tc-btn-ghost tc-btn-sm"
                                 on:click=move |_| tutorial_state.update(|t| t.active = !t.active)
                             >
-                                "Tutorial"
+                                {move || tr("shell.tutorial", "Tutorial")}
                             </button>
                             <button
                                 type="button"
@@ -283,8 +312,8 @@ pub fn AppShell(children: Children) -> impl IntoView {
                                 on:click=on_toggle_theme
                             >
                                 {move || match ctx.theme.get() {
-                                    ThemeMode::Dark => "Light mode",
-                                    ThemeMode::Light => "Dark mode",
+                                    ThemeMode::Dark => tr("shell.light_mode", "Light mode"),
+                                    ThemeMode::Light => tr("shell.dark_mode", "Dark mode"),
                                 }}
                             </button>
                             <A href=app_href("/login") attr:class="tc-btn tc-btn-primary tc-btn-sm" attr:data-target="sign-in-link">
@@ -356,7 +385,9 @@ pub fn AppShell(children: Children) -> impl IntoView {
                 {NAV_GROUPS.iter().map(|group| {
                     view! {
                         <div>
-                            <div class="tc-nav-group-label">{group.title}</div>
+                            <div class="tc-nav-group-label">
+                                {move || tr(&nav_group_key(group.title), group.title)}
+                            </div>
                             <div class="tc-nav-list">
                                 {group.items.iter().map(|item| {
                                     let href = app_href(item.path);
@@ -375,7 +406,7 @@ pub fn AppShell(children: Children) -> impl IntoView {
                                             attr:data-target=item.id
                                             on:click=move |_| ctx.active_tab.set(None)
                                         >
-                                            <span>{item.label}</span>
+                                            <span>{move || tr(&nav_key(item.id), item.label)}</span>
                                             {if !item.live {
                                                 view! { <span class="tc-badge">"Soon"</span> }.into_any()
                                             } else {

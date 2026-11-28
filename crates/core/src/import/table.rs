@@ -7,7 +7,7 @@ use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
 
 use crate::csv_io::{format_error, parse_bool, parse_decimal, RowError};
-use crate::import::{CellValue, RawTable};
+use crate::import::{is_known_field, CellValue, RawTable};
 
 /// An import file bound to an entity: known columns in any order, one [`Row`] per usable data
 /// row.
@@ -86,18 +86,66 @@ pub fn bind(
     required: &[&str],
     mapping: Option<&[(String, String)]>,
 ) -> Result<Table, Vec<RowError>> {
+    bind_with_values(raw, known, required, mapping, &[])
+}
+
+/// Like [`bind`], with `fixed` fields: `(field, value)` pairs whose value fills the field in every
+/// row as if the file had a column of that text (ADR 0100). The value is read by the same rules
+/// as a text cell of the file. Header errors besides those of [`bind`]: an unknown field, a field
+/// given twice, and a field that is both a file column and fixed. A fixed field counts as present
+/// for the `required` ones.
+pub fn bind_with_values(
+    raw: RawTable,
+    known: &[&str],
+    required: &[&str],
+    mapping: Option<&[(String, String)]>,
+    fixed: &[(String, String)],
+) -> Result<Table, Vec<RowError>> {
     let header_row = raw.header_row;
     let file_columns: Vec<String> = raw.header.iter().map(|h| h.trim().to_lowercase()).collect();
-    let (fields, errors) = match mapping {
-        None => bind_by_name(&file_columns, known, required, header_row),
-        Some(m) => bind_by_mapping(&file_columns, known, required, m, header_row),
+    let fixed: Vec<(String, &str)> = fixed
+        .iter()
+        .map(|(f, v)| (f.trim().to_lowercase(), v.as_str()))
+        .collect();
+    // A fixed field is present, so it satisfies a required one.
+    let still_required: Vec<&str> = required
+        .iter()
+        .copied()
+        .filter(|r| !fixed.iter().any(|(f, _)| f == r))
+        .collect();
+    let (fields, mut errors) = match mapping {
+        None => bind_by_name(&file_columns, known, &still_required, header_row),
+        Some(m) => bind_by_mapping(&file_columns, known, &still_required, m, header_row),
     };
+    let mut seen_fixed: HashSet<&str> = HashSet::new();
+    for (field, _) in &fixed {
+        if !is_known_field(known, field) {
+            errors.push(header_error(
+                header_row,
+                field,
+                format!("unknown field; known fields are {}", known.join(", ")),
+            ));
+        } else if !seen_fixed.insert(field) {
+            errors.push(header_error(
+                header_row,
+                field,
+                "field has two fixed values",
+            ));
+        } else if fields.iter().flatten().any(|f| f == field) {
+            errors.push(header_error(
+                header_row,
+                field,
+                "field is both a file column and a fixed value",
+            ));
+        }
+    }
     if !errors.is_empty() {
         return Err(errors);
     }
 
     let width = file_columns.len();
-    let columns: Vec<String> = fields.iter().flatten().cloned().collect();
+    let mut columns: Vec<String> = fields.iter().flatten().cloned().collect();
+    columns.extend(fixed.iter().map(|(f, _)| f.clone()));
     let mut rows = Vec::with_capacity(raw.rows.len());
     let mut width_errors = raw.errors;
     let mut failed_rows = raw.failed_rows;
@@ -125,6 +173,9 @@ pub fn bind(
                 }
             }
             cells.insert(field.clone(), value);
+        }
+        for (field, value) in &fixed {
+            cells.insert(field.clone(), CellValue::text(*value));
         }
         rows.push(Row {
             line: r.row,
@@ -163,7 +214,7 @@ fn bind_by_name(
     let mut errors = Vec::new();
     let mut seen = HashSet::new();
     for c in columns {
-        if !known.contains(&c.as_str()) {
+        if !is_known_field(known, c) {
             errors.push(header_error(
                 row,
                 c,
@@ -199,7 +250,7 @@ fn bind_by_mapping(
         if by_column.get(&file) == Some(&field) {
             continue; // the same pair twice
         }
-        if !known.contains(&field.as_str()) {
+        if !is_known_field(known, &field) {
             errors.push(header_error(
                 row,
                 &field,
@@ -722,6 +773,65 @@ mod tests {
             );
             assert_eq!(e.is_empty(), expected.is_some(), "{value:?}");
         }
+    }
+
+    fn fixed(pairs: &[(&str, &str)]) -> Vec<(String, String)> {
+        map(pairs)
+    }
+
+    #[test]
+    fn a_fixed_value_fills_its_field_in_every_row() {
+        let n = CellValue::text;
+        let t = bind_with_values(
+            raw(&["Article"], vec![(2, vec![n("A1")]), (3, vec![n("A2")])]),
+            &KNOWN,
+            &["code", "price"],
+            Some(&map(&[("article", "code")])),
+            &fixed(&[(" Price ", "12,50"), ("name", "  Kept as written ")]),
+        )
+        .unwrap();
+        assert_eq!(t.columns, ["code", "price", "name"]);
+        for row in &t.rows {
+            let mut errors = vec![];
+            let mut cells = Cells::new(row, &mut errors);
+            // Parsed as a text cell of the file would be: decimal comma, spaces kept for text.
+            assert_eq!(cells.decimal("price"), Cell::Value(dec!(12.5)));
+            assert_eq!(cells.text("name"), Cell::Value("  Kept as written ".into()));
+            assert!(errors.is_empty());
+        }
+        assert_eq!(t.rows[1].get("code"), Some("A2"));
+        // An empty value is an empty cell.
+        let t = bind_with_values(
+            raw(&["code"], vec![(2, vec![n("A1")])]),
+            &KNOWN,
+            &[],
+            None,
+            &fixed(&[("price", "")]),
+        )
+        .unwrap();
+        assert_eq!(t.rows[0].value("price"), Some(&CellValue::Empty));
+    }
+
+    #[test]
+    fn fixed_value_errors_are_header_errors() {
+        let e = bind_with_values(
+            raw(&["a"], vec![]),
+            &KNOWN,
+            &["code", "name"],
+            Some(&map(&[("a", "code")])),
+            &fixed(&[
+                ("code", "x"),
+                ("bogus", "1"),
+                ("price", "1"),
+                ("PRICE", "2"),
+            ]),
+        )
+        .unwrap_err();
+        let m = messages(&e);
+        assert!(m.contains(&"code: field is both a file column and a fixed value".to_string()));
+        assert!(m.iter().any(|m| m.starts_with("bogus: unknown field")));
+        assert!(m.contains(&"price: field has two fixed values".to_string()));
+        assert!(m.contains(&"name: required field is not mapped".to_string()));
     }
 
     #[test]

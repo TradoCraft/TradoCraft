@@ -10,7 +10,7 @@ use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgConnection};
 use tradocraft_core::{
-    audit, is_language, new_id, AppError, AppResult, AppState, CurrentUser, Permission, LANGUAGES,
+    audit, is_language, new_id, AppError, AppResult, AppState, CurrentUser, Permission,
 };
 use utoipa::{IntoParams, ToSchema};
 use utoipa_axum::router::OpenApiRouter;
@@ -59,7 +59,7 @@ pub struct Ticket {
     pub category: String,
     /// What the system guessed from the last incoming e-mail.
     pub suggested_category: Option<String>,
-    /// nl | fr | en | de | es — the language to answer in.
+    /// ISO 639-1 code: the language to answer in.
     pub language: String,
     /// record | detected | agent: where `language` came from.
     pub language_source: String,
@@ -805,10 +805,9 @@ async fn create_ticket(
     let language = match &input.language {
         Some(l) if is_language(l) => l.clone(),
         Some(_) => {
-            return Err(AppError::Validation(format!(
-                "language must be one of {}",
-                LANGUAGES.join(", ")
-            )))
+            return Err(AppError::Validation(
+                "language must be an ISO 639-1 language code".to_string(),
+            ))
         }
         None => match &contact {
             Some(c) => c.effective_language.clone(),
@@ -891,7 +890,11 @@ async fn update_ticket(
     check_one_of("status", &input.status, &STATUSES)?;
     check_one_of("priority", &input.priority, &PRIORITIES)?;
     check_one_of("category", &input.category, &CATEGORIES)?;
-    check_one_of("language", &input.language, &LANGUAGES)?;
+    if !is_language(&input.language) {
+        return Err(AppError::Validation(
+            "language must be an ISO 639-1 language code".into(),
+        ));
+    }
     if input.subject.trim().is_empty() {
         return Err(AppError::Validation("subject is required".into()));
     }

@@ -1,27 +1,12 @@
 // Delivery note template. Data comes from data.json (see crates/delivery/src/pdf.rs).
 #let d = json("data.json")
 
-#let labels = (
-  nl: (title: "Leveringsbon", number: "Nummer", order: "Order", reference: "Uw referentie", date: "Datum", carrier: "Vervoerder", tracking: "Tracking",
-       ship_to: "Leveradres", pos: "Pos.", code: "Code", description: "Omschrijving", qty: "Aantal", serial: "Lot / serienummer", notes: "Opmerkingen",
-       preview: "VOORBEELD", vat: "BTW", page: "Pagina", received: "Ontvangen door (naam, datum, handtekening)"),
-  fr: (title: "Bon de livraison", number: "Numéro", order: "Commande", reference: "Votre référence", date: "Date", carrier: "Transporteur", tracking: "Suivi",
-       ship_to: "Adresse de livraison", pos: "Pos.", code: "Code", description: "Description", qty: "Quantité", serial: "Lot / n° de série", notes: "Remarques",
-       preview: "APERÇU", vat: "TVA", page: "Page", received: "Reçu par (nom, date, signature)"),
-  en: (title: "Delivery note", number: "Number", order: "Order", reference: "Your reference", date: "Date", carrier: "Carrier", tracking: "Tracking",
-       ship_to: "Deliver to", pos: "Pos.", code: "Code", description: "Description", qty: "Qty", serial: "Lot / serial number", notes: "Notes",
-       preview: "PREVIEW", vat: "VAT", page: "Page", received: "Received by (name, date, signature)"),
-  de: (title: "Lieferschein", number: "Nummer", order: "Auftrag", reference: "Ihre Referenz", date: "Datum", carrier: "Spediteur", tracking: "Sendungsnummer",
-       ship_to: "Lieferadresse", pos: "Pos.", code: "Artikel", description: "Beschreibung", qty: "Menge", serial: "Charge / Seriennummer", notes: "Bemerkungen",
-       preview: "VORSCHAU", vat: "MwSt.", page: "Seite", received: "Erhalten von (Name, Datum, Unterschrift)"),
-  es: (title: "Albarán de entrega", number: "Número", order: "Pedido", reference: "Su referencia", date: "Fecha", carrier: "Transportista", tracking: "Seguimiento",
-       ship_to: "Dirección de entrega", pos: "Pos.", code: "Código", description: "Descripción", qty: "Cantidad", serial: "Lote / n.º de serie", notes: "Observaciones",
-       preview: "VISTA PREVIA", vat: "IVA", page: "Página", received: "Recibido por (nombre, fecha, firma)"),
-)
-#let l = labels.at(d.language, default: labels.en)
+// Labels in the document language with English for missing ones (ADR 0101): written by the
+// renderer from the translation catalogue (crates/core/i18n/documents, company overrides).
+#let l = json("labels.json")
 
 #set document(title: l.title + " " + d.number)
-#set text(size: 9.5pt, lang: if d.language in ("nl", "fr", "de", "es") { d.language } else { "en" })
+#set text(size: 9.5pt, lang: d.language)
 #set page(
   paper: "a4",
   margin: (x: 18mm, top: 18mm, bottom: 22mm),

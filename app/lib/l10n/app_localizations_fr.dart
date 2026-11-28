@@ -9378,6 +9378,24 @@ class AppLocalizationsFr extends AppLocalizations {
   String get impAllMapped => 'Chaque champ a une colonne.';
 
   @override
+  String get impFixedValues => 'Valeurs fixes';
+
+  @override
+  String get impFixedHelp =>
+      'Une valeur fixe remplit un champ dans chaque ligne, lue comme une cellule du fichier (une date sous la forme 2027-01-01).';
+
+  @override
+  String get impAddFixed => 'Ajouter une valeur fixe';
+
+  @override
+  String get impFixedValue => 'Valeur';
+
+  @override
+  String impRemoveFixed(String field) {
+    return 'Supprimer la valeur fixe de $field';
+  }
+
+  @override
   String get impMappingsMenu => 'Correspondances enregistrées';
 
   @override
@@ -10104,6 +10122,40 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get plShowLogo => 'Imprimer le logo de l\'entreprise';
+
+  @override
+  String get plImportSettings => 'Import';
+
+  @override
+  String get plImportSettingsHelp =>
+      'Comment un import des articles de la liste lit les positions et les titres des groupes.';
+
+  @override
+  String get plImportLevels => 'Niveaux de groupe dans une position';
+
+  @override
+  String get plImportTitles =>
+      'Si des lignes donnent des titres différents à un groupe';
+
+  @override
+  String get plImportTitlesLowest =>
+      'La ligne à la position la plus basse l\'emporte';
+
+  @override
+  String get plImportTitlesFirst => 'La première ligne du fichier l\'emporte';
+
+  @override
+  String get plImportTitlesError => 'Signaler une erreur';
+
+  @override
+  String get plImportShort => 'Une position avec moins de niveaux de groupe';
+
+  @override
+  String get plImportShortShallower =>
+      'Placer l\'article dans le groupe indiqué';
+
+  @override
+  String get plImportShortError => 'Signaler une erreur';
 
   @override
   String plProductCount(int count) {
@@ -12057,4 +12109,96 @@ class AppLocalizationsFr extends AppLocalizations {
   String listGroupCollapsed(String label, int count) {
     return '$label, $count lignes, réduit';
   }
+
+  @override
+  String get adminLanguagesTitle => 'Langues du contenu';
+
+  @override
+  String get adminLanguagesHelp =>
+      'Les langues dans lesquelles votre entreprise rédige et imprime : textes produits, listes de prix, base de connaissances, réponses, e-mails et documents. Les sélecteurs de langue proposent ces langues dans cet ordre.';
+
+  @override
+  String get adminLanguagesDefault => 'Par défaut';
+
+  @override
+  String get adminLanguagesMakeDefault => 'Définir par défaut';
+
+  @override
+  String get adminLanguagesRemove => 'Retirer la langue';
+
+  @override
+  String get adminLanguagesAdd => 'Ajouter une langue';
+
+  @override
+  String get adminLanguagesSearch => 'Rechercher par nom ou code';
+
+  @override
+  String get adminLanguagesSaved => 'Langues enregistrées';
+
+  @override
+  String get adminTranslations => 'Traductions';
+
+  @override
+  String get translationsTitle => 'Traductions';
+
+  @override
+  String get translationsHelp =>
+      'Ajoutez une langue d\'interface ou corrigez des textes sans nouvelle version : exportez le modèle anglais, traduisez-le et importez le fichier. Les textes manquants s\'affichent en anglais.';
+
+  @override
+  String get translationsDomainApp => 'Interface';
+
+  @override
+  String get translationsDomainDocuments => 'Documents';
+
+  @override
+  String get translationsDomainMail => 'E-mails système';
+
+  @override
+  String get translationsExportTemplate => 'Exporter le modèle anglais';
+
+  @override
+  String get translationsImport => 'Importer un fichier';
+
+  @override
+  String get translationsExport => 'Exporter';
+
+  @override
+  String get translationsDelete => 'Supprimer les textes de l\'entreprise';
+
+  @override
+  String get translationsShipped => 'Inclus';
+
+  @override
+  String translationsCompanyTexts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count textes de l\'entreprise',
+      one: '1 texte de l\'entreprise',
+      zero: 'aucun texte de l\'entreprise',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get translationsSaved => 'Traductions enregistrées';
+
+  @override
+  String get translationsDeleted => 'Textes de l\'entreprise supprimés';
+
+  @override
+  String get translationsExported => 'Fichier exporté';
+
+  @override
+  String get translationsBadFile =>
+      'Le fichier n\'est pas un fichier ARB ou JSON contenant des textes.';
+
+  @override
+  String translationsBadKeys(String keys) {
+    return 'Clés inconnues ou messages invalides : $keys';
+  }
+
+  @override
+  String get translationsMissingOnly => 'Manquants seulement';
 }

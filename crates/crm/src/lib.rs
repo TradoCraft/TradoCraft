@@ -124,10 +124,7 @@ impl CustomerInput {
             out.push("country_code must be a 2-letter code".to_string());
         }
         if !tradocraft_core::is_language(&self.language.to_lowercase()) {
-            out.push(format!(
-                "language must be one of {}",
-                tradocraft_core::LANGUAGES.join(", ")
-            ));
+            out.push("language must be an ISO 639-1 language code".to_string());
         }
         if self.discount_percent < -Decimal::ONE_HUNDRED
             || self.discount_percent > Decimal::ONE_HUNDRED

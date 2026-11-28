@@ -19,10 +19,11 @@ const _entityJson = {
   'file_stem': 'customers',
   'key': 'customers',
   'key_column': 'code',
+  'key_columns': ['code'],
   'columns': [
-    {'kind': 'code', 'name': 'code', 'required': true},
-    {'kind': 'text', 'name': 'name', 'required': true},
-    {'kind': 'text', 'name': 'city', 'required': false},
+    {'kind': 'code', 'name': 'code', 'required': true, 'per_language': false},
+    {'kind': 'text', 'name': 'name', 'required': true, 'per_language': false},
+    {'kind': 'text', 'name': 'city', 'required': false, 'per_language': false},
   ],
 };
 
@@ -1360,6 +1361,34 @@ void main() {
       },
     );
 
+    testWidgets(
+      'saved mappings arriving late keep the fixed values the person entered',
+      (tester) async {
+        final gate = Completer<Object?>();
+        final t = setup({'GET /api/v1/imports/mappings': (_) => gate.future});
+        final w = t.container.read(importWizardProvider.notifier);
+        unawaited(w.selectEntity(entity));
+        await settle(tester);
+        unawaited(w.upload(_xlsx));
+        await settle(tester);
+        w.setFixed('city', 'Gent');
+        gate.complete([
+          {
+            ...mappingJson('m1', 'Other', {'code': 'code'}),
+            'columns': [
+              {'column': 'code', 'field': 'code'},
+              {'value': 'Brugge', 'field': 'city'},
+            ],
+          },
+        ]);
+        await settle(tester);
+        final s = t.container.read(importWizardProvider);
+        expect(s.saved, hasLength(1));
+        expect(s.fixed, {'city': 'Gent'});
+        expect(s.fields, ['code', 'name', 'city']);
+      },
+    );
+
     testWidgets('saved mappings arriving after the screen is gone do nothing', (
       tester,
     ) async {
@@ -1464,6 +1493,83 @@ void main() {
       expect(c.blocked, isTrue);
       expect(c.unmappedRequired, ['code']);
       expect(checkMapping(['code', 'name', 'city'], entity).blocked, isFalse);
+    });
+
+    test('fixed values are sent, checked and taken from a saved mapping', () {
+      final sent = columnsToSend(
+        ['code', 'name'],
+        ['code', 'name'],
+        fixed: {'city': 'Gent'},
+      )!;
+      expect(sent.map((p) => (p.column, p.value, p.field)), [
+        ('code', null, 'code'),
+        ('name', null, 'name'),
+        (null, 'Gent', 'city'),
+      ]);
+      // A fixed key counts as mapped; a field with a column and a fixed value is doubled.
+      expect(
+        checkMapping([null], entity, fixed: {'code': 'C1'}).keyMissing,
+        isFalse,
+      );
+      expect(checkMapping(['code'], entity, fixed: {'code': 'C1'}).duplicates, {
+        'code',
+      });
+      final saved = ImportMapping.fromJson({
+        ...mappingJson('id-f', 'fixed', {'Nr': 'code'}),
+        'columns': [
+          {'column': 'Nr', 'field': 'code'},
+          {'value': 'Gent', 'field': 'city'},
+          {'value': 'x', 'field': 'gone'},
+        ],
+      });
+      expect(fixedFromMapping(entity, saved), {'city': 'Gent'});
+      expect(bestSavedMapping(['nr'], [saved])?.name, 'fixed');
+      expect(fieldsFromMapping(['Nr', 'Gent'], entity, saved), ['code', null]);
+    });
+
+    test('a per-language family takes the member a file column names', () {
+      final products = ImportDescription.fromJson({
+        ..._entityJson,
+        'columns': [
+          ...(_entityJson['columns'] as List),
+          {
+            'kind': 'text',
+            'name': 'name',
+            'required': false,
+            'per_language': true,
+          },
+        ],
+      });
+      final family = products.columns.last;
+      expect(familyField(family, ' Name_FR '), 'name_fr');
+      expect(familyField(family, 'name'), isNull);
+      expect(familyField(family, 'name_fra'), isNull);
+      expect(sameNameFields(['code', 'name_it', 'name'], products), [
+        'code',
+        'name_it',
+        'name',
+      ]);
+      expect(isEntityField(products, 'name_nl'), isTrue);
+      expect(fixableColumns(products).map((c) => c.name), [
+        'code',
+        'name',
+        'city',
+      ]);
+      expect(checkMapping(['code'], products).unmapped, ['name', 'city']);
+      expect(columnFieldOptions(products, 'Name_FR'), [
+        'code',
+        'name',
+        'city',
+        'name_fr',
+      ]);
+      // A saved mapping may give a differently named column a language field.
+      final saved = ImportMapping.fromJson({
+        ...mappingJson('id-l', 'lang', {}),
+        'columns': [
+          {'column': 'Naam FR', 'field': 'name_fr'},
+        ],
+      });
+      expect(fieldsFromMapping(['Naam FR'], products, saved), ['name_fr']);
     });
   });
 }

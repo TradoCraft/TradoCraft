@@ -2,47 +2,12 @@
 // It is an internal document for the shop floor: there is no cost on it.
 #let d = json("data.json")
 
-#let labels = (
-  nl: (title: "Productieorder", number: "Nummer", product: "Product", quantity: "Aantal", bom: "BOM-revisie", division: "Afdeling", ready: "Klaar tegen",
-       order: "Verkooporder", customer: "Klant", priority: "Prioriteit", parent: "Deel van", remark: "Opmerking voor productie",
-       components: "Onderdelen", pos: "Pos.", code: "Code", description: "Omschrijving", qty: "Aantal", picked: "Gepickt",
-       operations: "Bewerkingen", operation: "Bewerking", work_centre: "Werkplek", planned: "Gepland (min)", dates: "Datums", actual: "Werkelijk (min)", done: "Klaar",
-       setup: "opstel", output: "Resultaat", lot: "Lotnummer", serials: "Serienummers", notes: "Opmerkingen",
-       subassemblies: "Onderdelen met een eigen productieorder", printed: "Afgedrukt", page: "Pagina", vat: "BTW",
-       cancelled: "GEANNULEERD", prio: (low: "Laag", normal: "Normaal", expedite: "Spoed")),
-  fr: (title: "Ordre de fabrication", number: "Numéro", product: "Produit", quantity: "Quantité", bom: "Révision de la nomenclature", division: "Service", ready: "Prêt pour",
-       order: "Commande", customer: "Client", priority: "Priorité", parent: "Fait partie de", remark: "Remarque pour la production",
-       components: "Composants", pos: "Pos.", code: "Code", description: "Description", qty: "Qté", picked: "Prélevé",
-       operations: "Opérations", operation: "Opération", work_centre: "Poste de travail", planned: "Prévu (min)", dates: "Dates", actual: "Réel (min)", done: "Fait",
-       setup: "réglage", output: "Résultat", lot: "N° de lot", serials: "N° de série", notes: "Remarques",
-       subassemblies: "Sous-ensembles avec leur propre ordre", printed: "Imprimé", page: "Page", vat: "TVA",
-       cancelled: "ANNULÉ", prio: (low: "Basse", normal: "Normale", expedite: "Urgente")),
-  en: (title: "Production order", number: "Number", product: "Product", quantity: "Quantity", bom: "BOM revision", division: "Division", ready: "Ready by",
-       order: "Sales order", customer: "Customer", priority: "Priority", parent: "Part of", remark: "Production remark",
-       components: "Components", pos: "Pos.", code: "Code", description: "Description", qty: "Qty", picked: "Picked",
-       operations: "Operations", operation: "Operation", work_centre: "Work centre", planned: "Planned (min)", dates: "Dates", actual: "Actual (min)", done: "Done",
-       setup: "setup", output: "Output", lot: "Lot number", serials: "Serial numbers", notes: "Notes",
-       subassemblies: "Subassemblies with their own order", printed: "Printed", page: "Page", vat: "VAT",
-       cancelled: "CANCELLED", prio: (low: "Low", normal: "Normal", expedite: "Expedite")),
-  de: (title: "Fertigungsauftrag", number: "Nummer", product: "Produkt", quantity: "Menge", bom: "Stücklistenrevision", division: "Abteilung", ready: "Fertig bis",
-       order: "Kundenauftrag", customer: "Kunde", priority: "Priorität", parent: "Teil von", remark: "Hinweis für die Fertigung",
-       components: "Komponenten", pos: "Pos.", code: "Artikel", description: "Beschreibung", qty: "Menge", picked: "Entnommen",
-       operations: "Arbeitsgänge", operation: "Arbeitsgang", work_centre: "Arbeitsplatz", planned: "Geplant (Min.)", dates: "Termine", actual: "Ist (Min.)", done: "Erledigt",
-       setup: "Rüsten", output: "Ergebnis", lot: "Chargennummer", serials: "Seriennummern", notes: "Bemerkungen",
-       subassemblies: "Baugruppen mit eigenem Auftrag", printed: "Gedruckt", page: "Seite", vat: "MwSt.",
-       cancelled: "STORNIERT", prio: (low: "Niedrig", normal: "Normal", expedite: "Eilig")),
-  es: (title: "Orden de producción", number: "Número", product: "Producto", quantity: "Cantidad", bom: "Revisión de la lista de materiales", division: "División", ready: "Listo para",
-       order: "Pedido de venta", customer: "Cliente", priority: "Prioridad", parent: "Parte de", remark: "Observación para producción",
-       components: "Componentes", pos: "Pos.", code: "Código", description: "Descripción", qty: "Cant.", picked: "Recogido",
-       operations: "Operaciones", operation: "Operación", work_centre: "Puesto de trabajo", planned: "Previsto (min)", dates: "Fechas", actual: "Real (min)", done: "Hecho",
-       setup: "preparación", output: "Resultado", lot: "Número de lote", serials: "Números de serie", notes: "Observaciones",
-       subassemblies: "Subconjuntos con su propia orden", printed: "Impreso", page: "Página", vat: "IVA",
-       cancelled: "CANCELADO", prio: (low: "Baja", normal: "Normal", expedite: "Urgente")),
-)
-#let l = labels.at(d.language, default: labels.en)
+// Labels in the document language with English for missing ones (ADR 0101): written by the
+// renderer from the translation catalogue (crates/core/i18n/documents, company overrides).
+#let l = json("labels.json")
 
 #set document(title: l.title + " " + d.number)
-#set text(size: 9.5pt, lang: if d.language in ("nl", "fr", "de", "es") { d.language } else { "en" })
+#set text(size: 9.5pt, lang: d.language)
 #set page(
   paper: "a4",
   margin: (x: 16mm, top: 16mm, bottom: 20mm),
@@ -84,7 +49,7 @@
   (l.ready, d.planned_ready_date),
   (l.order, d.order_number),
   (l.customer, d.customer),
-  (l.priority, l.prio.at(d.priority, default: d.priority)),
+  (l.priority, l.at("prio." + d.priority, default: d.priority)),
   (l.parent, d.parent_number),
 ).filter(f => f.at(1) != "")
 #table(

@@ -6,6 +6,12 @@ VALUES ('00000000-0000-7000-8000-000000000001', 'Demo Manufacturing BV', 'BE0123
         'Industrieweg 1', '9000', 'Gent', 'BE', 'EUR', 'sales@example.com', '+32 9 000 00 00',
         'BE68 5390 0754 7034', true);
 
+-- The demo company writes in five languages (ADR 0101); the insert above gave it only its default.
+DELETE FROM core.company_languages WHERE company_id = '00000000-0000-7000-8000-000000000001';
+INSERT INTO core.company_languages (company_id, language, sort_order)
+SELECT '00000000-0000-7000-8000-000000000001', l, (o - 1)::int
+FROM unnest(ARRAY['nl', 'fr', 'en', 'de', 'es']) WITH ORDINALITY AS t (l, o);
+
 INSERT INTO core.users (id, email, display_name) VALUES
     ('00000000-0000-7000-8000-000000000101', 'admin@example.com', 'Admin User'),
     ('00000000-0000-7000-8000-000000000102', 'sales@example.com', 'Sales User'),

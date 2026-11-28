@@ -124,7 +124,8 @@ class PriceListsPage extends ConsumerWidget {
                               key: ValueKey('pl-open-${p.code}'),
                               tooltip: l.plOpen,
                               icon: const Icon(AppIcons.accountTree),
-                              onPressed: () => context.go('/price-lists/${p.id}'),
+                              onPressed: () =>
+                                  context.go('/price-lists/${p.id}'),
                             ),
                             if (canWrite) ...[
                               IconButton(
@@ -165,6 +166,14 @@ class _PriceListDialogState extends ConsumerState<PriceListDialog> {
   late final _name = TextEditingController(text: widget.list?.name);
   late DateTime _validFrom = widget.list?.validFrom ?? DateTime.now();
   late bool _showLogo = widget.list?.settings.showLogo ?? true;
+  // How an import reads positions and group titles for this list (ADR 0100).
+  late int _groupLevels = widget.list?.settings.importGroupLevels ?? 2;
+  late ImportTitleConflict _titleConflict =
+      widget.list?.settings.importTitleConflict ??
+      ImportTitleConflict.lowestPosition;
+  late ImportShortPosition _shortPosition =
+      widget.list?.settings.importShortPosition ??
+      ImportShortPosition.shallowerGroup;
   bool _busy = false;
   String? _error;
 
@@ -206,6 +215,9 @@ class _PriceListDialogState extends ConsumerState<PriceListDialog> {
         footerText: old?.footerText ?? '',
         showUnit: old?.showUnit ?? true,
         showLogo: _showLogo,
+        importGroupLevels: _groupLevels,
+        importTitleConflict: _titleConflict,
+        importShortPosition: _shortPosition,
       ),
     );
     final products = ref.read(apiProvider).products;
@@ -262,12 +274,78 @@ class _PriceListDialogState extends ConsumerState<PriceListDialog> {
                 value: _showLogo,
                 onChanged: (v) => setState(() => _showLogo = v),
               ),
+              ExpansionTile(
+                key: const ValueKey('pl-import-settings'),
+                tilePadding: EdgeInsets.zero,
+                title: Text(l.plImportSettings),
+                subtitle: Text(
+                  l.plImportSettingsHelp,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                children: [
+                  DropdownButtonFormField<int>(
+                    key: const ValueKey('pl-import-levels'),
+                    initialValue: _groupLevels,
+                    decoration: InputDecoration(labelText: l.plImportLevels),
+                    items: [
+                      for (var n = 1; n <= 4; n++)
+                        DropdownMenuItem(value: n, child: Text('$n')),
+                    ],
+                    onChanged: (v) => setState(() => _groupLevels = v ?? 2),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<ImportTitleConflict>(
+                    key: const ValueKey('pl-import-titles'),
+                    isExpanded: true,
+                    initialValue: _titleConflict,
+                    decoration: InputDecoration(labelText: l.plImportTitles),
+                    items: [
+                      DropdownMenuItem(
+                        value: ImportTitleConflict.lowestPosition,
+                        child: Text(l.plImportTitlesLowest),
+                      ),
+                      DropdownMenuItem(
+                        value: ImportTitleConflict.firstRow,
+                        child: Text(l.plImportTitlesFirst),
+                      ),
+                      DropdownMenuItem(
+                        value: ImportTitleConflict.error,
+                        child: Text(l.plImportTitlesError),
+                      ),
+                    ],
+                    onChanged: (v) =>
+                        setState(() => _titleConflict = v ?? _titleConflict),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<ImportShortPosition>(
+                    key: const ValueKey('pl-import-short'),
+                    isExpanded: true,
+                    initialValue: _shortPosition,
+                    decoration: InputDecoration(labelText: l.plImportShort),
+                    items: [
+                      DropdownMenuItem(
+                        value: ImportShortPosition.shallowerGroup,
+                        child: Text(l.plImportShortShallower),
+                      ),
+                      DropdownMenuItem(
+                        value: ImportShortPosition.error,
+                        child: Text(l.plImportShortError),
+                      ),
+                    ],
+                    onChanged: (v) =>
+                        setState(() => _shortPosition = v ?? _shortPosition),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
                     _error!,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                 ),
             ],

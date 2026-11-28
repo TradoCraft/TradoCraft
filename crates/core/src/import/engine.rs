@@ -17,7 +17,10 @@ use crate::auth::CurrentUser;
 use crate::csv_io::{self, ImportParams, ImportReport, RowError};
 use crate::error::{AppError, AppResult};
 use crate::import::importable::{Importable, NoProgress, Phase, Progress};
-use crate::import::{download, read_table, write, CellValue, Cells, Format, Limits, Table};
+use crate::import::{
+    composite_key, download, key_parts, read_table, write, Cells, ExportTable, Format, Limits,
+    Table,
+};
 use crate::{audit, new_id};
 
 /// How often (in rows) the progress sink is told how far an import is.
@@ -88,8 +91,15 @@ fn tick(progress: &dyn Progress, phase: Phase, done: usize, total: usize) {
 
 /// What an import does with one valid row.
 enum Action<E: Importable> {
-    Create { key: String, change: E::Change },
-    Update { id: Uuid, change: E::Change },
+    Create {
+        key: String,
+        change: E::Change,
+    },
+    Update {
+        id: Uuid,
+        key: String,
+        change: E::Change,
+    },
 }
 
 /// The outcome of checking a whole file: what to write and what was found wrong.
@@ -110,6 +120,20 @@ fn limit_reached(width_errors: &[RowError], planned: usize, line: usize) -> bool
     planned + earlier >= csv_io::MAX_REPORTED_ERRORS
 }
 
+/// The key of a row: the trimmed values of the key columns ([`composite_key`]); None when one of
+/// them is missing.
+fn row_key<E: Importable>(row: &crate::import::Row) -> Option<String> {
+    let parts: Option<Vec<&str>> = E::KEY_COLUMNS.iter().map(|c| row.get_trimmed(c)).collect();
+    Some(composite_key(&parts?))
+}
+
+/// A key as a person reads it: its parts joined with ` / `.
+fn shown_key(key: &str, count: usize) -> String {
+    key_parts(key, count)
+        .map(|p| p.join(" / "))
+        .unwrap_or_else(|| key.to_string())
+}
+
 /// Checks every row against the database and decides what each one would do.
 async fn plan<E: Importable>(
     conn: &mut PgConnection,
@@ -117,12 +141,7 @@ async fn plan<E: Importable>(
     table: &Table,
     progress: &dyn Progress,
 ) -> AppResult<Plan<E>> {
-    let keys: Vec<String> = table
-        .rows
-        .iter()
-        .filter_map(|r| r.get_trimmed(E::KEY_COLUMN))
-        .map(str::to_string)
-        .collect();
+    let keys: Vec<String> = table.rows.iter().filter_map(row_key::<E>).collect();
     let stored: HashMap<String, E::Stored> =
         E::load(conn, user, &keys).await?.into_iter().collect();
     let mut context = E::context(conn, user, table).await?;
@@ -159,19 +178,23 @@ async fn plan_one<E: Importable>(
 ) -> AppResult<()> {
     let mut cells = Cells::new(row, &mut plan.errors);
     let before = cells.error_count();
-    let Some(key) = cells.trimmed(E::KEY_COLUMN).value() else {
-        cells.error(
-            Some(E::KEY_COLUMN),
-            format!("{} is required", E::KEY_COLUMN),
-        );
+    let mut missing = false;
+    for column in E::KEY_COLUMNS {
+        if cells.trimmed(column).value().is_none() {
+            cells.error(Some(column), format!("{column} is required"));
+            missing = true;
+        }
+    }
+    let Some(key) = row_key::<E>(row).filter(|_| !missing) else {
         return Ok(());
     };
     if let Some(first) = seen.insert(key.clone(), row.line) {
         cells.error(
-            Some(E::KEY_COLUMN),
+            Some(E::KEY_COLUMNS[0]),
             format!(
-                "{} {key} appears twice (first on line {first})",
-                E::KEY_COLUMN
+                "{} {} appears twice (first on line {first})",
+                E::KEY_COLUMNS.join(" / "),
+                shown_key(&key, E::KEY_COLUMNS.len())
             ),
         );
         return Ok(());
@@ -185,6 +208,7 @@ async fn plan_one<E: Importable>(
         Some(c) if E::unchanged(c, &change) => plan.unchanged += 1,
         Some(c) => plan.actions.push(Action::Update {
             id: E::stored_id(c),
+            key,
             change,
         }),
         None => plan.actions.push(Action::Create { key, change }),
@@ -192,12 +216,11 @@ async fn plan_one<E: Importable>(
     Ok(())
 }
 
-/// The `data` of an audit event: `extra` fields, the source of the file and the job, if any.
-fn audit_data(options: &RunOptions<'_>, extra: Option<(&str, &str)>) -> serde_json::Value {
-    let mut data = serde_json::Map::new();
-    if let Some((k, v)) = extra {
-        data.insert(k.to_string(), v.into());
-    }
+/// The `data` of an audit event: the entity's fields, the source of the file and the job, if any.
+fn audit_data(
+    options: &RunOptions<'_>,
+    mut data: serde_json::Map<String, serde_json::Value>,
+) -> serde_json::Value {
     data.insert("source".into(), options.format.audit_source().into());
     if let Some(job) = options.import_job {
         data.insert("import_job".into(), job.to_string().into());
@@ -267,13 +290,15 @@ async fn attempt<E: Importable>(
             Action::Create { key, change } => {
                 let id = new_id();
                 E::create(&mut tx, user, id, &change).await?;
-                let data = audit_data(options, Some((E::KEY_COLUMN, &key)));
-                audit::record(&mut tx, user, E::AUDIT_ENTITY, id, "created", data).await?;
+                let event = E::audit_event(id, &key, &change, true);
+                let data = audit_data(options, event.data);
+                audit::record(&mut tx, user, event.entity, event.id, event.action, data).await?;
             }
-            Action::Update { id, change } => {
+            Action::Update { id, key, change } => {
                 E::update(&mut tx, user, id, &change).await?;
-                let data = audit_data(options, None);
-                audit::record(&mut tx, user, E::AUDIT_ENTITY, id, "updated", data).await?;
+                let event = E::audit_event(id, &key, &change, false);
+                let data = audit_data(options, event.data);
+                audit::record(&mut tx, user, event.entity, event.id, event.action, data).await?;
             }
         }
         tick(options.progress, Phase::Writing, n + 1, total);
@@ -299,9 +324,10 @@ pub async fn run_import<E: Importable>(
     csv_io::with_replan(|| attempt::<E>(pool, user, table, options)).await
 }
 
-/// The names of the columns of an entity, in export order.
-pub fn column_names<E: Importable>() -> Vec<&'static str> {
-    E::COLUMNS.iter().map(|c| c.name).collect()
+/// The fields a file of the entity is bound against, in export order: the column names, and
+/// `<prefix>_*` for a per-language family (see [`crate::import::is_known_field`]).
+pub fn column_names<E: Importable>() -> Vec<String> {
+    E::COLUMNS.iter().map(|c| c.field()).collect()
 }
 
 /// The HTTP side of an import: checks the write permission, reads `body` (any of the three
@@ -317,12 +343,14 @@ pub async fn import_request<E: Importable>(
     let (bytes, sheet) = (body.to_vec(), params.sheet.clone());
     // Parsing is CPU work on up to a request's worth of file: keep it off the async threads.
     let read = tokio::task::spawn_blocking(move || {
+        let known = column_names::<E>();
+        let known: Vec<&str> = known.iter().map(String::as_str).collect();
         read_table(
             &bytes,
             sheet.as_deref(),
             &Limits::request(),
-            &column_names::<E>(),
-            &[E::KEY_COLUMN],
+            &known,
+            E::KEY_COLUMNS,
             None,
         )
     })
@@ -366,11 +394,11 @@ pub struct ExportParams {
     pub format: Option<ExportFormat>,
 }
 
-/// The typed rows of an export as `user` (checks the read permission).
+/// The header and typed rows of an export as `user` (checks the read permission).
 pub async fn export_rows<E: Importable>(
     pool: &PgPool,
     user: &CurrentUser,
-) -> AppResult<Vec<Vec<CellValue>>> {
+) -> AppResult<ExportTable> {
     user.require(E::READ)?;
     E::export(pool, user).await
 }
@@ -383,9 +411,10 @@ pub async fn export_request<E: Importable>(
     params: &ExportParams,
 ) -> AppResult<(HeaderMap, Vec<u8>)> {
     let format = Format::from(params.format.unwrap_or_default());
-    let rows = export_rows::<E>(pool, user).await?;
+    let table = export_rows::<E>(pool, user).await?;
     let body = tokio::task::spawn_blocking(move || {
-        write(format, E::FILE_STEM, &column_names::<E>(), rows)
+        let header: Vec<&str> = table.header.iter().map(String::as_str).collect();
+        write(format, E::FILE_STEM, &header, table.rows)
     })
     .await
     .map_err(|e| AppError::Internal(e.into()))??;
@@ -446,8 +475,10 @@ mod tests {
         let job = Uuid::nil();
         let options = RunOptions::new(Format::Xlsx).dry_run(true).import_job(job);
         assert!(options.dry_run);
+        let mut extra = serde_json::Map::new();
+        extra.insert("code".into(), "C1".into());
         assert_eq!(
-            audit_data(&options, Some(("code", "C1"))),
+            audit_data(&options, extra),
             serde_json::json!({
                 "code": "C1",
                 "source": "xlsx_import",
@@ -456,13 +487,30 @@ mod tests {
         );
         let plain = RunOptions::new(Format::Csv);
         assert_eq!(
-            audit_data(&plain, None),
+            audit_data(&plain, Default::default()),
             serde_json::json!({ "source": "csv_import" })
         );
         assert_eq!(
-            audit_data(&RunOptions::new(Format::Ods), None)["source"],
+            audit_data(&RunOptions::new(Format::Ods), Default::default())["source"],
             "ods_import"
         );
+    }
+
+    #[test]
+    fn a_key_of_several_columns_is_shown_with_slashes() {
+        let key = composite_key(&["P-100", "Z1", "2027-01-01"]);
+        assert_eq!(shown_key(&key, 3), "P-100 / Z1 / 2027-01-01");
+        assert_eq!(shown_key("C1", 1), "C1");
+        // No value can fake a boundary between parts.
+        let odd = composite_key(&["A\u{1f}B", "\",\""]);
+        assert_eq!(
+            key_parts(&odd, 2),
+            Some(vec!["A\u{1f}B".to_string(), "\",\"".to_string()])
+        );
+        assert_ne!(odd, composite_key(&["A", "B\u{1f}\",\""]));
+        assert_eq!(composite_key(&["C1"]), "C1");
+        assert_eq!(key_parts("C1", 1), Some(vec!["C1".to_string()]));
+        assert_eq!(key_parts("C1", 2), None);
     }
 
     #[test]

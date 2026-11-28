@@ -16,6 +16,7 @@ class ProvisionSpec {
     required this.currency,
     required this.defaultLanguage,
     required this.name,
+    this.languages,
     this.legalName,
     this.vatNumber,
   });
@@ -37,9 +38,14 @@ class ProvisionSpec {
   /// ISO 4217 currency code.
   final String currency;
 
-  /// One of nl, fr, en, de, es.
+  /// ISO 639-1 code of the company's default language.
   @JsonKey(name: 'default_language')
   final String defaultLanguage;
+
+  /// The company's content languages in display order (ISO 639-1); the default language is.
+  /// added in front when missing. Empty: only the default language (ADR 0101).
+  @JsonKey(includeIfNull: false)
+  final List<String>? languages;
 
   /// Registered name when it differs from `name`.
   @JsonKey(includeIfNull: false,name: 'legal_name')

@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../api/generated/export.dart';
 import '../l10n/l10n.dart';
+import '../l10n/runtime_l10n.dart';
+import 'portal_languages.dart';
 import 'portal_csat.dart';
 import 'portal_help.dart';
 import 'portal_orders.dart';
@@ -110,10 +112,13 @@ class PortalApp extends ConsumerWidget {
       ),
       routerConfig: ref.watch(portalRouterProvider),
       locale: ref.watch(portalLocaleProvider),
-      supportedLocales: AppLocalizations.supportedLocales,
+      // Shipped languages plus those the company installed as catalogues (ADR 0101).
+      supportedLocales: interfaceLocales(
+        ref.watch(portalInstalledLanguagesProvider).value ?? const [],
+      ),
       localizationsDelegates: [
-        AppLocalizations.delegate,
-        ...GlobalMaterialLocalizations.delegates,
+        RuntimeLocalizationsDelegate(ref.watch(portalRuntimeCataloguesProvider)),
+        ...fallbackFlutterDelegates,
       ],
       onGenerateTitle: (context) => context.l10n.portalTitle,
     );

@@ -36,7 +36,7 @@ class RuleConditions {
   @JsonKey(includeIfNull: false,name: 'customer_id')
   final String? customerId;
 
-  /// The language of the customer (nl, fr, en, de, es).
+  /// The language of the customer (ISO 639-1 codes).
   @JsonKey(includeIfNull: false,name: 'customer_languages')
   final List<String>? customerLanguages;
 
@@ -60,7 +60,7 @@ class RuleConditions {
   @JsonKey(includeIfNull: false,name: 'team_id')
   final String? teamId;
 
-  /// The language of the ticket itself (nl, fr, en, de, es), which may differ from its customer's.
+  /// The language of the ticket itself (ISO 639-1 codes), which may differ from its customer's.
   @JsonKey(includeIfNull: false,name: 'ticket_languages')
   final List<String>? ticketLanguages;
 

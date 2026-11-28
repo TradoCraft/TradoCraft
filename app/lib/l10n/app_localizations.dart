@@ -16578,6 +16578,36 @@ abstract class AppLocalizations {
   /// **'Every field has a column.'**
   String get impAllMapped;
 
+  /// No description provided for @impFixedValues.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixed values'**
+  String get impFixedValues;
+
+  /// No description provided for @impFixedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A fixed value fills a field in every row, read like a cell of the file (a date as 2027-01-01).'**
+  String get impFixedHelp;
+
+  /// No description provided for @impAddFixed.
+  ///
+  /// In en, this message translates to:
+  /// **'Add fixed value'**
+  String get impAddFixed;
+
+  /// No description provided for @impFixedValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get impFixedValue;
+
+  /// No description provided for @impRemoveFixed.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the fixed value of {field}'**
+  String impRemoveFixed(String field);
+
   /// No description provided for @impMappingsMenu.
   ///
   /// In en, this message translates to:
@@ -17825,6 +17855,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Print the company logo'**
   String get plShowLogo;
+
+  /// No description provided for @plImportSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get plImportSettings;
+
+  /// No description provided for @plImportSettingsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'How an import of price list items reads positions and group titles.'**
+  String get plImportSettingsHelp;
+
+  /// No description provided for @plImportLevels.
+  ///
+  /// In en, this message translates to:
+  /// **'Group levels in a position'**
+  String get plImportLevels;
+
+  /// No description provided for @plImportTitles.
+  ///
+  /// In en, this message translates to:
+  /// **'When rows give a group different titles'**
+  String get plImportTitles;
+
+  /// No description provided for @plImportTitlesLowest.
+  ///
+  /// In en, this message translates to:
+  /// **'The row with the lowest position wins'**
+  String get plImportTitlesLowest;
+
+  /// No description provided for @plImportTitlesFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'The first row of the file wins'**
+  String get plImportTitlesFirst;
+
+  /// No description provided for @plImportTitlesError.
+  ///
+  /// In en, this message translates to:
+  /// **'Report an error'**
+  String get plImportTitlesError;
+
+  /// No description provided for @plImportShort.
+  ///
+  /// In en, this message translates to:
+  /// **'A position with fewer group levels'**
+  String get plImportShort;
+
+  /// No description provided for @plImportShortShallower.
+  ///
+  /// In en, this message translates to:
+  /// **'Put the item in the group it names'**
+  String get plImportShortShallower;
+
+  /// No description provided for @plImportShortError.
+  ///
+  /// In en, this message translates to:
+  /// **'Report an error'**
+  String get plImportShortError;
 
   /// No description provided for @plProductCount.
   ///
@@ -21149,6 +21239,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{label}, {count} rows, collapsed'**
   String listGroupCollapsed(String label, int count);
+
+  /// No description provided for @adminLanguagesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Content languages'**
+  String get adminLanguagesTitle;
+
+  /// No description provided for @adminLanguagesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The languages your company writes and prints in: product texts, price lists, knowledge base, answers, mails and documents. Language pickers offer these languages in this order.'**
+  String get adminLanguagesHelp;
+
+  /// No description provided for @adminLanguagesDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get adminLanguagesDefault;
+
+  /// No description provided for @adminLanguagesMakeDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Make default'**
+  String get adminLanguagesMakeDefault;
+
+  /// No description provided for @adminLanguagesRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove language'**
+  String get adminLanguagesRemove;
+
+  /// No description provided for @adminLanguagesAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add language'**
+  String get adminLanguagesAdd;
+
+  /// No description provided for @adminLanguagesSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name or code'**
+  String get adminLanguagesSearch;
+
+  /// No description provided for @adminLanguagesSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Languages saved'**
+  String get adminLanguagesSaved;
+
+  /// No description provided for @adminTranslations.
+  ///
+  /// In en, this message translates to:
+  /// **'Translations'**
+  String get adminTranslations;
+
+  /// No description provided for @translationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Translations'**
+  String get translationsTitle;
+
+  /// No description provided for @translationsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an interface language or correct texts without a new release: export the English template, translate it and import the file. Texts missing in a language are shown in English.'**
+  String get translationsHelp;
+
+  /// No description provided for @translationsDomainApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Interface'**
+  String get translationsDomainApp;
+
+  /// No description provided for @translationsDomainDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get translationsDomainDocuments;
+
+  /// No description provided for @translationsDomainMail.
+  ///
+  /// In en, this message translates to:
+  /// **'System mails'**
+  String get translationsDomainMail;
+
+  /// No description provided for @translationsExportTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Export English template'**
+  String get translationsExportTemplate;
+
+  /// No description provided for @translationsImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import file'**
+  String get translationsImport;
+
+  /// No description provided for @translationsExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get translationsExport;
+
+  /// No description provided for @translationsDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove company texts'**
+  String get translationsDelete;
+
+  /// No description provided for @translationsShipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Included'**
+  String get translationsShipped;
+
+  /// No description provided for @translationsCompanyTexts.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{no company texts} =1{1 company text} other{{count} company texts}}'**
+  String translationsCompanyTexts(int count);
+
+  /// No description provided for @translationsSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Translations saved'**
+  String get translationsSaved;
+
+  /// No description provided for @translationsDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Company texts removed'**
+  String get translationsDeleted;
+
+  /// No description provided for @translationsExported.
+  ///
+  /// In en, this message translates to:
+  /// **'File exported'**
+  String get translationsExported;
+
+  /// No description provided for @translationsBadFile.
+  ///
+  /// In en, this message translates to:
+  /// **'The file is not an ARB or JSON file with texts.'**
+  String get translationsBadFile;
+
+  /// No description provided for @translationsBadKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown keys or invalid messages: {keys}'**
+  String translationsBadKeys(String keys);
+
+  /// No description provided for @translationsMissingOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing only'**
+  String get translationsMissingOnly;
 }
 
 class _AppLocalizationsDelegate

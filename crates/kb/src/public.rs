@@ -26,7 +26,7 @@ const CACHE: &str = "public, max-age=300";
 
 #[derive(Debug, Deserialize, IntoParams)]
 pub struct LanguageParams {
-    /// nl | fr | en | de | es (default: the company's language)
+    /// ISO 639-1 code (default: the company's language)
     pub language: Option<String>,
 }
 
@@ -37,7 +37,7 @@ pub struct BrowseParams {
     /// Includes the sub-categories of this category.
     pub category_id: Option<Uuid>,
     pub tag: Option<String>,
-    /// nl | fr | en | de | es (default: the company's language)
+    /// ISO 639-1 code (default: the company's language)
     pub language: Option<String>,
     pub limit: Option<i64>,
     pub offset: Option<i64>,
@@ -65,7 +65,7 @@ pub fn language(p: Option<&str>, default: &str) -> AppResult<String> {
     match p.map(str::trim).filter(|l| !l.is_empty()) {
         Some(l) if is_language(l) => Ok(l.to_string()),
         Some(_) => Err(AppError::Validation(
-            "language must be one of nl, fr, en, de, es".into(),
+            "language must be an ISO 639-1 language code".into(),
         )),
         None => Ok(default.to_string()),
     }

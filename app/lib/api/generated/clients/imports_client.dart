@@ -8,6 +8,7 @@ import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 
 import '../models/create_job.dart';
+import '../models/format.dart';
 import '../models/import_description.dart';
 import '../models/import_file.dart';
 import '../models/import_job.dart';
@@ -25,6 +26,16 @@ abstract class ImportsClient {
   /// The entities the caller may import, with their columns.
   @GET('/api/v1/imports/entities')
   Future<List<ImportDescription>> listImportEntities();
+
+  /// An export of the entity in the columns of its import (`format` csv, xlsx or ods): what an.
+  /// import of the same file leaves unchanged. Needs the read permission of the entity.
+  ///
+  /// [format] - `csv` (default), `xlsx` or `ods`.
+  @GET('/api/v1/imports/entities/{key}/export')
+  Future<String> exportImportEntity({
+    @Path('key') required String key,
+    @Query('format') Format? format,
+  });
 
   /// Uploads a file (CSV, XLSX or ODS, at most 50 MiB): the request body is the file itself. A file.
   /// of another type, or one that exceeds the archive limits, is refused and not stored.

@@ -10,7 +10,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgConnection};
 use tradocraft_core::{
-    audit, is_language, new_id, AppError, AppResult, AppState, CurrentUser, Permission, LANGUAGES,
+    audit, is_language, new_id, AppError, AppResult, AppState, CurrentUser, Permission,
 };
 use utoipa::{IntoParams, ToSchema};
 use utoipa_axum::router::OpenApiRouter;
@@ -73,7 +73,7 @@ async fn check_team(
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow, ToSchema)]
 pub struct AnswerText {
-    /// nl | fr | en | de | es
+    /// ISO 639-1 code
     pub language: String,
     #[serde(default)]
     pub subject: String,
@@ -164,7 +164,10 @@ async fn texts(conn: &mut PgConnection, ids: &[Uuid]) -> AppResult<Vec<(Uuid, An
     let rows: Vec<T> = sqlx::query_as(
         "SELECT answer_id, language::text AS language, subject, body FROM helpdesk.prepared_answer_texts
          WHERE answer_id = ANY($1)
-         ORDER BY array_position(ARRAY['nl','fr','en','de','es'], language::text)",
+         ORDER BY core.language_order(
+                      (SELECT a.company_id FROM helpdesk.prepared_answers a WHERE a.id = answer_id),
+                      language::text),
+                  language",
     )
     .bind(ids)
     .fetch_all(conn)
@@ -237,10 +240,9 @@ impl PreparedAnswerInput {
         let mut seen = Vec::new();
         for t in &filled {
             if !is_language(&t.language) {
-                return Err(AppError::Validation(format!(
-                    "language must be one of {}",
-                    LANGUAGES.join(", ")
-                )));
+                return Err(AppError::Validation(
+                    "language must be an ISO 639-1 language code".to_string(),
+                ));
             }
             if seen.contains(&t.language) {
                 return Err(AppError::Validation(format!(
@@ -437,14 +439,9 @@ pub fn pick_text<'a>(
     language: &str,
     company_default: &str,
 ) -> Option<(&'a AnswerText, bool)> {
-    let find = |l: &str| texts.iter().find(|t| t.language == l);
-    if let Some(t) = find(language) {
-        return Some((t, false));
-    }
-    find("en")
-        .or_else(|| find(company_default))
-        .or_else(|| texts.first())
-        .map(|t| (t, true))
+    let langs: Vec<&str> = texts.iter().map(|t| t.language.as_str()).collect();
+    let chain = tradocraft_core::languages::fallback_chain(language, company_default, &[]);
+    tradocraft_core::languages::pick(&langs, &chain).map(|(i, fallback)| (&texts[i], fallback))
 }
 
 /// What the ranking needs to know about one answer.
