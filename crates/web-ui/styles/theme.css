@@ -234,6 +234,60 @@ select {
 }
 
 /* App Shell */
+.tc-app-frame {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.tc-env-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px var(--space-md);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.tc-env-banner-test {
+  background: #c79100;
+  color: #000000;
+}
+
+:root[data-theme="light"] .tc-env-banner-test {
+  background: #fbc02d;
+  color: #000000;
+}
+
+.tc-env-banner-tutorial {
+  background: #1b5e20;
+  color: #ffffff;
+}
+
+:root[data-theme="light"] .tc-env-banner-tutorial {
+  background: #2e7d32;
+  color: #ffffff;
+}
+
+.tc-worker-banner {
+  display: flex;
+  align-items: center;
+  padding: 6px var(--space-md);
+  font-size: 13px;
+  font-weight: 500;
+  background: #8a5a00;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+:root[data-theme="light"] .tc-worker-banner {
+  background: #ffe0a3;
+  color: #000000;
+}
+
 .tc-shell {
   display: grid;
   grid-template-rows: 48px 36px 1fr;
@@ -242,7 +296,8 @@ select {
     "topbar topbar"
     "sidebar tabbar"
     "sidebar main";
-  height: 100vh;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -642,4 +697,111 @@ select {
 
 .tc-row-selected {
   background: var(--primary-container);
+}
+
+/* Home Overview */
+.tc-home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-lg);
+  align-items: start;
+}
+
+.tc-home-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.tc-home-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.tc-home-card-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.tc-home-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.tc-home-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: 6px var(--space-sm);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--outline-variant);
+  background: var(--surface-container);
+  font-size: 13px;
+}
+
+.tc-home-list-btn {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+
+.tc-home-list-btn:hover {
+  background: var(--surface-container-high);
+}
+
+/* Company Bootstrap Setup */
+.tc-setup-wrap {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-xl);
+  background:
+    radial-gradient(circle at top right, rgba(47, 93, 98, 0.22), transparent 45%),
+    var(--surface);
+}
+
+.tc-setup-card {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.tc-setup-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.tc-setup-step {
+  padding: 4px var(--space-sm);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--outline-variant);
+  background: var(--surface-container);
+  color: var(--on-surface-variant);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tc-setup-step-active {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+  border-color: var(--primary);
+  font-weight: 600;
+}
+
+.tc-setup-step-done {
+  background: var(--success-container);
+  color: var(--success);
+  border-color: var(--success);
 }

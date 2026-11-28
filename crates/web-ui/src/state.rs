@@ -1,4 +1,5 @@
 use leptos::prelude::*;
+use tradocraft_api_client::{EnvironmentInfo, WorkerStatus};
 
 use crate::api::{ConnectionMode, Me};
 
@@ -46,6 +47,8 @@ pub struct AppContext {
     pub theme: RwSignal<ThemeMode>,
     pub tabs: RwSignal<Vec<WorkspaceTab>>,
     pub active_tab: RwSignal<Option<String>>,
+    pub environment: RwSignal<Option<EnvironmentInfo>>,
+    pub worker_status: RwSignal<Option<WorkerStatus>>,
 }
 
 impl AppContext {
@@ -56,6 +59,8 @@ impl AppContext {
             theme: RwSignal::new(ThemeMode::Dark),
             tabs: RwSignal::new(Vec::new()),
             active_tab: RwSignal::new(None),
+            environment: RwSignal::new(None),
+            worker_status: RwSignal::new(None),
         }
     }
 
@@ -80,6 +85,7 @@ impl AppContext {
         self.session.set(None);
         self.tabs.set(Vec::new());
         self.active_tab.set(None);
+        self.worker_status.set(None);
     }
 }
 

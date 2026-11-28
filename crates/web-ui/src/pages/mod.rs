@@ -2,6 +2,7 @@ pub mod admin;
 pub mod answers;
 pub mod customers;
 pub mod helpdesk;
+pub mod home;
 pub mod kb;
 pub mod kb_staff;
 pub mod login;
@@ -10,6 +11,7 @@ pub mod placeholder;
 pub mod portal;
 pub mod products;
 pub mod quotations;
+pub mod setup;
 pub mod suppliers;
 pub mod todo;
 

@@ -4,10 +4,14 @@ use std::sync::Arc;
 use leptos::ev::SubmitEvent;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
+use leptos_router::components::A;
 use leptos_router::hooks::use_navigate;
 use leptos_router::NavigateOptions;
+use tradocraft_api_client::Client;
 
-use crate::api::{ApiClient, Auth, ConnectionMode, MockApiClient, WebApiClient};
+use crate::api::{resolve_base_url, ApiClient, Auth, ConnectionMode, MockApiClient, WebApiClient};
+use crate::components::shell::app_href;
+use crate::pages::set_alive;
 use crate::state::{ActiveSession, AppContext};
 
 const DEMO_USERS: &[(&str, &str)] = &[
@@ -64,6 +68,7 @@ pub fn LoginPage() -> impl IntoView {
     let bearer = RwSignal::new(initial_token);
     let busy = RwSignal::new(false);
     let error = RwSignal::new(Option::<String>::None);
+    let needs_setup = RwSignal::new(false);
     let active = Arc::new(AtomicBool::new(true));
     on_cleanup({
         let active = Arc::clone(&active);
@@ -71,6 +76,20 @@ pub fn LoginPage() -> impl IntoView {
             active.store(false, Ordering::Release);
         }
     });
+
+    {
+        let resolved_probe = resolve_base_url(&base_url.get_untracked());
+        let active = Arc::clone(&active);
+        if !resolved_probe.is_empty() {
+            spawn_local(async move {
+                if let Ok(status) = Client::new(resolved_probe).setup_status().await {
+                    if active.load(Ordering::Acquire) {
+                        let _ = set_alive(needs_setup, status.needs_setup);
+                    }
+                }
+            });
+        }
+    }
 
     let on_submit = move |ev: SubmitEvent| {
         ev.prevent_default();
@@ -109,7 +128,7 @@ pub fn LoginPage() -> impl IntoView {
                     ctx.draft_connection.set(connection.clone());
                     ctx.session.set(Some(ActiveSession { connection, me }));
                     busy.set(false);
-                    nav("/products", NavigateOptions::default());
+                    nav("/home", NavigateOptions::default());
                 }
                 Err(err) => {
                     busy.set(false);
@@ -135,6 +154,17 @@ pub fn LoginPage() -> impl IntoView {
                 {move || error.get().map(|msg| view! {
                     <div class="tc-alert-error" role="alert" data-target="login-error">{msg}</div>
                 })}
+
+                <Show when=move || needs_setup.get()>
+                    <div class="tc-card" style="padding: var(--space-md); background: var(--surface-container);" data-target="login-setup-banner">
+                        <div style="font-size: 13px; margin-bottom: var(--space-xs);">
+                            "No company is set up on this server yet."
+                        </div>
+                        <A href=app_href("/setup") attr:class="tc-btn tc-btn-sm" attr:data-target="login-setup-link">
+                            "Set up first company"
+                        </A>
+                    </div>
+                </Show>
 
                 <div class="tc-field">
                     <label class="tc-label" for="login-server">"API Base URL (blank uses Trunk /api proxy)"</label>

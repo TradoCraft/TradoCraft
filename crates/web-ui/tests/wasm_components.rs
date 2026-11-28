@@ -4,11 +4,16 @@ use leptos::prelude::*;
 use leptos::task::tick;
 use leptos_router::components::Router;
 use leptos_router::components::Routes;
+use tradocraft_api_client::{EnvKind, EnvironmentInfo, WorkerState, WorkerStatus};
 use tradocraft_web_ui::api::{Company, ConnectionMode, Me};
+use tradocraft_web_ui::components::banners::{EnvironmentBanner, WorkerBanner};
+use tradocraft_web_ui::components::shell::AppShell;
 use tradocraft_web_ui::components::tutorial_overlay::TutorialOverlay;
 use tradocraft_web_ui::pages::admin::AdminPage;
+use tradocraft_web_ui::pages::home::HomePage;
 use tradocraft_web_ui::pages::login::LoginPage;
 use tradocraft_web_ui::pages::products::ProductsPage;
+use tradocraft_web_ui::pages::setup::SetupPage;
 use tradocraft_web_ui::state::{ActiveSession, AppContext};
 use tradocraft_web_ui::tutorial::TutorialState;
 use wasm_bindgen::JsCast;
@@ -246,4 +251,166 @@ async fn admin_page_with_one_section_shows_no_switcher() {
     assert!(guard
         .query("[data-target=\"admin-zones-load-error\"]")
         .is_some());
+}
+
+#[wasm_bindgen_test]
+async fn app_shell_gates_navigation_by_session_and_permissions() {
+    let guard = ContainerGuard::new();
+    let ctx = AppContext::new();
+    let _handle = leptos::mount::mount_to(guard.el().clone(), move || {
+        provide_context(ctx);
+        view! {
+            <Router>
+                <AppShell>
+                    <div>"body"</div>
+                </AppShell>
+            </Router>
+        }
+    });
+    tick().await;
+
+    // Signed-out visitors only see public destinations.
+    assert!(guard.query("[data-target=\"nav-kb\"]").is_some());
+    assert!(guard.query("[data-target=\"nav-portal\"]").is_some());
+    assert!(guard.query("[data-target=\"nav-home\"]").is_none());
+    assert!(guard.query("[data-target=\"nav-products\"]").is_none());
+    assert!(guard.query("[data-target=\"nav-admin\"]").is_none());
+
+    ctx.session.set(Some(ActiveSession {
+        connection: ConnectionMode::MockDemo,
+        me: me_with(&["products.read", "quotations.read"]),
+    }));
+    tick().await;
+
+    assert!(guard.query("[data-target=\"nav-home\"]").is_some());
+    assert!(guard.query("[data-target=\"nav-products\"]").is_some());
+    assert!(guard.query("[data-target=\"nav-quotations\"]").is_some());
+    assert!(guard.query("[data-target=\"nav-admin\"]").is_none());
+    assert!(guard.query("[data-target=\"nav-finance\"]").is_none());
+}
+
+#[wasm_bindgen_test]
+async fn home_page_renders_only_permitted_cards_and_empty_fallback() {
+    let guard = ContainerGuard::new();
+    let ctx = AppContext::new();
+    ctx.session.set(Some(ActiveSession {
+        connection: ConnectionMode::MockDemo,
+        me: me_with(&["products.read"]),
+    }));
+    let _handle = leptos::mount::mount_to(guard.el().clone(), move || {
+        provide_context(ctx);
+        view! {
+            <Router>
+                <HomePage />
+            </Router>
+        }
+    });
+    tick().await;
+
+    assert!(guard.query("[data-target=\"home-empty\"]").is_some());
+    assert!(guard.query("[data-target=\"home-card-todo\"]").is_none());
+    assert!(guard
+        .query("[data-target=\"home-card-helpdesk\"]")
+        .is_none());
+
+    ctx.session.set(Some(ActiveSession {
+        connection: ConnectionMode::MockDemo,
+        me: me_with(&["todo.use", "quotations.read"]),
+    }));
+    tick().await;
+
+    assert!(guard.query("[data-target=\"home-empty\"]").is_none());
+    assert!(guard.query("[data-target=\"home-card-todo\"]").is_some());
+    assert!(guard
+        .query("[data-target=\"home-card-quotations\"]")
+        .is_some());
+    assert!(guard
+        .query("[data-target=\"home-card-helpdesk\"]")
+        .is_none());
+    assert!(guard
+        .query("[data-target=\"home-card-purchasing\"]")
+        .is_none());
+}
+
+#[wasm_bindgen_test]
+async fn banners_reflect_environment_and_worker_state() {
+    let guard = ContainerGuard::new();
+    let ctx = AppContext::new();
+    let _handle = leptos::mount::mount_to(guard.el().clone(), move || {
+        provide_context(ctx);
+        view! {
+            <div>
+                <EnvironmentBanner />
+                <WorkerBanner />
+            </div>
+        }
+    });
+    tick().await;
+
+    assert!(guard.query("[data-target=\"env-banner\"]").is_none());
+    assert!(guard.query("[data-target=\"worker-banner\"]").is_none());
+
+    ctx.environment.set(Some(EnvironmentInfo {
+        name: "tutorial".into(),
+        kind: EnvKind::Tutorial,
+        db_name: "db".into(),
+        version: "0.4.0".into(),
+        instance_id: "inst".into(),
+    }));
+    ctx.worker_status.set(Some(WorkerStatus {
+        state: WorkerState::NeverSeen,
+        last_beat_at: None,
+        age_seconds: None,
+        started_at: None,
+        interval_seconds: None,
+        late_after_seconds: None,
+        version: None,
+        host: None,
+        last_outage: None,
+    }));
+    tick().await;
+
+    assert!(guard
+        .query("[data-target=\"env-banner-tutorial\"]")
+        .is_some());
+    assert!(guard.query("[data-target=\"worker-banner\"]").is_some());
+
+    ctx.environment.set(Some(EnvironmentInfo {
+        name: "prod".into(),
+        kind: EnvKind::Live,
+        db_name: "db".into(),
+        version: "0.4.0".into(),
+        instance_id: "inst".into(),
+    }));
+    ctx.worker_status.set(Some(WorkerStatus {
+        state: WorkerState::Running,
+        last_beat_at: None,
+        age_seconds: None,
+        started_at: None,
+        interval_seconds: None,
+        late_after_seconds: None,
+        version: None,
+        host: None,
+        last_outage: None,
+    }));
+    tick().await;
+
+    assert!(guard.query("[data-target=\"env-banner\"]").is_none());
+    assert!(guard.query("[data-target=\"worker-banner\"]").is_none());
+}
+
+#[wasm_bindgen_test]
+async fn setup_page_renders_without_panicking() {
+    let guard = ContainerGuard::new();
+    let _handle = leptos::mount::mount_to(guard.el().clone(), || {
+        provide_context(AppContext::new());
+        view! {
+            <Router>
+                <SetupPage />
+            </Router>
+        }
+    });
+    tick().await;
+
+    assert!(guard.query("[data-target=\"setup-page\"]").is_some());
 }

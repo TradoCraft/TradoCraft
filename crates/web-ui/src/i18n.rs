@@ -19,6 +19,32 @@ pub const SOURCE: &[(&str, &str)] = &[
     ("shell.dark_mode", "Dark mode"),
     ("shell.sign_out", "Sign out"),
     ("shell.interface_language", "Interface language"),
+    (
+        "banner.worker_never_seen",
+        "No background worker heartbeat has been recorded yet — outbound and inbound e-mail are paused.",
+    ),
+    ("home.title", "Overview"),
+    (
+        "home.subtitle",
+        "Open workspace items, pending tasks, and recent records.",
+    ),
+    ("home.refresh", "Refresh"),
+    ("home.see_all", "See all"),
+    ("home.open_tabs", "Open tabs"),
+    ("home.todo", "To-do"),
+    ("home.helpdesk", "Helpdesk"),
+    ("home.quotations", "Quotations"),
+    ("home.purchasing", "Purchase orders"),
+    (
+        "home.empty",
+        "No overview cards are available for your current permissions. Use the module navigation to open a section.",
+    ),
+    ("setup.title", "First-company setup"),
+    (
+        "setup.already_done",
+        "This server already has a company configured.",
+    ),
+    ("setup.go_login", "Go to sign in"),
     ("admin.translations.title", "Interface translations"),
     (
         "admin.translations.help",
