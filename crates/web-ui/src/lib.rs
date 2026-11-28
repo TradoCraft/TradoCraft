@@ -115,8 +115,14 @@ pub fn App() -> impl IntoView {
                     path=path!("/opportunities")
                     view=|| view! {
                         <AppShell>
-                            <PlaceholderPage title="Opportunities" route="/opportunities" />
+                            <pages::opportunities::OpportunitiesPage />
                         </AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/opportunities/:id")
+                    view=|| view! {
+                        <AppShell><pages::opportunities::OpportunityDetailPage /></AppShell>
                     }
                 />
                 <Route
@@ -275,15 +281,51 @@ pub fn App() -> impl IntoView {
                     path=path!("/production")
                     view=|| view! {
                         <AppShell>
-                            <PlaceholderPage title="Production" route="/production" />
+                            <pages::production::ProductionPage />
                         </AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/production/release")
+                    view=|| view! {
+                        <AppShell><pages::production::ProductionReleasePage /></AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/production/divisions")
+                    view=|| view! {
+                        <AppShell><pages::production::ProductionDivisionsPage /></AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/production/work-centres")
+                    view=|| view! {
+                        <AppShell><pages::production::ProductionWorkCentresPage /></AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/production/capacity")
+                    view=|| view! {
+                        <AppShell><pages::production_board::ProductionCapacityPage /></AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/production/board")
+                    view=|| view! {
+                        <AppShell><pages::production_board::ProductionBoardPage /></AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/production/:id")
+                    view=|| view! {
+                        <AppShell><pages::production_detail::ProductionDetailPage /></AppShell>
                     }
                 />
                 <Route
                     path=path!("/mrp")
                     view=|| view! {
                         <AppShell>
-                            <PlaceholderPage title="MRP" route="/mrp" />
+                            <pages::mrp::MrpPage />
                         </AppShell>
                     }
                 />

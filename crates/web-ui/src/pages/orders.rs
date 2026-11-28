@@ -637,6 +637,7 @@ pub fn OrdersPage() -> impl IntoView {
                                 }}
 
                                 {move || read_order_tab(&open_tabs, &tab_id_body, Clone::clone).map(|tab| {
+                                    let production_order_id = tab.order_id;
                                     let s = &tab.summary;
                                     let reference = if s.customer_reference.trim().is_empty() {
                                         "—".to_string()
@@ -730,6 +731,10 @@ pub fn OrdersPage() -> impl IntoView {
                                                         <span>{format!("VAT: {} {}", d.vat_total, d.order.currency)}</span>
                                                         <strong>{format!("Total: {} {}", d.order.total, d.order.currency)}</strong>
                                                     </div>
+                                                    <Show when=move || super::phase2::can("production.read")>
+                                                        <super::production::OrderProductionPanel order_id=production_order_id />
+                                                    </Show>
+
 
                                                     {(!d.revisions.is_empty()).then(|| view! {
                                                         <div style="font-size: 12px;">

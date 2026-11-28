@@ -78,3 +78,16 @@ pub(crate) fn parse_uuid(label: &str, raw: &str) -> Result<Uuid, String> {
 pub(crate) fn fmt_opt_display<T: ToString>(value: Option<T>) -> String {
     value.map(|v| v.to_string()).unwrap_or_default()
 }
+
+mod phase2;
+
+pub mod opportunities;
+
+mod product_engineering;
+mod product_media;
+mod product_tabs;
+
+pub mod mrp;
+pub mod production;
+pub mod production_board;
+pub mod production_detail;

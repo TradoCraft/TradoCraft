@@ -1,5 +1,5 @@
 //! Administration: one destination with a section per area, each shown only with its permission.
-//! Mirrors `app/lib/features/admin/admin_page.dart` (without the site baseline types and the
+//! Mirrors `app/lib/features/admin/admin_page.dart` (without the
 //! configurator builder shortcut). Every section is deep-linkable as `/admin/<section>`.
 
 pub mod attributes;
@@ -34,19 +34,21 @@ pub enum AdminSection {
     Vat,
     Zones,
     Attributes,
+    Baseline,
     Identity,
     Audit,
     Import,
 }
 
 impl AdminSection {
-    pub const ALL: [AdminSection; 9] = [
+    pub const ALL: [AdminSection; 10] = [
         AdminSection::Users,
         AdminSection::Modules,
         AdminSection::Company,
         AdminSection::Vat,
         AdminSection::Zones,
         AdminSection::Attributes,
+        AdminSection::Baseline,
         AdminSection::Identity,
         AdminSection::Audit,
         AdminSection::Import,
@@ -61,6 +63,7 @@ impl AdminSection {
             Self::Vat => "vat",
             Self::Zones => "zones",
             Self::Attributes => "attributes",
+            Self::Baseline => "baseline",
             Self::Identity => "identity",
             Self::Audit => "audit",
             Self::Import => "import",
@@ -75,6 +78,7 @@ impl AdminSection {
             Self::Vat => "VAT rates",
             Self::Zones => "Price zones",
             Self::Attributes => "Attributes",
+            Self::Baseline => "Site baseline types",
             Self::Identity => "Identity providers",
             Self::Audit => "Audit trail",
             Self::Import => "Import",
@@ -92,7 +96,7 @@ impl AdminSection {
             // User administration needs users.admin; price zones are open to prices.write.
             Self::Users | Self::Modules | Self::Company | Self::Vat => can("users.admin"),
             Self::Zones => can("prices.write"),
-            Self::Attributes => can("products.write"),
+            Self::Attributes | Self::Baseline => can("products.write"),
             Self::Identity => can("identity.admin"),
             Self::Audit => can("audit.view"),
             Self::Import => can("imports.admin"),
@@ -235,6 +239,7 @@ pub fn AdminPage() -> impl IntoView {
                         Some(AdminSection::Company) => view! { <company::CompanySection /> }.into_any(),
                         Some(AdminSection::Vat) => view! { <vat::VatSection /> }.into_any(),
                         Some(AdminSection::Zones) => view! { <zones::ZonesSection /> }.into_any(),
+                        Some(AdminSection::Baseline) => view! { <super::opportunities::BaselineTypesPage /> }.into_any(),
                         Some(AdminSection::Attributes) => view! { <attributes::AttributesSection /> }.into_any(),
                         Some(AdminSection::Identity) => view! { <identity::IdentitySection /> }.into_any(),
                         Some(AdminSection::Audit) => view! { <audit::AuditSection /> }.into_any(),
@@ -269,7 +274,7 @@ mod tests {
         );
         assert_eq!(
             allowed_sections(|p| p == "products.write"),
-            vec![AdminSection::Attributes]
+            vec![AdminSection::Attributes, AdminSection::Baseline]
         );
     }
 

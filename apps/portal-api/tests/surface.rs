@@ -506,6 +506,7 @@ async fn request_logs_do_not_record_link_tokens(db: PgPool) {
     let subscriber = tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)
         .with_ansi(false)
+        .with_span_events(tracing_subscriber::fmt::format::FmtSpan::NEW)
         .with_writer(move || writer.clone())
         .finish();
     let _guard = tracing::subscriber::set_default(subscriber);

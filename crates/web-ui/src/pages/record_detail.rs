@@ -371,19 +371,9 @@ pub fn RecordDetailView(
                                     </div>
                                 }
                                 .into_any(),
-                                LoadedRecord::Product(p) => view! {
-                                    <div class="tc-detail-grid">
-                                        {kv_row("Code", p.code)}
-                                        {kv_row("Name", p.name)}
-                                        {kv_row("Type", p.product_type)}
-                                        {kv_row("Unit", p.unit)}
-                                        {kv_row("VAT %", p.vat_rate.to_string())}
-                                        {kv_row("Tracking", p.tracking)}
-                                        {kv_row("Barcode", p.barcode.unwrap_or_default())}
-                                        {kv_row("Description", p.description)}
-                                    </div>
+                                LoadedRecord::Product(product) => {
+                                    view! { <super::product_tabs::ProductDetailTabs product /> }.into_any()
                                 }
-                                .into_any(),
                                 LoadedRecord::Quotation(q) => view! {
                                     <div style="display: flex; flex-direction: column; gap: var(--space-lg);">
                                         <div class="tc-detail-grid">
@@ -421,7 +411,9 @@ pub fn RecordDetailView(
                                     </div>
                                 }
                                 .into_any(),
-                                LoadedRecord::Order(o) => view! {
+                                LoadedRecord::Order(o) => {
+                                    let order_id = o.order.id;
+                                    view! {
                                     <div style="display: flex; flex-direction: column; gap: var(--space-lg);">
                                         <div class="tc-detail-grid">
                                             {kv_row("Number", format!("{} (rev {})", o.order.number, o.revision))}
@@ -455,9 +447,12 @@ pub fn RecordDetailView(
                                                 </tbody>
                                             </table>
                                         </div>
+                                        <Show when=move || super::phase2::can("production.read")>
+                                            <super::production::OrderProductionPanel order_id />
+                                        </Show>
                                     </div>
+                                }.into_any()
                                 }
-                                .into_any(),
                                 LoadedRecord::Supplier(s) => view! {
                                     <div class="tc-detail-grid">
                                         {kv_row("Code", s.code)}

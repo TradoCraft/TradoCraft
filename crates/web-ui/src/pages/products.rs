@@ -442,6 +442,9 @@ pub fn ProductsPage() -> impl IntoView {
                     >
                         {move || if loading.get() { "Loading..." } else { "Refresh" }}
                     </button>
+                    <Show when=move || is_signed_in.get()>
+                        <super::product_tabs::ProductCsvActions reload=reload_nonce />
+                    </Show>
                 </div>
             </div>
 
@@ -553,6 +556,7 @@ pub fn ProductsPage() -> impl IntoView {
                                             children=move |product| {
                                                 let open_product = product.clone();
                                                 let open_product_btn = product.clone();
+                                                let details_href = crate::components::shell::app_href(&format!("/products/{}", product.id));
                                                 let row_tab_id = format!("edit:{}", product.id);
                                                 let row_target = format!("product-row-{}", product.code);
                                                 let aria_label = format!("Open product {}", product.code);
@@ -588,7 +592,11 @@ pub fn ProductsPage() -> impl IntoView {
                                                                 {product.code}
                                                             </button>
                                                         </td>
-                                                        <td>{product.name}</td>
+                                                        <td>
+                                                            <A href=details_href on:click=|ev: leptos::ev::MouseEvent| ev.stop_propagation()>
+                                                                {product.name}
+                                                            </A>
+                                                        </td>
                                                         <td><span class=type_badge_class>{product.product_type}</span></td>
                                                         <td class="tc-mono">{product.family_code.unwrap_or_else(|| "—".to_string())}</td>
                                                         <td>{product.unit}</td>

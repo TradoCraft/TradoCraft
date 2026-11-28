@@ -335,6 +335,761 @@ impl Client {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PackagingCategory {
+    pub active: bool,
+    pub code: String,
+    pub description: String,
+    pub id: Uuid,
+    pub name: String,
+    pub product_count: i64,
+    pub requires_shipping_quote: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PackagingCategoryInput {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub active: Option<bool>,
+    pub code: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub requires_shipping_quote: Option<bool>,
+}
+
+/// One grid of a country, e.g. 230 V single phase at 50 Hz.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PowerGrid {
+    pub active: bool,
+    pub country_code: String,
+    pub frequency_hz: i32,
+    pub id: Uuid,
+    pub name: String,
+    pub phases: i32,
+    pub voltage_v: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub struct ListPowerGridsParams {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub country: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PowerGridInput {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub active: Option<bool>,
+    pub country_code: String,
+    pub frequency_hz: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    pub phases: i32,
+    pub voltage_v: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BulkPricePreview {
+    pub applied: i64,
+    pub conflicts: i64,
+    pub lines: Vec<BulkPriceLine>,
+    pub valid_from: chrono::NaiveDate,
+    pub without_price: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BulkPriceLine {
+    pub conflict: bool,
+    pub current_price: String,
+    pub current_valid_from: chrono::NaiveDate,
+    pub new_price: String,
+    pub product_code: String,
+    pub product_id: Uuid,
+    pub product_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub replaced_price: Option<String>,
+    pub zone_code: String,
+    pub zone_id: Uuid,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BulkPriceChangeInput {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub family_id: Option<Uuid>,
+    pub kind: ChangeKind,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub product_ids: Option<Vec<Uuid>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub replace_planned: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rounding: Option<String>,
+    pub valid_from: chrono::NaiveDate,
+    pub value: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub zone_ids: Option<Vec<Uuid>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ChangeKind {
+    #[serde(rename = "percent")]
+    Percent,
+    #[serde(rename = "amount")]
+    Amount,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProductFamily {
+    pub active: bool,
+    pub code: String,
+    pub id: Uuid,
+    pub name: String,
+    pub product_count: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProductFamilyInput {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub active: Option<bool>,
+    pub code: String,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProductRelation {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub a_family_code: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub a_family_id: Option<Uuid>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub a_product_code: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub a_product_id: Option<Uuid>,
+    pub active: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub b_family_code: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub b_family_id: Option<Uuid>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub b_product_code: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub b_product_id: Option<Uuid>,
+    pub bidirectional: bool,
+    pub id: Uuid,
+    pub kind: String,
+    pub note: String,
+    pub strength: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub struct ListProductRelationsParams {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub product_id: Option<Uuid>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub family_id: Option<Uuid>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub kind: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProductRelationInput {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub a_family_id: Option<Uuid>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub a_product_id: Option<Uuid>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub active: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub b_family_id: Option<Uuid>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub b_product_id: Option<Uuid>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bidirectional: Option<bool>,
+    pub kind: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub strength: Option<i32>,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub struct ExportProductsParams {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub format: Option<String>,
+}
+
+/// The response of a groups endpoint, ordered by value.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GroupPage {
+    pub group_by: String,
+    pub groups: Vec<GroupCount>,
+}
+
+/// The rows of one group.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GroupCount {
+    pub count: i64,
+    pub value: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ProductGroupsParams {
+    pub group_by: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub q: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub code: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub active: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub family_id: Option<Uuid>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub product_type: Option<String>,
+}
+
+/// Outcome of an import (or of its dry run). `errors` is empty on success; with errors nothing was
+/// written and the counts are 0.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ImportReport {
+    pub created: u64,
+    pub errors: Vec<RowError>,
+    pub unchanged: u64,
+    pub updated: u64,
+}
+
+/// One problem in an import file.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RowError {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub column: Option<String>,
+    pub message: String,
+    pub row: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub struct ImportProductsParams {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dry_run: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sheet: Option<String>,
+}
+
+/// One attribute. `value` is text in JSON: a decimal for `number` (e.g. `"0.55"`), `true` or
+/// `false` for `boolean`. A `range` uses `value_min` and `value_max` (decimals) instead; its
+/// `value` is ignored on input and shown as `min..max` on output.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProductAttribute {
+    pub key: String,
+    pub kind: AttributeKind,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub unit: Option<String>,
+    pub value: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub value_max: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub value_min: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum AttributeKind {
+    #[serde(rename = "number")]
+    Number,
+    #[serde(rename = "text")]
+    Text,
+    #[serde(rename = "boolean")]
+    Boolean,
+    #[serde(rename = "range")]
+    Range,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProductMedia {
+    pub caption: String,
+    pub content_type: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub filename: String,
+    pub id: Uuid,
+    pub is_default: bool,
+    pub kind: String,
+    pub size_bytes: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub struct UploadProductMediaParams {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub caption: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub filename: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub client_id: Option<Uuid>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MediaUpdate {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub caption: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_default: Option<bool>,
+}
+
+/// An option of a product, with the option product's code and name.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProductOption {
+    pub active: bool,
+    pub default_quantity: String,
+    pub option_active: bool,
+    pub option_code: String,
+    pub option_name: String,
+    pub option_product_id: Uuid,
+    pub required: bool,
+    pub sort_order: i32,
+}
+
+/// One option as set from the product screen.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProductOptionInput {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub active: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default_quantity: Option<String>,
+    pub option_product_id: Uuid,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub required: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sort_order: Option<i32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PowerCompatibilityReport {
+    pub available: Vec<PowerGrid>,
+    pub country_code: String,
+    pub status: PowerStatus,
+    pub supported: Vec<PowerSupply>,
+}
+
+/// Machine-readable status of a [`PowerCompatibility`].
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum PowerStatus {
+    #[serde(rename = "not_applicable")]
+    NotApplicable,
+    #[serde(rename = "needs_external_supply")]
+    NeedsExternalSupply,
+    #[serde(rename = "compatible")]
+    Compatible,
+    #[serde(rename = "incompatible")]
+    Incompatible,
+    #[serde(rename = "unknown_grid")]
+    UnknownGrid,
+}
+
+/// A way to power a product.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PowerSupply {
+    pub current_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub frequency_hz: Option<i32>,
+    pub id: Uuid,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub phases: Option<i32>,
+    pub tolerance_pct: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub voltage_max_v: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub voltage_min_v: Option<i32>,
+    pub voltage_v: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub struct GetProductPowerCompatibilityParams {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub country: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub grid_id: Option<Uuid>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PowerSupplyInput {
+    pub current_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub frequency_hz: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub phases: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tolerance_pct: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub voltage_max_v: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub voltage_min_v: Option<i32>,
+    pub voltage_v: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ZonePriceEntry {
+    pub id: Uuid,
+    pub unit_price: String,
+    pub valid_from: chrono::NaiveDate,
+    pub zone_code: String,
+    pub zone_id: Uuid,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ZonePriceInput {
+    pub unit_price: String,
+    pub valid_from: chrono::NaiveDate,
+    pub zone_id: Uuid,
+}
+
+/// A correction of a zone price that has not started yet.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ZonePriceCorrection {
+    pub unit_price: String,
+    pub valid_from: chrono::NaiveDate,
+}
+
+/// What the rules and the order history say about one product.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RelatedProducts {
+    pub rules: Vec<ProductRelation>,
+    pub suggestions: Vec<Suggestion>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Suggestion {
+    pub because_of_code: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub confidence: Option<f64>,
+    pub note: String,
+    pub product_code: String,
+    pub product_id: Uuid,
+    pub product_name: String,
+    pub reason: SuggestionReason,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub strength: Option<i32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum SuggestionReason {
+    #[serde(rename = "rule")]
+    Rule,
+    #[serde(rename = "often_bought_together")]
+    OftenBoughtTogether,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProductTranslation {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    pub language: String,
+    pub name: String,
+}
+
+impl Client {
+    /// `GET /api/v1/packaging-categories`.
+    pub async fn list_packaging(&self) -> Result<Vec<PackagingCategory>, ApiError> {
+        self.get_json("/api/v1/packaging-categories", &()).await
+    }
+
+    /// `POST /api/v1/packaging-categories`.
+    pub async fn create_packaging(
+        &self,
+        body: &PackagingCategoryInput,
+    ) -> Result<PackagingCategory, ApiError> {
+        self.post_json("/api/v1/packaging-categories", body).await
+    }
+
+    /// `PUT /api/v1/packaging-categories/{id}`.
+    pub async fn update_packaging(
+        &self,
+        id: Uuid,
+        body: &PackagingCategoryInput,
+    ) -> Result<PackagingCategory, ApiError> {
+        self.put_json(&format!("/api/v1/packaging-categories/{id}"), body)
+            .await
+    }
+
+    /// `GET /api/v1/power-grids`.
+    pub async fn list_power_grids(
+        &self,
+        params: &ListPowerGridsParams,
+    ) -> Result<Vec<PowerGrid>, ApiError> {
+        self.get_json("/api/v1/power-grids", params).await
+    }
+
+    /// `POST /api/v1/power-grids`.
+    pub async fn create_power_grid(&self, body: &PowerGridInput) -> Result<PowerGrid, ApiError> {
+        self.post_json("/api/v1/power-grids", body).await
+    }
+
+    /// `PUT /api/v1/power-grids/{id}`.
+    pub async fn update_power_grid(
+        &self,
+        id: Uuid,
+        body: &PowerGridInput,
+    ) -> Result<PowerGrid, ApiError> {
+        self.put_json(&format!("/api/v1/power-grids/{id}"), body)
+            .await
+    }
+
+    /// `POST /api/v1/prices/bulk/apply`.
+    pub async fn apply_bulk_prices(
+        &self,
+        body: &BulkPriceChangeInput,
+    ) -> Result<BulkPricePreview, ApiError> {
+        self.post_json("/api/v1/prices/bulk/apply", body).await
+    }
+
+    /// `POST /api/v1/prices/bulk/preview`.
+    pub async fn preview_bulk_prices(
+        &self,
+        body: &BulkPriceChangeInput,
+    ) -> Result<BulkPricePreview, ApiError> {
+        self.post_json("/api/v1/prices/bulk/preview", body).await
+    }
+
+    /// `GET /api/v1/product-families`.
+    pub async fn list_families(&self) -> Result<Vec<ProductFamily>, ApiError> {
+        self.get_json("/api/v1/product-families", &()).await
+    }
+
+    /// `POST /api/v1/product-families`.
+    pub async fn create_family(
+        &self,
+        body: &ProductFamilyInput,
+    ) -> Result<ProductFamily, ApiError> {
+        self.post_json("/api/v1/product-families", body).await
+    }
+
+    /// `PUT /api/v1/product-families/{id}`.
+    pub async fn update_family(
+        &self,
+        id: Uuid,
+        body: &ProductFamilyInput,
+    ) -> Result<ProductFamily, ApiError> {
+        self.put_json(&format!("/api/v1/product-families/{id}"), body)
+            .await
+    }
+
+    /// `GET /api/v1/product-relations`.
+    pub async fn list_product_relations(
+        &self,
+        params: &ListProductRelationsParams,
+    ) -> Result<Vec<ProductRelation>, ApiError> {
+        self.get_json("/api/v1/product-relations", params).await
+    }
+
+    /// `POST /api/v1/product-relations`.
+    pub async fn create_product_relation(
+        &self,
+        body: &ProductRelationInput,
+    ) -> Result<ProductRelation, ApiError> {
+        self.post_json("/api/v1/product-relations", body).await
+    }
+
+    /// `PUT /api/v1/product-relations/{id}`.
+    pub async fn update_product_relation(
+        &self,
+        id: Uuid,
+        body: &ProductRelationInput,
+    ) -> Result<ProductRelation, ApiError> {
+        self.put_json(&format!("/api/v1/product-relations/{id}"), body)
+            .await
+    }
+
+    /// `GET /api/v1/products/export`.
+    pub async fn export_products(
+        &self,
+        params: &ExportProductsParams,
+    ) -> Result<Vec<u8>, ApiError> {
+        self.get_bytes_with_query("/api/v1/products/export", params)
+            .await
+    }
+
+    /// `GET /api/v1/products/groups`.
+    pub async fn product_groups(
+        &self,
+        params: &ProductGroupsParams,
+    ) -> Result<GroupPage, ApiError> {
+        self.get_json("/api/v1/products/groups", params).await
+    }
+
+    /// `POST /api/v1/products/import`.
+    pub async fn import_products(
+        &self,
+        params: &ImportProductsParams,
+        body: Vec<u8>,
+    ) -> Result<ImportReport, ApiError> {
+        self.post_bytes("/api/v1/products/import", params, body)
+            .await
+    }
+
+    /// `GET /api/v1/products/{id}/attributes`.
+    pub async fn list_product_attributes(
+        &self,
+        id: Uuid,
+    ) -> Result<Vec<ProductAttribute>, ApiError> {
+        self.get_json(&format!("/api/v1/products/{id}/attributes"), &())
+            .await
+    }
+
+    /// `PUT /api/v1/products/{id}/attributes`.
+    pub async fn replace_product_attributes(
+        &self,
+        id: Uuid,
+        body: &Vec<ProductAttribute>,
+    ) -> Result<Vec<ProductAttribute>, ApiError> {
+        self.put_json(&format!("/api/v1/products/{id}/attributes"), body)
+            .await
+    }
+
+    /// `GET /api/v1/products/{id}/media`.
+    pub async fn list_product_media(&self, id: Uuid) -> Result<Vec<ProductMedia>, ApiError> {
+        self.get_json(&format!("/api/v1/products/{id}/media"), &())
+            .await
+    }
+
+    /// `POST /api/v1/products/{id}/media`.
+    pub async fn upload_product_media(
+        &self,
+        id: Uuid,
+        params: &UploadProductMediaParams,
+        body: Vec<u8>,
+    ) -> Result<ProductMedia, ApiError> {
+        self.post_bytes(&format!("/api/v1/products/{id}/media"), params, body)
+            .await
+    }
+
+    /// `GET /api/v1/products/{id}/media/default`.
+    pub async fn get_product_default_media(&self, id: Uuid) -> Result<Vec<u8>, ApiError> {
+        self.get_bytes_with_query(&format!("/api/v1/products/{id}/media/default"), &())
+            .await
+    }
+
+    /// `GET /api/v1/products/{id}/media/{media_id}`.
+    pub async fn get_product_media(&self, id: Uuid, media_id: Uuid) -> Result<Vec<u8>, ApiError> {
+        self.get_bytes_with_query(&format!("/api/v1/products/{id}/media/{media_id}"), &())
+            .await
+    }
+
+    /// `DELETE /api/v1/products/{id}/media/{media_id}`.
+    pub async fn delete_product_media(&self, id: Uuid, media_id: Uuid) -> Result<(), ApiError> {
+        self.delete_empty(&format!("/api/v1/products/{id}/media/{media_id}"))
+            .await
+    }
+
+    /// `PATCH /api/v1/products/{id}/media/{media_id}`.
+    pub async fn update_product_media(
+        &self,
+        id: Uuid,
+        media_id: Uuid,
+        body: &MediaUpdate,
+    ) -> Result<ProductMedia, ApiError> {
+        self.patch_json(&format!("/api/v1/products/{id}/media/{media_id}"), body)
+            .await
+    }
+
+    /// `GET /api/v1/products/{id}/options`.
+    pub async fn list_product_options(&self, id: Uuid) -> Result<Vec<ProductOption>, ApiError> {
+        self.get_json(&format!("/api/v1/products/{id}/options"), &())
+            .await
+    }
+
+    /// `PUT /api/v1/products/{id}/options`.
+    pub async fn replace_product_options(
+        &self,
+        id: Uuid,
+        body: &Vec<ProductOptionInput>,
+    ) -> Result<Vec<ProductOption>, ApiError> {
+        self.put_json(&format!("/api/v1/products/{id}/options"), body)
+            .await
+    }
+
+    /// `GET /api/v1/products/{id}/power-compatibility`.
+    pub async fn get_product_power_compatibility(
+        &self,
+        id: Uuid,
+        params: &GetProductPowerCompatibilityParams,
+    ) -> Result<PowerCompatibilityReport, ApiError> {
+        self.get_json(
+            &format!("/api/v1/products/{id}/power-compatibility"),
+            params,
+        )
+        .await
+    }
+
+    /// `GET /api/v1/products/{id}/power-supplies`.
+    pub async fn get_product_power_supplies(&self, id: Uuid) -> Result<Vec<PowerSupply>, ApiError> {
+        self.get_json(&format!("/api/v1/products/{id}/power-supplies"), &())
+            .await
+    }
+
+    /// `PUT /api/v1/products/{id}/power-supplies`.
+    pub async fn replace_product_power_supplies(
+        &self,
+        id: Uuid,
+        body: &Vec<PowerSupplyInput>,
+    ) -> Result<Vec<PowerSupply>, ApiError> {
+        self.put_json(&format!("/api/v1/products/{id}/power-supplies"), body)
+            .await
+    }
+
+    /// `GET /api/v1/products/{id}/prices`.
+    pub async fn list_product_prices(&self, id: Uuid) -> Result<Vec<ZonePriceEntry>, ApiError> {
+        self.get_json(&format!("/api/v1/products/{id}/prices"), &())
+            .await
+    }
+
+    /// `POST /api/v1/products/{id}/prices`.
+    pub async fn add_product_price(
+        &self,
+        id: Uuid,
+        body: &ZonePriceInput,
+    ) -> Result<ZonePriceEntry, ApiError> {
+        self.post_json(&format!("/api/v1/products/{id}/prices"), body)
+            .await
+    }
+
+    /// `PUT /api/v1/products/{id}/prices/{price_id}`.
+    pub async fn correct_product_price(
+        &self,
+        id: Uuid,
+        price_id: Uuid,
+        body: &ZonePriceCorrection,
+    ) -> Result<ZonePriceEntry, ApiError> {
+        self.put_json(&format!("/api/v1/products/{id}/prices/{price_id}"), body)
+            .await
+    }
+
+    /// `DELETE /api/v1/products/{id}/prices/{price_id}`.
+    pub async fn delete_product_price(&self, id: Uuid, price_id: Uuid) -> Result<(), ApiError> {
+        self.delete_empty(&format!("/api/v1/products/{id}/prices/{price_id}"))
+            .await
+    }
+
+    /// `GET /api/v1/products/{id}/related`.
+    pub async fn get_related_products(&self, id: Uuid) -> Result<RelatedProducts, ApiError> {
+        self.get_json(&format!("/api/v1/products/{id}/related"), &())
+            .await
+    }
+
+    /// `GET /api/v1/products/{id}/translations`.
+    pub async fn list_product_translations(
+        &self,
+        id: Uuid,
+    ) -> Result<Vec<ProductTranslation>, ApiError> {
+        self.get_json(&format!("/api/v1/products/{id}/translations"), &())
+            .await
+    }
+
+    /// `PUT /api/v1/products/{id}/translations`.
+    pub async fn replace_product_translations(
+        &self,
+        id: Uuid,
+        body: &Vec<ProductTranslation>,
+    ) -> Result<Vec<ProductTranslation>, ApiError> {
+        self.put_json(&format!("/api/v1/products/{id}/translations"), body)
+            .await
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
