@@ -11,3 +11,7 @@ pub mod table;
 pub mod tabs;
 pub mod todo_widgets;
 pub mod tutorial_overlay;
+
+pub mod kanban;
+
+pub mod resource_board;

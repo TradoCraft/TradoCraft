@@ -4323,6 +4323,9 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.21",
  "uuid",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
 ]
 
 [[package]]

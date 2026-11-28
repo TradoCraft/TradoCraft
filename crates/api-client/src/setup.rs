@@ -102,6 +102,9 @@ impl Client {
     ) -> Result<BootstrapResult, ApiError> {
         if req.token.as_deref().is_some_and(|t| !t.trim().is_empty()) {
             self.validate_secret_base_url("setup token")?;
+            return self
+                .post_json_without_redirect("/api/v1/setup/bootstrap", req)
+                .await;
         }
         self.post_json_unauthenticated("/api/v1/setup/bootstrap", req)
             .await

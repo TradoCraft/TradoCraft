@@ -270,6 +270,7 @@ where
         (false, false) => "",
     };
     let click_row = row.clone();
+    let action_row = row.clone();
     let cells = columns
         .iter()
         .map(|col| {
@@ -292,6 +293,14 @@ where
             }
         >
             {cells}
+            {on_row_click.map(|callback| view! {
+                <td>
+                    <button type="button" class="tc-btn tc-btn-sm" on:click=move |event| {
+                        event.stop_propagation();
+                        callback.run(action_row.clone());
+                    }>"Open"</button>
+                </td>
+            })}
         </tr>
     }
     .into_any()
@@ -523,11 +532,12 @@ where
                                         .collect_view()
                                 })
                             }}
+                            {on_row_click.is_some().then(|| view! {<th scope="col">"Actions"</th>})}
                         </tr>
                     </thead>
                     <tbody>
                         {move || {
-                            let col_span = columns_sv.with_value(|cols| cols.len().max(1));
+                            let col_span = columns_sv.with_value(|cols| (cols.len() + usize::from(on_row_click.is_some())).max(1));
                             let is_loading = loading.get();
                             let grouped_active = groups.is_some()
                                 && query.with(|q| q.group_by.is_some());

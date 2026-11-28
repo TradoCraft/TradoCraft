@@ -107,6 +107,44 @@ impl Client {
         self.send_json(req).await
     }
 
+    pub(crate) async fn post_json_with_query<Q, B, T>(
+        &self,
+        path: &str,
+        query: &Q,
+        body: &B,
+    ) -> Result<T, ApiError>
+    where
+        Q: Serialize + ?Sized,
+        B: Serialize + ?Sized,
+        T: DeserializeOwned,
+    {
+        let req = self.apply_headers(self.http.post(self.url(path)?).query(query).json(body))?;
+        self.send_json(req).await
+    }
+
+    pub(crate) async fn post_without_body<T>(&self, path: &str) -> Result<T, ApiError>
+    where
+        T: DeserializeOwned,
+    {
+        let req = self.apply_headers(self.http.post(self.url(path)?))?;
+        self.send_json(req).await
+    }
+
+    pub(crate) async fn put_json_with_query<Q, B, T>(
+        &self,
+        path: &str,
+        query: &Q,
+        body: &B,
+    ) -> Result<T, ApiError>
+    where
+        Q: Serialize + ?Sized,
+        B: Serialize + ?Sized,
+        T: DeserializeOwned,
+    {
+        let req = self.apply_headers(self.http.put(self.url(path)?).query(query).json(body))?;
+        self.send_json(req).await
+    }
+
     pub(crate) async fn put_json<B, T>(&self, path: &str, body: &B) -> Result<T, ApiError>
     where
         B: Serialize + ?Sized,
@@ -233,8 +271,18 @@ impl Client {
 
     /// Sends an authenticated `GET` and returns the raw response body (file downloads).
     pub(crate) async fn get_bytes(&self, path: &str) -> Result<Vec<u8>, ApiError> {
-        let url = self.url(path)?;
-        let req = self.apply_headers(self.http.get(url))?;
+        self.get_bytes_with_query(path, &()).await
+    }
+
+    pub(crate) async fn get_bytes_with_query<Q>(
+        &self,
+        path: &str,
+        query: &Q,
+    ) -> Result<Vec<u8>, ApiError>
+    where
+        Q: Serialize + ?Sized,
+    {
+        let req = self.apply_headers(self.http.get(self.url(path)?).query(query))?;
         let resp = req.send().await?;
         let status = resp.status();
         if !status.is_success() {
@@ -287,6 +335,69 @@ impl Client {
         self.send_json(req).await
     }
 
+    /// A request containing a credential in the body must never be replayed at a redirect.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) async fn post_json_without_redirect<B, T>(
+        &self,
+        path: &str,
+        body: &B,
+    ) -> Result<T, ApiError>
+    where
+        B: Serialize + ?Sized,
+        T: DeserializeOwned,
+    {
+        let client = reqwest::Client::builder()
+            .redirect(reqwest::redirect::Policy::none())
+            .build()?;
+        self.send_json(client.post(self.url(path)?).json(body))
+            .await
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) async fn post_json_without_redirect<B, T>(
+        &self,
+        path: &str,
+        body: &B,
+    ) -> Result<T, ApiError>
+    where
+        B: Serialize + ?Sized,
+        T: DeserializeOwned,
+    {
+        use wasm_bindgen::{JsCast, JsValue};
+        use wasm_bindgen_futures::JsFuture;
+
+        let fail = |_| {
+            ApiError::InvalidConfig(
+                "The setup endpoint could not be reached directly. Check the server URL.".into(),
+            )
+        };
+        let json = serde_json::to_string(body)
+            .map_err(|_| ApiError::InvalidConfig("Could not encode the setup request.".into()))?;
+        let options = web_sys::RequestInit::new();
+        options.set_method("POST");
+        options.set_redirect(web_sys::RequestRedirect::Error);
+        options.set_body(&JsValue::from_str(&json));
+        let request =
+            web_sys::Request::new_with_str_and_init(&self.url(path)?, &options).map_err(fail)?;
+        request
+            .headers()
+            .set("content-type", "application/json")
+            .map_err(fail)?;
+        let window = web_sys::window().ok_or_else(|| fail(JsValue::UNDEFINED))?;
+        let response = JsFuture::from(window.fetch_with_request(&request))
+            .await
+            .map_err(fail)?
+            .dyn_into::<web_sys::Response>()
+            .map_err(fail)?;
+        let text = JsFuture::from(response.text().map_err(fail)?)
+            .await
+            .map_err(fail)?
+            .as_string()
+            .ok_or_else(|| fail(JsValue::UNDEFINED))?;
+        let text = checked_text(response.status(), text)?;
+        decode_json(text)
+    }
+
     /// Sends an unauthenticated JSON `POST` expecting an empty 2xx body (such as `202 Accepted`).
     pub(crate) async fn post_json_unauthenticated_empty<B>(
         &self,
@@ -331,29 +442,35 @@ impl Client {
 
     async fn send_checked(&self, req: reqwest::RequestBuilder) -> Result<String, ApiError> {
         let resp = req.send().await?;
-        let status = resp.status();
-        let text = resp.text().await?;
-        if !status.is_success() {
-            let body = serde_json::from_str::<ErrorBody>(&text).ok();
-            return Err(ApiError::Http {
-                status: status.as_u16(),
-                body,
-                raw_body: text,
-            });
-        }
-        Ok(text)
+        let status = resp.status().as_u16();
+        checked_text(status, resp.text().await?)
     }
 
     async fn send_json<T: DeserializeOwned>(
         &self,
         req: reqwest::RequestBuilder,
     ) -> Result<T, ApiError> {
-        let text = self.send_checked(req).await?;
-        serde_json::from_str::<T>(&text).map_err(|err| ApiError::Decode {
-            message: err.to_string(),
-            body: text,
-        })
+        decode_json(self.send_checked(req).await?)
     }
+}
+
+fn checked_text(status: u16, text: String) -> Result<String, ApiError> {
+    if !(200..300).contains(&status) {
+        let body = serde_json::from_str::<ErrorBody>(&text).ok();
+        return Err(ApiError::Http {
+            status,
+            body,
+            raw_body: text,
+        });
+    }
+    Ok(text)
+}
+
+fn decode_json<T: DeserializeOwned>(text: String) -> Result<T, ApiError> {
+    serde_json::from_str(&text).map_err(|err| ApiError::Decode {
+        message: err.to_string(),
+        body: text,
+    })
 }
 
 /// Enforces HTTPS for secret transport, with an explicit loopback HTTP exemption for local

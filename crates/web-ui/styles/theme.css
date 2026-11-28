@@ -887,10 +887,22 @@ select {
   position: fixed;
   inset: 0;
   z-index: 60;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  color: inherit;
   background: rgba(0, 0, 0, 0.56);
   display: grid;
   place-items: center;
   padding: var(--space-lg);
+}
+
+.tc-modal-backdrop:not([open]) {
+  display: none;
 }
 
 .tc-modal {
@@ -1219,4 +1231,106 @@ select {
   font-family: var(--font-mono);
   font-size: 10px;
   color: var(--on-surface-variant);
+.tc-phase-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-block: var(--space-sm);
 }
+
+.tc-phase-section {
+  margin-block: var(--space-lg);
+}
+
+.tc-phase-field {
+  display: grid;
+  gap: var(--space-xs);
+  align-content: start;
+  min-width: 0;
+}
+
+.tc-phase-fieldset {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.tc-phase-form,
+.tc-phase-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: var(--space-sm);
+}
+
+.tc-phase-row {
+  margin-block: var(--space-sm);
+}
+
+.tc-phase-overlay {
+  position: fixed;
+  inset: 0;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  color: inherit;
+  display: grid;
+  place-items: center;
+  padding: var(--space-md);
+  background: rgb(0 0 0 / 65%);
+}
+
+.tc-phase-overlay:not([open]) {
+  display: none;
+}
+
+.tc-phase-dialog {
+  width: min(100%, 48rem);
+  max-height: 85vh;
+  overflow: auto;
+  padding: var(--space-lg);
+}
+
+.tc-phase-board {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(13rem, 1fr);
+  gap: var(--space-sm);
+  overflow: auto;
+  padding-block: var(--space-sm);
+}
+
+.tc-phase-board > section {
+  padding: var(--space-sm);
+}
+
+.tc-phase-board ul,
+.tc-phase-resource ul {
+  list-style: none;
+  padding: 0;
+}
+
+.tc-phase-board li,
+.tc-phase-resource li {
+  padding: var(--space-sm);
+  margin-block: var(--space-xs);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-sm);
+}
+
+.tc-phase-resource td {
+  min-width: 10rem;
+  vertical-align: top;
+}
+
+.tc-product-media {
+  display: block;
+  width: min(100%, 44rem);
+  height: min(55vh, 30rem);
+  object-fit: contain;
+}
+
+.tc-phase-overloaded { color: var(--error); font-weight: 600; }

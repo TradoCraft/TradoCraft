@@ -18,12 +18,15 @@ pub fn Modal(
     let target_sv = StoredValue::new(target);
     let children_sv = StoredValue::new(children);
     let footer_sv = StoredValue::new(footer);
-    let dialog_ref = NodeRef::<leptos::html::Div>::new();
+    let dialog_ref = NodeRef::<leptos::html::Dialog>::new();
 
     Effect::new(move |_| {
         if open.get() {
             if let Some(el) = dialog_ref.get() {
-                let _ = el.focus();
+                #[cfg(target_arch = "wasm32")]
+                let _ = el.show_modal();
+                #[cfg(not(target_arch = "wasm32"))]
+                let _ = el;
             }
         }
     });
@@ -45,28 +48,25 @@ pub fn Modal(
                 let render_footer = footer_sv.get_value();
 
                 view! {
-                    <div
+                    <dialog
+                        node_ref=dialog_ref
                         class="tc-modal-backdrop"
+                        aria-labelledby=title_id
                         data-target=format!("{t}-backdrop")
                         on:click=move |_| {
                             if close_on_backdrop {
                                 on_close.run(());
                             }
                         }
-                        on:keydown=move |ev: leptos::ev::KeyboardEvent| {
-                            if close_on_escape && ev.key() == "Escape" {
-                                ev.stop_propagation();
+                        on:cancel=move |ev: leptos::ev::Event| {
+                            ev.prevent_default();
+                            if close_on_escape {
                                 on_close.run(());
                             }
                         }
                     >
                         <div
-                            node_ref=dialog_ref
                             class="tc-modal"
-                            role="dialog"
-                            aria-modal="true"
-                            aria-labelledby=title_id
-                            tabindex="-1"
                             data-target=t.clone()
                             on:click=|ev: leptos::ev::MouseEvent| ev.stop_propagation()
                         >
@@ -96,7 +96,7 @@ pub fn Modal(
                                 </div>
                             })}
                         </div>
-                    </div>
+                    </dialog>
                 }
             }
         </Show>
